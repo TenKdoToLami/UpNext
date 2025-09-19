@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<title>Supabase GitHub OAuth Test</title>
+		<style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin-top: 100px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    #user-info {
+      margin-top: 20px;
+    }
+  </style>
+	</head>
+	<body>
+		<h1>Supabase GitHub OAuth Test</h1>
+		<button id="github-login">Sign in with GitHub</button>
+
+		<div id="user-info"></div>
+
+		<script type="module">
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js";
+
+    const supabaseUrl = "https://rhjkmpgrvxclmkeizshl.supabase.co";
+    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJoamttcGdydnhjbG1rZWl6c2hsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzMDI5MDAsImV4cCI6MjA3Mzg3ODkwMH0.ghNoEDXc8RhByYcqcCB5ezJNWghxMTarYpL1G0eviXs";
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    const loginButton = document.getElementById('github-login');
+    const userInfoDiv = document.getElementById('user-info');
+
+    loginButton.addEventListener('click', async () => {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'github',
+      });
+      if (error) console.error('Login error:', error);
+      else console.log('Redirecting to GitHub...');
+    });
+
+    async function checkUser() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        userInfoDiv.innerHTML = `
+          <p><strong>Logged in as:</strong> ${session.user.email || 'GitHub User'}</p>
+          <p><strong>User ID:</strong> ${session.user.id}</p>
+        `;
+        loginButton.style.display = 'none';
+      }
+    }
+
+    checkUser();
+
+    supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN') {
+        checkUser();
+      }
+    });
+  </script>
+	</body>
+</html>
