@@ -2,61 +2,72 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Supabase GitHub OAuth Test</title>
+  <title>Supabase GitHub Signup Test</title>
   <style>
     body { font-family: Arial; text-align: center; margin-top: 100px; }
-    button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
+    button { padding: 10px 20px; font-size: 16px; cursor: pointer; margin: 5px; }
     #user-info { margin-top: 20px; }
   </style>
 </head>
 <body>
-  <h1>Supabase GitHub OAuth Test</h1>
-  <button id="github-login">Sign in with GitHub</button>
+  <h1>Supabase GitHub Signup Test</h1>
+  <button id="github-login">Sign up / Login with GitHub</button>
+  <button id="logout" style="display:none;">Logout</button>
   <div id="user-info"></div>
 
   <script type="module">
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js";
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.34.0/dist/module/supabase.js";
 
-const supabaseUrl = "https://rhjkmpgrvxclmkeizshl.supabase.co";
-const supabaseKey = "YOUR_ANON_KEY";
-const supabase = createClient(supabaseUrl, supabaseKey);
+    const SUPABASE_URL = "https://rhjkmpgrvxclmkeizshl.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJoamttcGdydnhjbG1rZWl6c2hsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzMDI5MDAsImV4cCI6MjA3Mzg3ODkwMH0.ghNoEDXc8RhByYcqcCB5ezJNWghxMTarYpL1G0eviXs.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJoamttcGdydnhjbG1rZWl6c2hsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzMDI5MDAsImV4cCI6MjA3Mzg3ODkwMH0.ghNoEDXc8RhByYcqcCB5ezJNWghxMTarYpL1G0eviXs";
+    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const loginButton = document.getElementById('github-login');
-const userInfoDiv = document.getElementById('user-info');
-loginButton.addEventListener('click', async () => {
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'github',
-    options: {
-      redirectTo: "https://tenkdotolami.github.io/UpNext/" // must match Supabase Redirect URLs
+    const loginButton = document.getElementById('github-login');
+    const logoutButton = document.getElementById('logout');
+    const userInfoDiv = document.getElementById('user-info');
+
+    async function signInWithGithub() {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'github',
+        options: {
+          redirectTo: window.location.href // redirects back here after login
+        }
+      });
+      if (error) console.error('Login error:', error);
+      else if (data?.url) window.location.href = data.url; // redirect manually if needed
     }
-  });
 
-  if (error) {
-    console.error('Login error:', error);
-    alert(error.message);
-  } else if (data.url) {
-    window.location.href = data.url;
-  }
-});
+    async function logout() {
+      const { error } = await supabase.auth.signOut();
+      if (error) console.error('Logout error:', error);
+      userInfoDiv.innerHTML = '';
+      loginButton.style.display = 'inline-block';
+      logoutButton.style.display = 'none';
+    }
 
+    async function checkUser() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        userInfoDiv.innerHTML = `
+          <p><strong>Logged in as:</strong> ${session.user.email || 'GitHub User'}</p>
+          <p><strong>User ID:</strong> ${session.user.id}</p>
+        `;
+        loginButton.style.display = 'none';
+        logoutButton.style.display = 'inline-block';
+      } else {
+        loginButton.style.display = 'inline-block';
+        logoutButton.style.display = 'none';
+      }
+    }
 
-async function checkUser() {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (session?.user) {
-    userInfoDiv.innerHTML = `
-      <p><strong>Logged in as:</strong> ${session.user.email || 'GitHub User'}</p>
-      <p><strong>User ID:</strong> ${session.user.id}</p>
-    `;
-    loginButton.style.display = 'none';
-  }
-}
+    loginButton.addEventListener('click', signInWithGithub);
+    logoutButton.addEventListener('click', logout);
 
-checkUser();
+    checkUser();
 
-supabase.auth.onAuthStateChange((event, session) => {
-  if (event === 'SIGNED_IN') checkUser();
-});
-</script>
-
+    supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') checkUser();
+    });
+  </script>
 </body>
 </html>
