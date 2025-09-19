@@ -23,14 +23,22 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 const loginButton = document.getElementById('github-login');
 const userInfoDiv = document.getElementById('user-info');
-
 loginButton.addEventListener('click', async () => {
-  const { error } = await supabase.auth.signInWithOAuth({
+  const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'github',
-    options: { redirectTo: window.location.origin }
+    options: {
+      redirectTo: "https://tenkdotolami.github.io/UpNext/" // must match Supabase Redirect URLs
+    }
   });
-  if (error) console.error('Login error:', error);
+
+  if (error) {
+    console.error('Login error:', error);
+    alert(error.message);
+  } else if (data.url) {
+    window.location.href = data.url;
+  }
 });
+
 
 async function checkUser() {
   const { data: { session } } = await supabase.auth.getSession();
