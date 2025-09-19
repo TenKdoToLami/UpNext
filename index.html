@@ -15,38 +15,40 @@
   <div id="user-info"></div>
 
   <script type="module">
-    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js";
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js";
 
-    const supabaseUrl = "https://rhjkmpgrvxclmkeizshl.supabase.co";
-    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJoamttcGdydnhjbG1rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzMDI5MDAsImV4cCI6MjA3Mzg3ODkwMH0.ghNoEDXc8RhByYcqcCB5ezJNWghxMTarYpL1G0eviXs";
-    const supabase = createClient(supabaseUrl, supabaseKey);
+const supabaseUrl = "https://rhjkmpgrvxclmkeizshl.supabase.co";
+const supabaseKey = "YOUR_ANON_KEY";
+const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const loginButton = document.getElementById('github-login');
-    const userInfoDiv = document.getElementById('user-info');
+const loginButton = document.getElementById('github-login');
+const userInfoDiv = document.getElementById('user-info');
 
-    loginButton.addEventListener('click', async () => {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'github',
-      });
-      if (error) console.error('Login error:', error);
-    });
+loginButton.addEventListener('click', async () => {
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'github',
+    options: { redirectTo: window.location.origin }
+  });
+  if (error) console.error('Login error:', error);
+});
 
-    async function checkUser() {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        userInfoDiv.innerHTML = `
-          <p><strong>Logged in as:</strong> ${session.user.email || 'GitHub User'}</p>
-          <p><strong>User ID:</strong> ${session.user.id}</p>
-        `;
-        loginButton.style.display = 'none';
-      }
-    }
+async function checkUser() {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    userInfoDiv.innerHTML = `
+      <p><strong>Logged in as:</strong> ${session.user.email || 'GitHub User'}</p>
+      <p><strong>User ID:</strong> ${session.user.id}</p>
+    `;
+    loginButton.style.display = 'none';
+  }
+}
 
-    checkUser();
+checkUser();
 
-    supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN') checkUser();
-    });
-  </script>
+supabase.auth.onAuthStateChange((event, session) => {
+  if (event === 'SIGNED_IN') checkUser();
+});
+</script>
+
 </body>
 </html>
