@@ -724,7 +724,7 @@
 						<i data-lucide="database" class="w-5 h-5 text-emerald-500 dark:text-emerald-400 shrink-0"></i>
 						<div>
 							<span class="text-sm font-medium text-emerald-600 dark:text-emerald-300">Currently using:
-								<strong>JSON</strong> data storage</span>
+								<strong>SQLite</strong> Database</span>
 							<p class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">This is your primary data file.
 								Share this
 								format to preserve your full library.</p>
@@ -736,20 +736,33 @@
 							class="text-xs font-bold text-emerald-500 dark:text-emerald-400 uppercase tracking-wider">Select
 							Data
 							Format</label>
-						<div class="grid grid-cols-3 gap-3">
-							<!-- JSON -->
+						<div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+							<!-- DB -->
 							<label class="cursor-pointer group">
-								<input type="radio" name="rawFormat" value="json_raw" class="peer hidden" checked
+								<input type="radio" name="rawFormat" value="db" class="peer hidden" checked
 									onchange="updateExportOptions()">
 								<div
-									class="bg-white dark:bg-zinc-900 border-2 border-zinc-200 dark:border-zinc-800 p-4 rounded-xl flex flex-col items-center gap-3 peer-checked:border-emerald-500 peer-checked:bg-emerald-50 dark:peer-checked:bg-emerald-500/10 text-zinc-400 peer-checked:text-emerald-500 dark:peer-checked:text-emerald-400 transition-all hover:bg-zinc-50 dark:hover:bg-zinc-800 relative">
-									<span
-										class="peer-checked:hidden absolute -top-2 -right-2 bg-emerald-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full hidden group-first:block"></span>
+									class="bg-white dark:bg-zinc-900 border-2 border-zinc-200 dark:border-zinc-800 p-4 rounded-xl flex flex-col items-center gap-3 peer-checked:border-emerald-500 peer-checked:bg-emerald-50 dark:peer-checked:bg-emerald-500/10 text-zinc-400 peer-checked:text-emerald-500 dark:peer-checked:text-emerald-400 transition-all hover:bg-zinc-50 dark:hover:bg-zinc-800 h-full">
+									<i data-lucide="database" class="w-6 h-6"></i>
+									<div class="text-center">
+										<span
+											class="text-sm font-bold block text-zinc-700 dark:text-zinc-200">SQLite</span>
+										<span class="text-[10px] text-zinc-500">Raw DB</span>
+									</div>
+								</div>
+							</label>
+
+							<!-- JSON -->
+							<label class="cursor-pointer group">
+								<input type="radio" name="rawFormat" value="json_raw" class="peer hidden"
+									onchange="updateExportOptions()">
+								<div
+									class="bg-white dark:bg-zinc-900 border-2 border-zinc-200 dark:border-zinc-800 p-4 rounded-xl flex flex-col items-center gap-3 peer-checked:border-emerald-500 peer-checked:bg-emerald-50 dark:peer-checked:bg-emerald-500/10 text-zinc-400 peer-checked:text-emerald-500 dark:peer-checked:text-emerald-400 transition-all hover:bg-zinc-50 dark:hover:bg-zinc-800 relative h-full">
 									<i data-lucide="file-json" class="w-6 h-6"></i>
 									<div class="text-center">
 										<span
 											class="text-sm font-bold block text-zinc-700 dark:text-zinc-200">JSON</span>
-										<span class="text-[10px] text-zinc-500">Full structure</span>
+										<span class="text-[10px] text-zinc-500">Universal</span>
 									</div>
 								</div>
 							</label>
@@ -759,12 +772,12 @@
 								<input type="radio" name="rawFormat" value="csv" class="peer hidden"
 									onchange="updateExportOptions()">
 								<div
-									class="bg-white dark:bg-zinc-900 border-2 border-zinc-200 dark:border-zinc-800 p-4 rounded-xl flex flex-col items-center gap-3 peer-checked:border-emerald-500 peer-checked:bg-emerald-50 dark:peer-checked:bg-emerald-500/10 text-zinc-400 peer-checked:text-emerald-500 dark:peer-checked:text-emerald-400 transition-all hover:bg-zinc-50 dark:hover:bg-zinc-800">
+									class="bg-white dark:bg-zinc-900 border-2 border-zinc-200 dark:border-zinc-800 p-4 rounded-xl flex flex-col items-center gap-3 peer-checked:border-emerald-500 peer-checked:bg-emerald-50 dark:peer-checked:bg-emerald-500/10 text-zinc-400 peer-checked:text-emerald-500 dark:peer-checked:text-emerald-400 transition-all hover:bg-zinc-50 dark:hover:bg-zinc-800 h-full">
 									<i data-lucide="file-spreadsheet" class="w-6 h-6"></i>
 									<div class="text-center">
 										<span
 											class="text-sm font-bold block text-zinc-700 dark:text-zinc-200">CSV</span>
-										<span class="text-[10px] text-zinc-500">Spreadsheet</span>
+										<span class="text-[10px] text-zinc-500">Excel</span>
 									</div>
 								</div>
 							</label>
@@ -774,12 +787,12 @@
 								<input type="radio" name="rawFormat" value="xml" class="peer hidden"
 									onchange="updateExportOptions()">
 								<div
-									class="bg-white dark:bg-zinc-900 border-2 border-zinc-200 dark:border-zinc-800 p-4 rounded-xl flex flex-col items-center gap-3 peer-checked:border-emerald-500 peer-checked:bg-emerald-50 dark:peer-checked:bg-emerald-500/10 text-zinc-400 peer-checked:text-emerald-500 dark:peer-checked:text-emerald-400 transition-all hover:bg-zinc-50 dark:hover:bg-zinc-800">
+									class="bg-white dark:bg-zinc-900 border-2 border-zinc-200 dark:border-zinc-800 p-4 rounded-xl flex flex-col items-center gap-3 peer-checked:border-emerald-500 peer-checked:bg-emerald-50 dark:peer-checked:bg-emerald-500/10 text-zinc-400 peer-checked:text-emerald-500 dark:peer-checked:text-emerald-400 transition-all hover:bg-zinc-50 dark:hover:bg-zinc-800 h-full">
 									<i data-lucide="file-code" class="w-6 h-6"></i>
 									<div class="text-center">
 										<span
 											class="text-sm font-bold block text-zinc-700 dark:text-zinc-200">XML</span>
-										<span class="text-[10px] text-zinc-500">Markup format</span>
+										<span class="text-[10px] text-zinc-500">Markup</span>
 									</div>
 								</div>
 							</label>
@@ -798,32 +811,20 @@
 				<div id="fullExportOptions" class="hidden space-y-6">
 					<div
 						class="bg-amber-50 dark:bg-amber-500/5 border border-amber-200 dark:border-amber-500/20 rounded-xl p-5 space-y-4">
-						<div class="flex items-center gap-3">
-							<div class="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
-								<i data-lucide="package" class="w-5 h-5 text-amber-600 dark:text-amber-400"></i>
+						<div class="flex items-start gap-4">
+							<div
+								class="shrink-0 w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center text-amber-600 dark:text-amber-500">
+								<i data-lucide="archive" class="w-5 h-5"></i>
 							</div>
 							<div>
-								<h3 class="text-base font-bold text-amber-700 dark:text-amber-300">Complete Application
-									Backup</h3>
-								<p class="text-xs text-zinc-500">Everything needed to run the app on another machine
+								<h3 class="text-sm font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-wide">
+									Complete System Backup</h3>
+								<p class="text-xs text-zinc-500 dark:text-zinc-400 mt-1 leading-relaxed">
+									Generates a standalone ZIP package containing:
 								</p>
-							</div>
-						</div>
-
-						<div class="grid grid-cols-2 gap-3 text-xs">
-							<div
-								class="bg-white dark:bg-zinc-900/50 rounded-lg p-3 border border-zinc-200 dark:border-zinc-800">
-								<div class="flex items-center gap-2 text-amber-500 dark:text-amber-400 font-bold mb-2">
-									<i data-lucide="folder-tree" class="w-4 h-4"></i>
-									<span>Application Code</span>
-								</div>
-								<ul class="text-zinc-500 space-y-1">
+								<ul class="text-zinc-500 space-y-1 mt-2">
 									<li class="flex items-center gap-1.5"><i data-lucide="check"
-											class="w-3 h-3 text-emerald-500 dark:text-emerald-400"></i> Python source
-										files</li>
-									<li class="flex items-center gap-1.5"><i data-lucide="check"
-											class="w-3 h-3 text-emerald-500 dark:text-emerald-400"></i> HTML templates
-									</li>
+											class="w-3 h-3 text-emerald-500 dark:text-emerald-400"></i> Source Code</li>
 									<li class="flex items-center gap-1.5"><i data-lucide="check"
 											class="w-3 h-3 text-emerald-500 dark:text-emerald-400"></i> CSS & JavaScript
 									</li>
@@ -831,34 +832,33 @@
 											class="w-3 h-3 text-emerald-500 dark:text-emerald-400"></i> Requirements.txt
 									</li>
 								</ul>
-							</div>
-							<div
-								class="bg-white dark:bg-zinc-900/50 rounded-lg p-3 border border-zinc-200 dark:border-zinc-800">
-								<div class="flex items-center gap-2 text-amber-500 dark:text-amber-400 font-bold mb-2">
-									<i data-lucide="database" class="w-4 h-4"></i>
-									<span>Your Data</span>
+
+								<div
+									class="mt-4 bg-white dark:bg-zinc-900/50 rounded-lg p-3 border border-zinc-200 dark:border-zinc-800">
+									<div
+										class="flex items-center gap-2 text-amber-500 dark:text-amber-400 font-bold mb-2">
+										<i data-lucide="database" class="w-4 h-4"></i>
+										<span>Your Data</span>
+									</div>
+									<ul class="text-zinc-500 space-y-1">
+										<li class="flex items-center gap-1.5"><i data-lucide="check"
+												class="w-3 h-3 text-emerald-500 dark:text-emerald-400"></i> SQLite
+											Database
+											(library.db)</li>
+										<li class="flex items-center gap-1.5"><i data-lucide="check"
+												class="w-3 h-3 text-emerald-500 dark:text-emerald-400"></i> Embedded
+											Cover
+											Images
+										</li>
+									</ul>
 								</div>
-								<ul class="text-zinc-500 space-y-1">
-									<li class="flex items-center gap-1.5"><i data-lucide="check"
-											class="w-3 h-3 text-emerald-500 dark:text-emerald-400"></i> Library data
-										(JSON)</li>
-									<li class="flex items-center gap-1.5"><i data-lucide="check"
-											class="w-3 h-3 text-emerald-500 dark:text-emerald-400"></i> Cover images
-									</li>
-									<li class="flex items-center gap-1.5"><i data-lucide="check"
-											class="w-3 h-3 text-emerald-500 dark:text-emerald-400"></i> Configuration
-										files</li>
-									<li class="flex items-center gap-1.5"><i data-lucide="check"
-											class="w-3 h-3 text-emerald-500 dark:text-emerald-400"></i> Export templates
-									</li>
-								</ul>
 							</div>
 						</div>
 
 						<p class="text-[10px] text-zinc-600 italic flex items-center gap-1.5">
 							<i data-lucide="info" class="w-3 h-3"></i>
 							Extract the ZIP and run <code
-								class="bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded text-amber-600 dark:text-amber-400">python run.py</code>
+								class="bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded text-amber-600 dark:text-amber-400">python manage.py run</code>
 							to
 							start the application
 						</p>

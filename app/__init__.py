@@ -11,6 +11,7 @@ def create_app():
     """Factory function to create the Flask app."""
     # Initialize Flask app with correct template/static folders
     app = Flask(__name__, template_folder=TEMPLATE_DIR, static_folder=STATIC_DIR)
+    app.config.from_object('app.config')
     
     # Register Blueprints
     from app.routes import views, api, export
@@ -18,8 +19,12 @@ def create_app():
     app.register_blueprint(api.bp)
     app.register_blueprint(export.bp)
     
-    # Ensure DB exists on startup
-    db = DataManager()
-    db._ensure_structure()
+    # Initialize DB
+    from app.database import db
+    db.init_app(app)
+    
+    # Ensure DB exists
+    with app.app_context():
+        db.create_all()
     
     return app

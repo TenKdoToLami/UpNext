@@ -8,7 +8,7 @@
 
 -   **Backend**: Python (Flask)
     -   **Modular Design**: Blueprints for routing, Service layer for logic.
-    -   **Data**: JSON-based persistence for portability.
+    -   **Data**: SQLite for robust, relational persistence.
 -   **Frontend**: HTML, CSS (Vanilla), JavaScript (Vanilla)
     -   **Design**: Glassmorphism aesthetic.
     -   **Icons**: Lucide Icons.
@@ -28,8 +28,8 @@ graph TD
         Flask -->|Register| Blueprints[Routes (app/routes/)]
         Blueprints -->|Invoke| Services[Services (app/services/)]
         Services -->|Configure| Config[Config (app/config.py)]
-        Services -->|Persist| DataManager[Utils (app/utils/)]
-        DataManager -->|Read/Write| JsonDB[(JSON Database)]
+        Services -->|Persist| DataManager[DB Manager (app/database.py)]
+        DataManager -->|Read/Write| SQLite[(SQLite Database)]
     end
     
     subgraph Frontend Components
@@ -47,6 +47,8 @@ The project follows a clean, modular structure:
 -   **`app/`**: Core application source code.
     -   `routes/`: Flask Blueprints defining API endpoints.
     -   `services/`: Business logic and data manipulation.
+    -   `models.py`: SQLAlchemy database models.
+    -   `database.py`: Database connection and session management.
     -   `utils/`: Helper functions (logging, data loading).
     -   `static/`: Assets (CSS, JS, images, icons).
     -   `templates/`: HTML Jinja2 templates.
@@ -68,7 +70,7 @@ A single wrapper script that handles the entire development lifecycle:
 -   **Clean**: Removes build artifacts and temporary files.
 
 ### Data Persistence
-Data is stored locally in `data/database.json`, making the application portable and easy to back up. Images are stored in `data/images/`.
+Data is stored locally in `data/library.db`, using SQLite for reliability while remaining portable. Images are stored in `data/images/`.
 
 ### Build System
 The build process is fully automated via `scripts/build.py`:

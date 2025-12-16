@@ -23,7 +23,6 @@ from xml.dom import minidom
 
 from flask import Blueprint, request, send_file, render_template, jsonify
 from app.services.data_manager import DataManager
-from app.config import IMAGES_DIR
 from app.utils.constants import RATING_MAP, MEDIA_COLOR_MAP, STATUS_TEXT_MAP
 
 bp = Blueprint('export', __name__, url_prefix='/api')
@@ -93,19 +92,44 @@ def filter_item_fields(item, fields):
     return {k: v for k, v in item.items() if k in fields}
 
 
+
 def collect_cover_images(items, include_covers):
-    """Collect cover image filenames from items."""
+    """Collect item IDs for items that have cover images."""
     if not include_covers:
         return set()
-    return {item.get('coverUrl') for item in items if item.get('coverUrl')}
+    return {item.get('id') for item in items if item.get('coverUrl')}
 
 
-def add_images_to_zip(zf, images):
-    """Add cover images to a ZIP file."""
-    for cover in images:
-        src_path = os.path.join(IMAGES_DIR, cover)
-        if os.path.exists(src_path):
-            zf.write(src_path, arcname=f"images/{cover}")
+def add_images_to_zip(zf, item_ids):
+    """Add cover images to a ZIP file from the database."""
+    from app.models import MediaItem
+    import mimetypes
+
+    for item_id in item_ids:
+        item = MediaItem.query.get(item_id)
+        if item and item.cover_image:
+            # Determine extension
+            ext = ".jpg"
+            if item.cover_mime:
+                 ext = mimetypes.guess_extension(item.cover_mime) or ".jpg"
+            
+            # The coverUrl in the export might still point to the API URL 'uuid?v=...'
+            # We can save it in the ZIP as 'images/{uuid}{ext}'
+            # But the HTML export renders <img src="{{ item.coverUrl }}">
+            # If we change how we bundle, we might need to adjust the HTML or just let it link to the server?
+            # Standard export usually packages resources.
+            # If I stick to 'images/{filename}' structure in zip, HTML needs to match.
+            # But item.coverUrl is now 'uuid?v=ts'.
+            # I should probably save it as '{uuid}{ext}' and maybe the HTML needs to know?
+            # Wait, the current export logic dumps the 'items' dicts.
+            # The 'coverUrl' field in those dicts is what's used.
+            # If I export a static HTML, it needs valid relative paths.
+            # If coverUrl is 'uuid?v=ts', that's not a file path.
+            # So I should probably update the exported item's coverUrl to be the filename in the zip.
+            
+            filename = f"{item_id}{ext}"
+            zf.writestr(f"images/{filename}", item.cover_image)
+
 
 
 def create_zip_response(filename, memory_file):
@@ -131,7 +155,8 @@ def generate_zip_filename(prefix):
 
 def export_json(items, fields, images):
     """Export items as JSON."""
-    export_items = [filter_item_fields(item, fields) for item in items] if fields else items
+    processed_items = _process_items_for_export(items, images)
+    export_items = [filter_item_fields(item, fields) for item in processed_items] if fields else processed_items
     json_data = json.dumps(export_items, indent=2, ensure_ascii=False)
     
     memory_file = io.BytesIO()
@@ -142,15 +167,35 @@ def export_json(items, fields, images):
     return create_zip_response(generate_zip_filename('upnext_raw_export'), memory_file)
 
 
+def _process_items_for_export(items, images):
+    """Refreshes item cover URLs for zip export."""
+    from app.models import MediaItem
+    import mimetypes
+    
+    processed = []
+    # Optimization: If we have many items, this Loop+Query is slow.
+    # But for a personal library (100-1000 items) it's acceptable.
+    for item in items:
+        new_item = item.copy()
+        if new_item.get('id') in images:
+             media_item = MediaItem.query.get(new_item['id'])
+             ext = ".jpg"
+             if media_item and media_item.cover_mime:
+                 ext = mimetypes.guess_extension(media_item.cover_mime) or ".jpg"
+             new_item['coverUrl'] = f"images/{new_item['id']}{ext}"
+        processed.append(new_item)
+    return processed
+
 def export_csv(items, fields, images):
     """Export items as CSV."""
+    processed_items = _process_items_for_export(items, images)
     csv_fields = [f for f in fields if f not in ['children', 'externalLinks']] if fields else DEFAULT_CSV_FIELDS
     
     output = io.StringIO()
     writer = csv.DictWriter(output, fieldnames=csv_fields, extrasaction='ignore')
     writer.writeheader()
     
-    for item in items:
+    for item in processed_items:
         row = {}
         for field in csv_fields:
             value = item.get(field, '')
@@ -171,11 +216,13 @@ def export_csv(items, fields, images):
 
 def export_xml(items, fields, images):
     """Export items as XML."""
+    processed_items = _process_items_for_export(items, images)
+    
     root = Element('library')
     root.set('exported', datetime.now().isoformat())
     root.set('count', str(len(items)))
     
-    for item in items:
+    for item in processed_items:
         item_data = filter_item_fields(item, fields) if fields else item
         item_el = SubElement(root, 'item')
         item_el.set('id', item.get('id', ''))
@@ -204,32 +251,41 @@ def export_xml(items, fields, images):
     
     return create_zip_response(generate_zip_filename('upnext_xml_export'), memory_file)
 
+def _serialize_list_to_xml(parent_el, key, value_list):
+    """Serialize a list to XML elements."""
+    # Singularize key for child elements (e.g. authors -> author)
+    child_tag = key[:-1] if key.endswith('s') else key + '_item'
+    
+    for item in value_list:
+        child_el = SubElement(parent_el, child_tag)
+        if isinstance(item, dict):
+            for k, v in item.items():
+                sub_el = SubElement(child_el, k)
+                sub_el.text = str(v) if v is not None else ''
+        else:
+            child_el.text = str(item)
 
-def _serialize_list_to_xml(parent_el, key, values):
-    """Serialize a list value to XML elements."""
-    if key == 'children':
-        for child in values:
-            child_el = SubElement(parent_el, 'child')
-            if isinstance(child, dict):
-                for ck, cv in child.items():
-                    SubElement(child_el, ck).text = str(cv) if cv else ''
-            else:
-                child_el.text = str(child)
-    elif key == 'externalLinks':
-        for link in values:
-            link_el = SubElement(parent_el, 'link')
-            if isinstance(link, dict):
-                for lk, lv in link.items():
-                    SubElement(link_el, lk).text = str(lv) if lv else ''
-            else:
-                link_el.text = str(link)
-    else:
-        for val in values:
-            SubElement(parent_el, 'value').text = str(val) if val else ''
+
+def export_db():
+    """Export the SQLite database file."""
+    # Assuming DB is at data/library.db based on config
+    from app.config import SQLITE_DB_PATH
+    
+    if not os.path.exists(SQLITE_DB_PATH):
+        raise FileNotFoundError("Database file not found")
+        
+    return send_file(
+        SQLITE_DB_PATH,
+        mimetype='application/x-sqlite3',
+        as_attachment=True,
+        download_name=f'library_backup_{datetime.now().strftime("%Y%m%d_%H%M%S")}.db'
+    )
 
 
 def export_html(items, fields, format_param, images):
     """Export items as HTML."""
+    processed_items = _process_items_for_export(items, images)
+    
     template_map = {
         'html_card': 'export_card.html',
         'html_accordion': 'export_accordion.html'
@@ -238,7 +294,7 @@ def export_html(items, fields, format_param, images):
     
     html_content = render_template(
         template_name,
-        items=items,
+        items=processed_items,
         fields=fields,
         now=datetime.now(),
         RATING_MAP=RATING_MAP,
@@ -249,6 +305,8 @@ def export_html(items, fields, format_param, images):
     memory_file = io.BytesIO()
     with zipfile.ZipFile(memory_file, 'w') as zf:
         zf.writestr('upnext_library.html', html_content)
+        # JSON data removed based on user feedback
+        # zf.writestr('upnext_data.json', json_data)
         add_images_to_zip(zf, images)
     
     return create_zip_response(generate_zip_filename('upnext_export'), memory_file)
@@ -276,7 +334,7 @@ def export_data():
         ZIP file containing the exported data and optionally images
     """
     try:
-        items = data_manager.load_items()
+        items = data_manager.get_items()
         items.sort(key=lambda x: x.get('updatedAt', ''), reverse=True)
         
         params = parse_export_params()
@@ -292,6 +350,8 @@ def export_data():
             return export_csv(items, fields, images)
         elif format_param == 'xml':
             return export_xml(items, fields, images)
+        elif format_param == 'db':
+            return export_db()
         else:
             return export_html(items, fields, format_param, images)
     
@@ -359,13 +419,15 @@ Created: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
 1. Extract this ZIP file to a folder
 2. Install Python 3.8+ if not already installed
 3. Install dependencies:
-   ```
+   ```bash
    pip install -r requirements.txt
    ```
 4. Run the application:
+   ```bash
+   python manage.py run
    ```
-   python run.py
-   ```
+   (Or use `python manage.py build` to create an executable)
+
 5. Open your browser to http://localhost:5000
 
 ## Contents
@@ -373,15 +435,19 @@ Created: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
 - `app/` - Application source code
   - `routes/` - API endpoints
   - `services/` - Business logic
+  - `models.py` - Database models
+  - `database.py` - Database utilities
   - `static/` - CSS, JavaScript, and assets
   - `templates/` - HTML templates
-- `data/` - Your library data (JSON) and cover images
+- `data/` - Database directory
+  - `library.db` - SQLite database containing all items and images
 - `run.py` - Application entry point
+- `manage.py` - Project manager script
 - `requirements.txt` - Python dependencies
 
 ## Notes
 
-- This is a complete backup of your UpNext installation
-- All your library entries and cover images are included
-- You can restore this backup by extracting it and running the application
+- This is a complete backup of your UpNext installation.
+- All your library entries and images are stored within `data/library.db`.
+- You can restore this backup by extracting it and running the application, or by copying `data/library.db` to a new installation.
 """

@@ -209,7 +209,7 @@
 			<!-- Cover -->
 			<div class="cover-container">
 				{% if 'coverUrl' in fields and item.coverUrl %}
-				<img src="images/{{ item.coverUrl }}" class="cover">
+				<img src="{{ item.coverUrl }}" class="cover">
 				{% else %}
 				<div class="no-cover">{% if 'coverUrl' in fields %}No Image{% else %}N/A{% endif %}</div>
 				{% endif %}

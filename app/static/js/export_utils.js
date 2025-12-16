@@ -566,6 +566,14 @@ export function triggerExport() {
 	}
 
 	const format = getCurrentFormat();
+
+	// DB export doesn't need config/fields
+	if (format === 'db') {
+		window.location.href = '/api/export?format=db';
+		closeExportModal();
+		return;
+	}
+
 	const config = EXPORT_CONFIG[format];
 	if (!config) return;
 

@@ -16,8 +16,11 @@ else:
 
 # Directories
 DATA_DIR = os.path.join(BASE_DIR, "data")
-IMAGES_DIR = os.path.join(DATA_DIR, "images")
-DB_FILE = os.path.join(DATA_DIR, "library.json")
+# New SQLite DB
+SQLITE_DB_PATH = os.path.join(DATA_DIR, 'library.db')
+SQLALCHEMY_DATABASE_URI = f"sqlite:///{SQLITE_DB_PATH}"
+SQLALCHEMY_TRACK_MODIFICATIONS = False
+
 
 # Template and Static directories
 TEMPLATE_DIR = os.path.join(BASE_DIR, "app", "templates")

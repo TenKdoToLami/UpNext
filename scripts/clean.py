@@ -22,7 +22,6 @@ def clean_project():
 
     # Specific files to remove (relative to root)
     specific_files_to_remove = [
-        'generate_docs.sh',
         'UpNext',
         'UpNext.exe',
         'UpNext.desktop'

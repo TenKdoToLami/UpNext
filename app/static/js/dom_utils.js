@@ -80,21 +80,22 @@ export function toggleExpand(id, type) {
 	const btnEl = document.getElementById(`btn-${type}-${id}`);
 	if (!textEl || !btnEl) return;
 
-	const clampClass = type === 'modal-review' ? 'line-clamp-4' : 'line-clamp-3';
+	const isModal = ['modal-review', 'detail-desc', 'detail-notes', 'detail-review'].includes(type);
+	const clampClass = isModal ? 'line-clamp-6' : 'line-clamp-3';
 	const isCollapsed = textEl.classList.contains(clampClass);
 
 	if (isCollapsed) {
 		// Expand
 		textEl.classList.remove(clampClass);
-		if (type === 'modal-review') {
-			textEl.classList.add('max-h-80', 'overflow-y-auto', 'custom-scrollbar', 'pr-2');
+		if (isModal) {
+			textEl.classList.add('max-h-96', 'overflow-y-auto', 'custom-scrollbar', 'pr-2');
 		}
 		btnEl.innerText = 'Show Less';
 	} else {
 		// Collapse
 		textEl.classList.add(clampClass);
-		if (type === 'modal-review') {
-			textEl.classList.remove('max-h-80', 'overflow-y-auto', 'custom-scrollbar', 'pr-2');
+		if (isModal) {
+			textEl.classList.remove('max-h-96', 'overflow-y-auto', 'custom-scrollbar', 'pr-2');
 			textEl.scrollTop = 0;
 		}
 		btnEl.innerText = 'Read More';

@@ -35,26 +35,33 @@ def start_server() -> None:
     app.run(host=HOST, port=PORT, debug=False, use_reloader=False)
 
 
-def launch_browser(target_url: str) -> None:
-    """Launches the browser in app mode if possible."""
+def launch_browser(target_url: str) -> bool:
+    """
+    Launches the browser in app mode if possible.
+    Returns True if the browser process blocked (app mode), False otherwise.
+    """
     browser_exe, is_chromium = get_browser_path()
 
     if not browser_exe:
         logger.warning("⚠️ No recognized browser path found. Opening default.")
         webbrowser.open(target_url)
-        return
+        return False
 
     logger.info(f"✅ Found Browser: {browser_exe}")
 
     if is_chromium:
-        _launch_chromium_app(browser_exe, target_url)
+        return _launch_chromium_app(browser_exe, target_url)
     else:
         logger.info("🌐 Opening in default browser window.")
         webbrowser.get(browser_exe).open(target_url)
+        return False
 
 
-def _launch_chromium_app(browser_exe: str, target_url: str) -> None:
-    """Helper to launch Chromium in app mode."""
+def _launch_chromium_app(browser_exe: str, target_url: str) -> bool:
+    """
+    Helper to launch Chromium in app mode.
+    Returns True if we successfully waited for the process (it blocked).
+    """
     profile_dir = os.path.join(DATA_DIR, "browser_profile")
     os.makedirs(profile_dir, exist_ok=True)
 
@@ -72,9 +79,11 @@ def _launch_chromium_app(browser_exe: str, target_url: str) -> None:
         proc = subprocess.Popen(cmd)
         proc.wait()
         logger.info("👋 App Window Closed. Exiting...")
+        return True
     except Exception as e:
         logger.error(f"❌ Error launching app mode: {e}")
         webbrowser.open(target_url)
+        return False
 
 
 def main() -> None:
@@ -93,12 +102,12 @@ def main() -> None:
 
     # 3. Launch UI
     target_url = f'http://{HOST}:{PORT}'
-    launch_browser(target_url)
+    waited = launch_browser(target_url)
 
     # 4. Cleanup/Exit when browser closes (if app mode waits)
-    # If browser doesn't wait (like non-app mode), keep script alive
-    if threading.active_count() > 0:
-        print("Server is running. Press Enter to exit if window is closed.")
+    # If browser didn't wait (non-app mode), keep script alive manually
+    if not waited and threading.active_count() > 0:
+        print("Server is running. Press Enter to exit.")
         try:
              input()
         except EOFError:

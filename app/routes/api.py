@@ -12,19 +12,18 @@ from typing import Dict, Any
 
 from flask import Blueprint, jsonify, request
 from app.services.data_manager import DataManager
-from app.services.image_service import ImageService
+from app.services.data_manager import DataManager
 from app.utils.constants import MEDIA_TYPES, STATUS_TYPES
 
 bp = Blueprint('api', __name__, url_prefix='/api')
 data_manager = DataManager()
-image_service = ImageService()
 logger = logging.getLogger(__name__)
 
 
 @bp.route('/items', methods=['GET'])
 def get_items():
     """Retrieve all items, sorted by recently updated."""
-    items = data_manager.load_items()
+    items = data_manager.get_items()
     # Sort by updatedAt descending
     items.sort(key=lambda x: x.get('updatedAt', ''), reverse=True)
     return jsonify(items)
@@ -45,61 +44,55 @@ def save_item():
 
         # Handle Image Upload
         image_file = request.files.get('image')
-        new_image_name = image_service.process_image(image_file)
+        if image_file and image_file.filename:
+            # Save bytes to DB columns
+            form_data['cover_image'] = image_file.read()
+            form_data['cover_mime'] = image_file.mimetype
+            # Clear old coverUrl if present, as it's legacy
+            form_data['cover_url'] = ""
 
-        items = data_manager.load_items()
-        
         # Determine if New or Update
         item_id = form_data.get('id')
-        existing_item_idx = -1
         
         if item_id:
-             existing_item_idx = next(
-                 (i for i, x in enumerate(items) if x['id'] == item_id), -1
-             )
+            # --- UPDATE ---
+            existing_item = data_manager.get_item(item_id)
+            if not existing_item:
+                 pass 
 
-        if existing_item_idx > -1:
-            # --- UPDATE EXISTING ---
-            existing_item = items[existing_item_idx]
-            
-            # Remove deprecated fields if present (cleanup)
-            existing_item.pop('isR18', None)
-
-            # Handle Cover Image update
-            if new_image_name:
-                # Delete old image if it exists
-                old_cover = existing_item.get('coverUrl')
-                if old_cover:
-                    image_service.delete_image(old_cover)
-                form_data['coverUrl'] = new_image_name
-            else:
-                # Keep existing cover
-                form_data['coverUrl'] = existing_item.get('coverUrl')
-
+            # Update timestamp
             form_data['updatedAt'] = datetime.now().isoformat()
             
-            # Merge updates (form_data overrides existing)
-            items[existing_item_idx].update(form_data)
-
-            # Ensure we return the full updated item
-            final_item = items[existing_item_idx]
+            # Use DataManager to update
+            # Map camelCase form_data specific fields if model uses snake_case?
+            # MediaItem uses snake_case but DataManager and models might handle mapping?
+            # Wait, MediaItem model had mapped attributes?
+            # The model has snake_case fields: cover_url, cover_image, is_hidden.
+            # But to_dict returns camelCase.
+            # The form_data likely comes in camelCase.
+            # I need to ensure keys match model attributes or DataManager handles it.
+            # Let's check DataManager update_item again.
+            # It does setattr(item, key, value). item is MediaItem.
+            # So key must vary.
+            
+            # Use DataManager to update
+            success = data_manager.update_item(item_id, form_data)
+            final_item = data_manager.get_item(item_id)
 
         else:
             # --- CREATE NEW ---
-            if not item_id:
-                form_data['id'] = uuid.uuid4().hex
+            item_id = uuid.uuid4().hex
+            form_data['id'] = item_id
             
-            form_data['coverUrl'] = new_image_name
             form_data['createdAt'] = datetime.now().isoformat()
             form_data['updatedAt'] = datetime.now().isoformat()
             form_data['isHidden'] = form_data.get('isHidden', False)
             
-            # Insert at top
-            items.insert(0, form_data)
-            final_item = form_data
+            success = data_manager.add_item(form_data)
+            final_item = data_manager.get_item(item_id)
 
-        if not data_manager.save_items(items):
-            raise IOError("Failed to save items to database")
+        if not success:
+            raise IOError("Failed to save item to database")
 
         return jsonify({'status': 'success', 'item': final_item})
 
@@ -115,21 +108,14 @@ def save_item():
 def delete_item(item_id):
     """Delete an item by ID."""
     try:
-        items = data_manager.load_items()
-        item_idx = next((i for i, x in enumerate(items) if x['id'] == item_id), -1)
+        item = data_manager.get_item(item_id)
         
-        if item_idx > -1:
-            item = items[item_idx]
-            # Delete associated image
-            image_service.delete_image(item.get('coverUrl'))
-            
-            # Remove from list
-            items.pop(item_idx)
-            
-            if data_manager.save_items(items):
+        if item:
+            # Image is in DB, cascade delete handles it or simple row delete
+            if data_manager.delete_item(item_id):
                 return jsonify({'status': 'success'})
             else:
-                return jsonify({'status': 'error', 'message': "Failed to save database"}), 500
+                return jsonify({'status': 'error', 'message': "Failed to delete from database"}), 500
         
         return jsonify({'status': 'success'})  # Idempotent success if not found
 
@@ -144,3 +130,7 @@ def _validate_item(data: Dict[str, Any]) -> None:
         raise ValueError(f"Invalid media type: {data.get('type')}")
     if data.get('status') not in STATUS_TYPES:
         raise ValueError(f"Invalid status: {data.get('status')}")
+
+
+
+

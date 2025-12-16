@@ -380,48 +380,80 @@ window.previewImage = (input) => {
 // =============================================================================
 
 /** Saves the current entry form. */
+// Flag to prevent double submission
+let isWizardSaving = false;
+
+/** Saves the current entry form. */
 window.saveEntry = async () => {
-    const formData = new FormData();
-    const status = document.getElementById('status').value;
+    if (isWizardSaving) return;
 
-    const data = {
-        id: document.getElementById('itemId').value,
-        type: document.getElementById('type').value,
-        status: status,
-        title: document.getElementById('title').value,
-        authors: state.currentAuthors,
-        alternateTitles: state.currentAlternateTitles,
-        universe: document.getElementById('universe').value,
-        series: document.getElementById('series').value,
-        seriesNumber: document.getElementById('seriesNumber').value,
-        description: document.getElementById('description').value,
-        notes: document.getElementById('notes')?.value || '',
-        review: document.getElementById('review').value,
-        progress: document.getElementById('progress').value,
-        // Clear rating for items not yet consumed
-        rating: ['Planning', 'Reading/Watching'].includes(status)
-            ? null
-            : parseInt(document.getElementById('rating').value),
-        children: state.currentChildren,
-        externalLinks: state.currentLinks,
-        isHidden: document.getElementById('isHidden').checked
-    };
+    const submitBtn = document.getElementById('submitBtn');
 
-    // Add pending inputs
-    const pendingAuth = document.getElementById('authorInput').value.trim();
-    if (pendingAuth && !data.authors.includes(pendingAuth)) data.authors.push(pendingAuth);
+    try {
+        isWizardSaving = true;
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            submitBtn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Saving';
+            safeCreateIcons();
+        }
 
-    const pendingAltTitle = document.getElementById('altTitleInput').value.trim();
-    if (pendingAltTitle && !data.alternateTitles.includes(pendingAltTitle)) data.alternateTitles.push(pendingAltTitle);
+        const formData = new FormData();
+        const status = document.getElementById('status').value;
 
-    formData.append('data', JSON.stringify(data));
+        const data = {
+            id: document.getElementById('itemId').value,
+            type: document.getElementById('type').value,
+            status: status,
+            title: document.getElementById('title').value,
+            authors: state.currentAuthors,
+            alternateTitles: state.currentAlternateTitles,
+            universe: document.getElementById('universe').value,
+            series: document.getElementById('series').value,
+            seriesNumber: document.getElementById('seriesNumber').value,
+            description: document.getElementById('description').value,
+            notes: document.getElementById('notes')?.value || '',
+            review: document.getElementById('review').value,
+            progress: document.getElementById('progress').value,
+            // Clear rating for items not yet consumed
+            rating: ['Planning', 'Reading/Watching'].includes(status)
+                ? null
+                : parseInt(document.getElementById('rating').value),
+            children: state.currentChildren,
+            externalLinks: state.currentLinks,
+            isHidden: document.getElementById('isHidden').checked
+        };
 
-    const file = document.getElementById('coverImage').files[0];
-    if (file) formData.append('image', file);
+        // Add pending inputs
+        const pendingAuth = document.getElementById('authorInput').value.trim();
+        if (pendingAuth && !data.authors.includes(pendingAuth)) data.authors.push(pendingAuth);
 
-    await fetch('/api/items', { method: 'POST', body: formData });
-    closeModal();
-    loadItems();
+        const pendingAltTitle = document.getElementById('altTitleInput').value.trim();
+        if (pendingAltTitle && !data.alternateTitles.includes(pendingAltTitle)) data.alternateTitles.push(pendingAltTitle);
+
+        formData.append('data', JSON.stringify(data));
+
+        const file = document.getElementById('coverImage').files[0];
+        if (file) formData.append('image', file);
+
+        await fetch('/api/items', { method: 'POST', body: formData });
+        closeModal();
+        loadItems();
+    } catch (e) {
+        console.error("Error saving entry:", e);
+        alert("Failed to save entry. Please try again.");
+    } finally {
+        isWizardSaving = false;
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            submitBtn.innerHTML = 'Finish';
+            // Note: If in edit mode, it should be 'Save Changes'. 
+            // ideally we check state.isEditMode but the modal is usually closed on success anyway.
+            // If error occurred, we should restore correct text.
+            if (state.isEditMode) submitBtn.innerHTML = 'Save Changes';
+        }
+    }
 };
 
 // =============================================================================

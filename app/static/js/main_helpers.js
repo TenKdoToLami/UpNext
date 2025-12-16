@@ -696,22 +696,25 @@ export function renderDetailView(item, content) {
                          </div>` : ''}
                          
                          ${item.review ? `
-                         <div class="relative z-10">
+                         <div class="relative z-10 group/rev">
                             <i data-lucide="quote" class="inline-block w-6 h-6 text-zinc-300 dark:text-[var(--theme-col)] opacity-50 mr-2 align-text-top"></i>
-                            <span class="text-zinc-700 dark:text-zinc-300 leading-relaxed italic text-lg whitespace-pre-wrap font-serif">${item.review}</span>
+                            <span id="detail-review-${item.id}" class="text-zinc-700 dark:text-zinc-300 leading-relaxed italic text-lg whitespace-pre-wrap font-serif line-clamp-6">${item.review}</span>
+                            ${item.review.length > 500 ? `<button type="button" id="btn-detail-review-${item.id}" onclick="event.stopPropagation(); window.toggleExpand('${item.id}', 'detail-review')" class="text-xs text-[var(--theme-col)] font-bold mt-2 hover:underline relative z-20">Read More</button>` : ''}
                          </div>` : ''}
                     </div>` : ''}
 
                     ${item.description ? `
-                    <div class="prose prose-invert max-w-none">
+                    <div class="prose prose-invert max-w-none group/desc">
                         <h4 class="text-sm font-bold text-zinc-800 dark:text-[var(--theme-col)] uppercase tracking-widest mb-4 opacity-80 flex items-center gap-2"><i data-lucide="align-left" class="w-4 h-4"></i> Synopsis</h4>
-                        <div class="text-zinc-600 dark:text-zinc-300 leading-relaxed text-lg font-light whitespace-pre-wrap">${item.description}</div>
+                        <div id="detail-desc-${item.id}" class="text-zinc-600 dark:text-zinc-300 leading-relaxed text-lg font-light whitespace-pre-wrap line-clamp-6">${item.description}</div>
+                         ${item.description.length > 500 ? `<button type="button" id="btn-detail-desc-${item.id}" onclick="event.stopPropagation(); window.toggleExpand('${item.id}', 'detail-desc')" class="text-xs text-[var(--theme-col)] font-bold mt-2 hover:underline relative z-20">Read More</button>` : ''}
                     </div>` : ''}
 
                     ${item.notes ? `
-                    <div class="bg-amber-50 dark:bg-amber-500/5 border border-amber-200 dark:border-amber-500/10 rounded-xl p-6">
+                    <div class="bg-amber-50 dark:bg-amber-500/5 border border-amber-200 dark:border-amber-500/10 rounded-xl p-6 group/notes">
                         <h4 class="text-xs font-bold text-amber-600 dark:text-amber-500 uppercase tracking-widest mb-3 flex items-center gap-2"><i data-lucide="sticky-note" class="w-4 h-4"></i> Notes</h4>
-                        <div class="text-zinc-600 dark:text-zinc-400 leading-relaxed whitespace-pre-wrap font-mono text-sm">${item.notes}</div>
+                        <div id="detail-notes-${item.id}" class="text-zinc-600 dark:text-zinc-400 leading-relaxed whitespace-pre-wrap font-mono text-sm line-clamp-6">${item.notes}</div>
+                         ${item.notes.length > 300 ? `<button type="button" id="btn-detail-notes-${item.id}" onclick="event.stopPropagation(); window.toggleExpand('${item.id}', 'detail-notes')" class="text-xs text-amber-600 dark:text-amber-500 font-bold mt-2 hover:underline relative z-20">Read More</button>` : ''}
                     </div>` : ''}
 
                     ${(item.children && item.children.length) ? `

@@ -9,7 +9,7 @@ UpNext is a beautiful, local web application designed to help you track your med
 -   **Rich Metadata**: Store authors, studios, alternative titles, series ordering, and universes (e.g., MCU).
 -   **Privacy & Review**: Mark items as "Hidden" and add personal reviews with a 4-point rating system.
 -   **Modern UI**: Responsive design with dark mode, grid/list views, and vibrant aesthetics.
--   **Portable**: Runs locally with a portable JSON database—your data stays yours.
+-   **Portable**: Runs locally with a portable SQLite database—your data stays yours.
 -   **Export**: Export your library to JSON or HTML cards/lists.
 
 ## 🚀 Getting Started
@@ -18,7 +18,7 @@ UpNext is a beautiful, local web application designed to help you track your med
 
 1.  **Clone the Repository**:
     ```bash
-    git clone https://github.com/yourusername/UpNext.git
+    git clone https://github.com/TenKdoToLami/UpNext.git
     cd UpNext
     ```
 
@@ -55,8 +55,8 @@ python3 manage.py clean
 
 ### Project Structure
 -   **`manage.py`**: The main entry point for running and building the project.
--   **`app/`**: Core application code (Flask blueprints, services, UI assets).
--   **`data/`**: User data storage (database.json, images).
+-   **`app/`**: Core application code (Flask blueprints, services, models, UI assets).
+-   **`data/`**: User data storage (library.db, images).
 -   **`scripts/`**: Helper scripts for build/run/clean automation.
 
 ### Setting Up Dev Environment
