@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>UpNext Library Export (Interactive List)</title>
+	<style>
+		:root {
+			--bg-page: #0c0c0e;
+			--bg-card: #18181b;
+			--bg-hover: #27272a;
+			--border: #27272a;
+			--text-main: #e4e4e7;
+			--text-muted: #a1a1aa;
+			--accent: #6366f1;
+		}
+
+		body {
+			font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+			background-color: var(--bg-page);
+			color: var(--text-main);
+			margin: 0;
+			padding: 40px 20px;
+			line-height: 1.5;
+		}
+
+		.container {
+			max-width: 900px;
+			margin: 0 auto;
+		}
+
+		h1 {
+			text-align: center;
+			font-weight: 800;
+			margin-bottom: 40px;
+			letter-spacing: -0.02em;
+		}
+
+		.item-row {
+			border: 1px solid var(--border);
+			margin-bottom: -1px;
+			/* Collapse borders */
+			background: var(--bg-card);
+		}
+
+		.item-row:first-child {
+			border-top-left-radius: 8px;
+			border-top-right-radius: 8px;
+		}
+
+		.item-row:last-child {
+			border-bottom-left-radius: 8px;
+			border-bottom-right-radius: 8px;
+			margin-bottom: 0;
+		}
+
+		details>summary {
+			list-style: none;
+			cursor: pointer;
+			padding: 16px 24px;
+			display: flex;
+			align-items: center;
+			gap: 16px;
+			transition: background 0.2s;
+		}
+
+		details>summary::-webkit-details-marker {
+			display: none;
+		}
+
+		details>summary:hover {
+			background-color: var(--bg-hover);
+		}
+
+		.thumb {
+			width: 40px;
+			height: 60px;
+			background: #333;
+			object-fit: cover;
+			border-radius: 4px;
+			flex-shrink: 0;
+		}
+
+		.no-thumb {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			background: #27272a;
+			color: #52525b;
+			font-size: 10px;
+		}
+
+		.header-content {
+			flex: 1;
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 12px;
+			min-width: 0;
+		}
+
+		.title {
+			font-weight: 700;
+			font-size: 16px;
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
+
+		.meta-badges {
+			display: flex;
+			gap: 8px;
+			flex-shrink: 0;
+		}
+
+		.badge {
+			font-size: 11px;
+			font-weight: bold;
+			text-transform: uppercase;
+			padding: 2px 6px;
+			border-radius: 4px;
+			background: #27272a;
+			color: #a1a1aa;
+		}
+
+		.chevron {
+			width: 20px;
+			height: 20px;
+			transition: transform 0.2s;
+			opacity: 0.5;
+		}
+
+		details[open] .chevron {
+			transform: rotate(180deg);
+		}
+
+		.expanded-content {
+			padding: 24px;
+			border-top: 1px solid var(--border);
+			background: rgba(0, 0, 0, 0.2);
+			animation: slideDown 0.2s ease-out;
+		}
+
+		@keyframes slideDown {
+			from {
+				opacity: 0;
+				transform: translateY(-5px);
+			}
+
+			to {
+				opacity: 1;
+				transform: translateY(0);
+			}
+		}
+
+		.grid-info {
+			display: grid;
+			grid-template-columns: 150px 1fr;
+			gap: 20px;
+		}
+
+		@media (max-width: 600px) {
+			.grid-info {
+				grid-template-columns: 1fr;
+			}
+
+			.cover-large {
+				display: none;
+			}
+
+			/* Hide large cover on mobile if redundant */
+		}
+
+		.cover-large {
+			width: 100%;
+			aspect-ratio: 2/3;
+			object-fit: cover;
+			border-radius: 8px;
+		}
+
+		.info-block h3 {
+			font-size: 12px;
+			text-transform: uppercase;
+			letter-spacing: 0.05em;
+			color: var(--text-muted);
+			margin: 0 0 8px 0;
+		}
+
+		.info-block p {
+			margin: 0 0 16px 0;
+			font-size: 14px;
+		}
+
+		.prose {
+			color: #d4d4d8;
+			line-height: 1.6;
+		}
+
+		.links a {
+			color: var(--accent);
+			text-decoration: none;
+			margin-right: 12px;
+			font-size: 14px;
+			font-weight: 500;
+		}
+
+		.links a:hover {
+			text-decoration: underline;
+		}
+	</style>
+</head>
+
+<body>
+
+	<div class="container">
+		<h1>Library Export</h1>
+
+		<div class="list">
+			{% for item in items %}
+			<div class="item-row">
+				<details>
+					<summary>
+						<!-- Left Thumbnail (if cover enabled) -->
+						{% if 'coverUrl' in fields and item.coverUrl %}
+						<img src="images/{{ item.coverUrl }}" class="thumb">
+						{% elif 'coverUrl' in fields %}
+						<div class="thumb no-thumb">No IMG</div>
+						{% endif %}
+
+						<div class="header-content">
+							<div class="title">{{ item.title }}</div>
+							<div class="meta-badges">
+								{% if 'type' in fields %}<span class="badge">{{ item.type }}</span>{% endif %}
+								{% if 'status' in fields %}<span class="badge">{{ item.status }}</span>{% endif %}
+								{% if 'rating' in fields and item.rating %}<span class="badge" style="color:#fbbf24">{{
+									RATING_MAP.get(item.rating, '') }}</span>{% endif %}
+							</div>
+						</div>
+
+						<!-- Right Chevron -->
+						<svg class="chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+						</svg>
+					</summary>
+
+					<div class="expanded-content">
+						<div class="grid-info">
+							<!-- Large Cover if expanded -->
+							{% if 'coverUrl' in fields and item.coverUrl %}
+							<div>
+								<img src="images/{{ item.coverUrl }}" class="cover-large">
+							</div>
+							{% endif %}
+
+							<div class="details-text">
+								{% if 'authors' in fields and (item.authors or item.author) %}
+								<div class="info-block">
+									<h3>Creators</h3>
+									<p>{{ (item.authors or [item.author])|join(', ') }}</p>
+								</div>
+								{% endif %}
+
+								{% if 'universe' in fields and item.universe %}
+								<div class="info-block">
+									<h3>Universe</h3>
+									<p>{{ item.universe }}</p>
+								</div>
+								{% endif %}
+
+								{% if 'series' in fields and item.series %}
+								<div class="info-block">
+									<h3>Series</h3>
+									<p>{{ item.series }} {% if item.seriesNumber %}#{{ item.seriesNumber }}{% endif %}
+									</p>
+								</div>
+								{% endif %}
+
+								{% if 'description' in fields and item.description %}
+								<div class="info-block">
+									<h3>Synopsis</h3>
+									<div class="prose">{{ item.description }}</div>
+								</div>
+								{% endif %}
+
+								{% if 'review' in fields and item.review %}
+								<div class="info-block">
+									<h3>Review</h3>
+									<div class="prose"
+										style="font-style: italic; border-left: 2px solid #333; padding-left: 12px;">{{
+										item.review }}</div>
+								</div>
+								{% endif %}
+
+								{% if 'notes' in fields and item.notes %}
+								<div class="info-block">
+									<h3>Notes</h3>
+									<div class="prose" style="color: #a1a1aa;">{{ item.notes }}</div>
+								</div>
+								{% endif %}
+
+								{% if 'externalLinks' in fields and item.externalLinks %}
+								<div class="info-block links">
+									<h3>Links</h3>
+									{% for link in item.externalLinks %}
+									<a href="{{ link.url }}" target="_blank">{{ link.label or 'Link' }}</a>
+									{% endfor %}
+								</div>
+								{% endif %}
+							</div>
+						</div>
+					</div>
+				</details>
+			</div>
+			{% endfor %}
+		</div>
+	</div>
+
+</body>
+
+</html>

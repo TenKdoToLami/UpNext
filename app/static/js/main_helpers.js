@@ -1,0 +1,766 @@
+/**
+ * @fileoverview Main helper functions for UpNext.
+ * Contains modal operations, wizard helpers, form field management, and detail view rendering.
+ * @module main_helpers
+ */
+
+import { state } from './state.js';
+import {
+	STEP_TITLES, LINK_SUGGESTIONS, TYPE_COLOR_MAP, STATUS_TYPES,
+	STATUS_ICON_MAP, STATUS_COLOR_MAP, ICON_MAP,
+	RATING_LABELS, RATING_COLORS, TEXT_COLORS, STAR_FILLS
+} from './constants.js';
+import { safeCreateIcons, safeVal, safeText, safeHtml, safeCheck } from './dom_utils.js';
+import {
+	renderTypeSelection, renderStatusSelection, updateWizardUI, updateFormUI,
+	showStep, validateStep, updateDynamicLinks, updateDots,
+	animateStepChange, getNextValidStep, getPrevValidStep
+} from './wizard_logic.js';
+
+// =============================================================================
+// MODAL OPERATIONS
+// =============================================================================
+
+/**
+ * Opens the entry modal for creating or editing an item.
+ * @param {string|null} id - Item ID for editing, null for new entry
+ */
+export function openModal(id = null) {
+	if (window.closeExportModal) window.closeExportModal();
+	if (window.closeInfoModal) window.closeInfoModal();
+
+	try {
+		const modal = document.getElementById('modal');
+		const form = document.getElementById('entryForm');
+
+		modal.classList.remove('hidden');
+		setTimeout(() => {
+			modal.classList.remove('opacity-0');
+			document.getElementById('modalContent').classList.remove('scale-95');
+		}, 10);
+
+		if (form) form.reset();
+		resetFormState();
+
+		if (id) {
+			populateFormFromItem(id);
+		}
+
+		renderAltTitles();
+		renderChildren();
+		updateModalTags();
+
+		if (id) {
+			initEditMode(id);
+		} else {
+			initWizard(false);
+		}
+	} catch (e) {
+		console.error('Error opening modal:', e);
+		initWizard(false);
+	}
+}
+
+/**
+ * Closes the entry modal with animation.
+ */
+export function closeModal() {
+	const modal = document.getElementById('modal');
+	modal.classList.add('opacity-0');
+	document.getElementById('modalContent').classList.add('scale-95');
+	setTimeout(() => modal.classList.add('hidden'), 200);
+}
+
+/**
+ * Resets all form-related state to defaults.
+ */
+function resetFormState() {
+	state.currentAuthors = [];
+	state.currentAlternateTitles = [];
+	state.currentChildren = [];
+	state.currentLinks = [];
+
+	safeVal('itemId', '');
+	safeText('currentCoverName', '');
+	safeHtml('linksContainer', '');
+	safeHtml('childrenContainer', '');
+	safeCheck('isHidden', false);
+
+	const img = document.getElementById('previewImg');
+	const ph = document.getElementById('previewPlaceholder');
+	if (img) { img.src = ''; img.classList.add('hidden'); }
+	if (ph) ph.classList.remove('hidden');
+}
+
+/**
+ * Populates form fields from an existing item.
+ * @param {string} id - Item ID
+ */
+function populateFormFromItem(id) {
+	const item = state.items.find(i => i.id === id);
+	if (!item) return;
+
+	safeVal('itemId', item.id);
+	safeVal('title', item.title);
+	safeVal('type', item.type);
+	safeVal('status', item.status);
+	safeVal('universe', item.universe || '');
+	safeVal('series', item.series || '');
+	safeVal('seriesNumber', item.seriesNumber || '');
+	safeVal('description', item.description || '');
+	safeVal('notes', item.notes || '');
+	safeVal('review', item.review || '');
+	safeVal('progress', item.progress || '');
+	safeVal('rating', item.rating || 2);
+
+	if (item.coverUrl) {
+		safeText('currentCoverName', item.coverUrl);
+		const img = document.getElementById('previewImg');
+		const ph = document.getElementById('previewPlaceholder');
+		if (img) { img.src = `/images/${item.coverUrl}`; img.classList.remove('hidden'); }
+		if (ph) ph.classList.add('hidden');
+	}
+
+	safeCheck('isHidden', item.isHidden || false);
+	state.currentAuthors = item.authors || (item.author ? [item.author] : []);
+	state.currentAlternateTitles = item.alternateTitles || [];
+	state.currentChildren = item.children || [];
+	state.currentLinks = item.externalLinks || [];
+}
+
+// =============================================================================
+// EDIT MODE
+// =============================================================================
+
+/**
+ * Initializes edit mode for an existing item.
+ * @param {string} id - Item ID to edit
+ */
+export function initEditMode(id) {
+	state.isEditMode = true;
+	state.currentStep = 1;
+
+	renderTypeSelection();
+	renderStatusSelection();
+	renderLinks();
+	updateDynamicLinks();
+
+	// Configure UI for edit mode (show all steps at once)
+	document.querySelectorAll('.wizard-step').forEach(el => {
+		el.classList.remove('absolute', 'inset-0', 'hidden', 'overflow-y-auto', 'items-center', 'justify-center', 'text-center');
+		el.style.display = 'block';
+		el.classList.add('relative', 'block', 'mb-6', 'w-full');
+	});
+
+	document.getElementById('entryForm').classList.remove('h-full', 'overflow-hidden');
+	document.getElementById('entryForm').classList.add('h-auto');
+	document.getElementById('wizardDots').classList.add('hidden');
+	document.getElementById('prevBtn').classList.add('hidden');
+	document.getElementById('nextBtn').classList.add('hidden');
+
+	const submitBtn = document.getElementById('submitBtn');
+	submitBtn.classList.remove('hidden');
+	submitBtn.innerText = 'Save Changes';
+
+	const item = state.items.find(i => i.id === id);
+	document.getElementById('modalTitle').innerText = item ? `Edit ${item.title}` : 'Edit Entry';
+
+	document.querySelectorAll('.edit-only-header').forEach(el => el.classList.remove('hidden'));
+
+	updateFormUI();
+
+	const type = document.getElementById('type').value;
+	const status = document.getElementById('status').value;
+	selectTypeVisuals(type);
+	selectStatusVisuals(status);
+}
+
+/**
+ * Initializes wizard mode for a new entry.
+ * @param {boolean} isEdit - Unused, kept for compatibility
+ */
+export function initWizard(isEdit) {
+	state.isEditMode = false;
+	renderTypeSelection();
+	renderStatusSelection();
+
+	document.querySelectorAll('.edit-only-header').forEach(el => el.classList.add('hidden'));
+	document.getElementById('entryForm').classList.remove('h-auto');
+	document.getElementById('entryForm').classList.add('h-full', 'overflow-hidden');
+
+	// Reset wizard step layout
+	document.querySelectorAll('.wizard-step').forEach(el => {
+		el.classList.add('absolute', 'inset-0', 'hidden');
+		el.classList.remove('relative', 'block', 'mb-6', 'w-full', 'max-w-4xl', 'mx-auto', 'flex', 'flex-col');
+		el.style.display = 'none';
+	});
+
+	restoreStepClasses();
+
+	document.getElementById('wizardDots').classList.remove('hidden');
+	document.getElementById('sidebar')?.classList.remove('hidden');
+	document.getElementById('prevBtn').classList.add('hidden');
+	document.getElementById('nextBtn').classList.remove('hidden');
+	document.getElementById('submitBtn').classList.add('hidden');
+	document.getElementById('submitBtn').innerText = 'Finish';
+	document.getElementById('modalTitle').innerText = 'New Entry';
+
+	renderChildren();
+	state.currentStep = 1;
+	state.maxReachedStep = 1;
+	showStep(1);
+}
+
+/**
+ * Restores CSS classes for each wizard step.
+ */
+function restoreStepClasses() {
+	const restore = (id, classes) => {
+		const el = document.getElementById(id);
+		if (el) el.classList.add(...classes);
+	};
+
+	const centerClasses = ['flex', 'flex-col', 'items-center', 'justify-center', 'text-center', 'overflow-y-auto', 'custom-scrollbar'];
+	const topClasses = ['flex', 'flex-col', 'overflow-y-auto', 'custom-scrollbar'];
+
+	restore('step-1', centerClasses);
+	restore('step-2', centerClasses);
+	restore('step-3', topClasses);
+	restore('step-4', centerClasses);
+	restore('step-5', centerClasses);
+	restore('step-6', topClasses);
+	restore('step-7', topClasses);
+	restore('step-8', topClasses);
+	restore('step-9', topClasses);
+	restore('step-10', topClasses);
+	restore('step-11', centerClasses);
+}
+
+// =============================================================================
+// WIZARD NAVIGATION
+// =============================================================================
+
+/** Advances to the next valid wizard step. */
+export function nextStep() {
+	if (!validateStep(state.currentStep)) return;
+	const next = getNextValidStep(state.currentStep);
+	if (next > state.TOTAL_STEPS) return;
+	animateStepChange(state.currentStep, next, 'right');
+	state.currentStep = next;
+}
+
+/** Returns to the previous valid wizard step. */
+export function prevStep() {
+	const prev = getPrevValidStep(state.currentStep);
+	if (prev < 1) return;
+	animateStepChange(state.currentStep, prev, 'left');
+	state.currentStep = prev;
+}
+
+/**
+ * Jumps to a specific wizard step.
+ * @param {number} step - Target step number
+ */
+export function jumpToStep(step) {
+	if (step === state.currentStep || step > state.maxReachedStep) return;
+	if (!validateStep(state.currentStep)) return;
+
+	const direction = step > state.currentStep ? 'right' : 'left';
+	animateStepChange(state.currentStep, step, direction);
+	state.currentStep = step;
+}
+
+/**
+ * Resets all wizard fields to defaults (used when changing media type).
+ */
+export function resetWizardFields() {
+	safeVal('progress', '');
+	safeVal('coverUrl', '');
+	safeHtml('coverPreview', '<div class="text-zinc-500 font-medium">No Image Selected</div>');
+	safeVal('coverImage', '');
+	safeVal('title', '');
+	safeVal('description', '');
+	safeVal('notes', '');
+	safeVal('review', '');
+	safeVal('rating', 2);
+
+	// Reset rating label
+	const rLabel = document.getElementById('ratingLabel');
+	if (rLabel) {
+		rLabel.innerText = 'Ok';
+		rLabel.className = `text-4xl font-black uppercase tracking-tighter drop-shadow-2xl transition-all transform hover:scale-105 ${TEXT_COLORS[2]}`;
+	}
+
+	state.currentAuthors = [];
+	state.currentAlternateTitles = [];
+	state.currentChildren = [];
+	state.currentLinks = [];
+
+	// Reset author input
+	safeHtml('authorTagsContainer', '<input id="authorInput" list="authorOptions" class="bg-transparent text-sm outline-none flex-1 min-w-[80px] text-zinc-700 dark:text-zinc-200 p-1 placeholder-zinc-400" placeholder="Type & Enter...">');
+	setTimeout(() => {
+		const authInput = document.getElementById('authorInput');
+		if (authInput) authInput.addEventListener('keydown', (e) => checkEnterKey(e, 'author'));
+	}, 0);
+
+	safeVal('universe', '');
+	safeVal('series', '');
+	safeVal('seriesNumber', '');
+	safeHtml('childrenContainer', '');
+	safeHtml('dynamicLinkButtons', '');
+	safeHtml('linksContainer', '');
+
+	// Reset alt-title input
+	safeHtml('altTitleTagsContainer', '<input id="altTitleInput" class="bg-transparent text-sm outline-none flex-1 min-w-[80px] text-zinc-700 dark:text-zinc-200 p-1 placeholder-zinc-400" placeholder="Type & Enter...">');
+	setTimeout(() => {
+		const altInput = document.getElementById('altTitleInput');
+		if (altInput) altInput.addEventListener('keydown', (e) => checkEnterKey(e, 'altTitle'));
+	}, 0);
+}
+
+// =============================================================================
+// TYPE & STATUS SELECTION
+// =============================================================================
+
+/**
+ * Handles media type selection.
+ * @param {string} t - Selected type
+ */
+export function selectType(t) {
+	const current = document.getElementById('type').value;
+	if (current === t && state.isEditMode) return;
+
+	if (!state.isEditMode) {
+		resetWizardFields();
+		state.maxReachedStep = 1;
+		document.getElementById('status').value = '';
+
+		document.querySelectorAll('[id^="status-card-"]').forEach(el => {
+			el.classList.remove('ring-2', 'ring-white', 'bg-zinc-800');
+			el.classList.add('border-zinc-800');
+		});
+		renderStatusSelection();
+	}
+
+	document.getElementById('type').value = t;
+	if (!state.isEditMode) updateDynamicLinks(t);
+	selectTypeVisuals(t);
+	updateWizardUI();
+
+	if (state.isEditMode) {
+		updateFormUI();
+	} else {
+		state.maxReachedStep = 1;
+		updateDots(1);
+		animateStepChange(1, 2, 'right');
+		state.currentStep = 2;
+	}
+}
+
+/**
+ * Handles status selection.
+ * @param {string} s - Selected status
+ */
+export function selectStatus(s) {
+	const current = document.getElementById('status').value;
+	if (current === s && !state.isEditMode) {
+		animateStepChange(2, 3, 'right');
+		state.currentStep = 3;
+		return;
+	}
+
+	document.getElementById('status').value = s;
+	selectStatusVisuals(s);
+
+	if (state.isEditMode) {
+		updateFormUI();
+	} else {
+		if (state.currentStep === 2) state.maxReachedStep = 2;
+		animateStepChange(2, 3, 'right');
+		state.currentStep = 3;
+	}
+}
+
+/**
+ * Updates visual selection state for type cards.
+ * @param {string} t - Selected type
+ */
+function selectTypeVisuals(t) {
+	document.querySelectorAll('[id^="type-card-"]').forEach(el => {
+		el.classList.remove('selected', 'ring-2', 'ring-indigo-500', 'bg-zinc-800');
+		el.classList.add('border-zinc-800');
+	});
+
+	const card = document.getElementById(`type-card-${t}`);
+	if (card) {
+		card.classList.add('selected', 'ring-2', 'ring-indigo-500', 'bg-zinc-800');
+		card.classList.remove('border-zinc-800');
+	}
+}
+
+/**
+ * Updates visual selection state for status cards.
+ * @param {string} s - Selected status
+ */
+function selectStatusVisuals(s) {
+	const idSafe = s.replace(/[^a-zA-Z]/g, '');
+
+	document.querySelectorAll('[id^="status-card-"]').forEach(el => {
+		el.classList.remove('selected', 'ring-2', 'ring-indigo-500', 'bg-zinc-800');
+		el.classList.add('border-zinc-800');
+	});
+
+	const card = document.getElementById(`status-card-${idSafe}`);
+	if (card) {
+		card.classList.add('selected', 'ring-2', 'ring-indigo-500', 'bg-zinc-800');
+		card.classList.remove('border-zinc-800');
+	}
+}
+
+// =============================================================================
+// AUTOCOMPLETE & TAGS
+// =============================================================================
+
+/**
+ * Populates autocomplete datalists from existing items.
+ */
+export function populateAutocomplete() {
+	const authors = new Set();
+	const universes = new Set();
+	const seriesList = new Set();
+
+	state.items.forEach(item => {
+		if (Array.isArray(item.authors)) item.authors.forEach(a => authors.add(a));
+		if (item.universe) universes.add(item.universe);
+		if (item.series) seriesList.add(item.series);
+	});
+
+	const fill = (id, set) => {
+		const el = document.getElementById(id);
+		if (el) el.innerHTML = Array.from(set).sort().map(v => `<option value="${v}">`).join('');
+	};
+
+	fill('authorOptions', authors);
+	fill('universeOptions', universes);
+	fill('seriesOptions', seriesList);
+}
+
+/**
+ * Updates the author tags display in the modal.
+ */
+export function updateModalTags() {
+	const container = document.getElementById('authorTagsContainer');
+	const input = document.getElementById('authorInput');
+
+	Array.from(container.children).forEach(c => {
+		if (c.tagName === 'SPAN') c.remove();
+	});
+
+	state.currentAuthors.forEach(auth => {
+		const tag = document.createElement('span');
+		tag.className = 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 text-xs px-2 py-1 rounded flex items-center gap-1 font-medium';
+		tag.innerHTML = `${auth} <button type="button" onclick="window.removeAuthor('${auth}')" class="hover:text-red-400 flex items-center"><i data-lucide="x" class="w-3 h-3"></i></button>`;
+		container.insertBefore(tag, input);
+	});
+}
+
+/**
+ * Removes an author from the current list.
+ * @param {string} val - Author to remove
+ */
+export function removeAuthor(val) {
+	state.currentAuthors = state.currentAuthors.filter(a => a !== val);
+	updateModalTags();
+}
+
+/**
+ * Handles Enter key for tag inputs.
+ * @param {KeyboardEvent} e - Keyboard event
+ * @param {'author'|'altTitle'} type - Input type
+ */
+export function checkEnterKey(e, type) {
+	if (e.key !== 'Enter') return;
+
+	e.preventDefault();
+	const val = e.target.value.trim();
+	if (!val) return;
+
+	if (type === 'author' && !state.currentAuthors.includes(val)) {
+		state.currentAuthors.push(val);
+		e.target.value = '';
+		updateModalTags();
+	} else if (type === 'altTitle' && !state.currentAlternateTitles.includes(val)) {
+		state.currentAlternateTitles.push(val);
+		e.target.value = '';
+		renderAltTitles();
+	}
+}
+
+/**
+ * Renders alternate titles as tags.
+ */
+export function renderAltTitles() {
+	const container = document.getElementById('altTitleTagsContainer');
+	const input = document.getElementById('altTitleInput');
+	if (!container) return;
+
+	Array.from(container.children).forEach(child => {
+		if (child.tagName === 'SPAN') child.remove();
+	});
+
+	state.currentAlternateTitles.forEach(title => {
+		const tag = document.createElement('span');
+		tag.className = 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 text-xs px-2 py-1 rounded flex items-center gap-1 font-medium';
+		tag.innerHTML = `${title} <button type="button" onclick="window.removeAltTitle('${title}')" class="hover:text-red-400 flex items-center"><i data-lucide="x" class="w-3 h-3"></i></button>`;
+		container.insertBefore(tag, input);
+	});
+
+	input.placeholder = state.currentAlternateTitles.length > 0 ? '' : 'Type & Enter...';
+}
+
+/**
+ * Removes an alternate title.
+ * @param {string} val - Title to remove
+ */
+export function removeAltTitle(val) {
+	state.currentAlternateTitles = state.currentAlternateTitles.filter(t => t !== val);
+	renderAltTitles();
+}
+
+// =============================================================================
+// CHILDREN / SEASONS
+// =============================================================================
+
+/**
+ * Renders the children (seasons/volumes) list.
+ */
+export function renderChildren() {
+	const container = document.getElementById('childrenContainer');
+	if (!container) return;
+
+	if (state.currentChildren.length === 0) {
+		container.innerHTML = '<div class="text-center text-zinc-400 dark:text-zinc-600 italic text-xs py-3">No items added yet</div>';
+		return;
+	}
+
+	container.innerHTML = state.currentChildren.map((child, idx) => {
+		const starsHtml = [1, 2, 3, 4].map(i => {
+			const fillClass = child.rating >= i ? STAR_FILLS[child.rating] : 'text-zinc-300 dark:text-zinc-700';
+			return `<button type="button" onclick="window.updateChildRating(${idx}, ${i})" class="focus:outline-none star-btn transition-transform"><i data-lucide="star" class="w-3.5 h-3.5 ${fillClass} fill-current"></i></button>`;
+		}).join('');
+
+		return `
+            <div class="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-2.5 flex items-center gap-3">
+                <input value="${child.title}" oninput="window.updateChild(${idx}, 'title', this.value)" class="bg-transparent border-b border-zinc-300 dark:border-zinc-700 outline-none text-xs pb-1 text-zinc-700 dark:text-zinc-200 flex-1 font-medium placeholder-zinc-400">
+                <div class="flex gap-1">${starsHtml}</div>
+                <button type="button" onclick="window.removeChildIdx(${idx})" class="text-zinc-400 hover:text-red-400 transition-colors"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+        `;
+	}).join('');
+
+	safeCreateIcons();
+}
+
+/** Adds a new child (season/volume). */
+export function addChild() {
+	const type = document.getElementById('type').value;
+	const prefix = ['Book', 'Manga'].includes(type) ? 'Volume' : 'Season';
+	const next = state.currentChildren.length + 1;
+	state.currentChildren.push({ id: crypto.randomUUID(), title: `${prefix} ${next}`, rating: 0 });
+	renderChildren();
+}
+
+export function removeChildIdx(idx) { state.currentChildren.splice(idx, 1); renderChildren(); }
+export function updateChild(idx, field, val) { state.currentChildren[idx][field] = val; }
+export function updateChildRating(idx, rating) { state.currentChildren[idx].rating = rating; renderChildren(); }
+
+// =============================================================================
+// EXTERNAL LINKS
+// =============================================================================
+
+/**
+ * Renders the external links list.
+ */
+export function renderLinks() {
+	const container = document.getElementById('linksContainer');
+	if (!container) return;
+
+	if (state.currentLinks.length === 0) {
+		container.innerHTML = '<div class="text-center text-zinc-400 dark:text-zinc-600 italic text-xs py-1">No links added</div>';
+		return;
+	}
+
+	container.innerHTML = state.currentLinks.map((link, idx) => `
+        <div class="flex gap-2 items-center slide-in-bottom">
+            <div class="w-1/3 relative">
+                <input list="linkNameOptions" value="${link.label}" onchange="window.updateLink(${idx}, 'label', this.value)" placeholder="Label" class="w-full bg-zinc-50 dark:bg-zinc-800 text-xs p-2 rounded border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 outline-none focus:border-indigo-500">
+            </div>
+            <input value="${link.url}" oninput="window.updateLink(${idx}, 'url', this.value)" placeholder="URL" class="flex-1 bg-zinc-50 dark:bg-zinc-800 text-xs p-2 rounded border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 outline-none focus:border-indigo-500">
+            <button type="button" onclick="window.pasteLink(${idx})" title="Paste from clipboard" class="px-2 py-1 text-xs rounded bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700">Paste</button>
+            <button type="button" onclick="window.removeLink(${idx})" class="text-zinc-400 hover:text-red-400"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+    `).join('');
+
+	safeCreateIcons();
+}
+
+export function addLink() { state.currentLinks.push({ label: '', url: '' }); renderLinks(); }
+export function addSpecificLink(label) { state.currentLinks.push({ label, url: '' }); renderLinks(); }
+export function removeLink(idx) { state.currentLinks.splice(idx, 1); renderLinks(); }
+export function updateLink(idx, field, val) { state.currentLinks[idx][field] = val; }
+
+export function pasteLink(idx) {
+	if (!navigator.clipboard) return;
+	navigator.clipboard.readText().then(text => {
+		state.currentLinks[idx].url = text || '';
+		renderLinks();
+	}).catch(() => { });
+}
+
+// =============================================================================
+// DETAIL VIEW
+// =============================================================================
+
+/**
+ * Renders the detail view for an item.
+ * @param {Object} item - Item to display
+ * @param {HTMLElement} content - Container element
+ */
+export function renderDetailView(item, content) {
+	const authors = item.authors || (item.author ? [item.author] : []);
+	const authHtml = authors.length
+		? authors.map(a => `<span onclick="smartFilter(event, 'author', '${a.replace(/'/g, "\\'")}')" class="hover:text-zinc-800 dark:hover:text-white underline decoration-zinc-400 dark:decoration-zinc-600 underline-offset-2 hover:decoration-zinc-800 dark:hover:decoration-white transition-all cursor-pointer relative z-50">${a}</span>`).join(', ')
+		: '<span class="italic text-zinc-400 dark:text-white/40">Unknown</span>';
+
+	const coverUrl = item.coverUrl ? `/images/${item.coverUrl}` : null;
+	const seriesText = item.seriesNumber ? `${item.series} #${item.seriesNumber}` : item.series;
+	const childLabel = ['Book', 'Manga'].includes(item.type) ? 'Volumes' : 'Seasons';
+
+	const childrenHtml = (item.children || []).map(c => `
+        <div class="flex items-center justify-between bg-zinc-100 dark:bg-zinc-900/60 p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors group/child w-full">
+            <span class="text-base text-zinc-700 dark:text-zinc-300 font-bold font-heading tracking-wide">${c.title}</span>
+            <div class="flex gap-1">
+                ${[1, 2, 3, 4].map(i => `<i data-lucide="star" class="w-5 h-5 ${c.rating >= i ? STAR_FILLS[c.rating] : 'text-zinc-300 dark:text-zinc-800'} fill-current"></i>`).join('')}
+            </div>
+        </div>
+    `).join('');
+
+	const linksHtml = (item.externalLinks || []).map(l => `
+        <a href="${l.url}" target="_blank" class="flex items-center gap-1.5 text-indigo-500 dark:text-indigo-400 hover:text-white bg-indigo-100 dark:bg-indigo-500/10 px-4 py-2 rounded-full border border-indigo-200 dark:border-indigo-500/20 hover:bg-indigo-500 dark:hover:bg-indigo-500 transition-all text-sm font-bold">
+            <i data-lucide="link" class="w-4 h-4"></i> ${l.label || 'Link'}
+        </a>
+    `).join('');
+
+	content.innerHTML = `
+        <div class="media-${item.type} relative h-full flex flex-col lg:flex-row">
+            <div class="relative w-full lg:w-[45%] h-64 lg:h-full shrink-0 bg-zinc-100 dark:bg-zinc-900 overflow-hidden group border-r border-zinc-200 dark:border-zinc-800">
+                ${coverUrl ? `<img src="${coverUrl}" class="w-full h-full object-contain bg-zinc-50 dark:bg-zinc-950/50">` : '<div class="w-full h-full flex items-center justify-center text-zinc-400 dark:text-zinc-700 bg-zinc-100 dark:bg-zinc-900"><i data-lucide="image" class="w-24 h-24 opacity-20"></i></div>'}
+                <div class="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-60 pointer-events-none"></div>
+                
+                <div class="absolute bottom-6 left-6 right-6 flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <button onclick="window.editFromDetail('${item.id}')" class="flex-1 py-3 rounded-xl font-bold flex items-center justify-center gap-2 bg-white/90 text-black hover:bg-white shadow-xl backdrop-blur-md transform hover:scale-[1.02] transition-all">
+                        <i data-lucide="edit-2" class="w-4 h-4"></i> Edit
+                    </button>
+                    <button onclick="window.deleteFromDetail('${item.id}')" class="px-4 py-3 rounded-xl font-bold flex items-center justify-center gap-2 bg-red-500/80 text-white hover:bg-red-600 shadow-xl backdrop-blur-md transition-all">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="flex-1 flex flex-col h-full bg-white dark:bg-[#0c0c0e] relative">
+                <div class="p-10 pb-6 border-b border-zinc-100 dark:border-white/5 relative">
+                    ${linksHtml ? `<div class="absolute top-8 right-16 mr-6 flex gap-2 z-20">${linksHtml}</div>` : ''}
+                    <div class="flex flex-wrap gap-2 mb-4 mt-2">
+                        <span class="media-badge px-4 py-1.5 rounded text-xs font-black uppercase tracking-widest flex items-center gap-1.5 transition-colors"><i data-lucide="${ICON_MAP[item.type]}" class="w-3.5 h-3.5"></i> ${item.type}</span>
+                        <span class="${STATUS_COLOR_MAP[item.status]} px-4 py-1.5 rounded text-xs font-black uppercase tracking-widest border border-current/20 flex items-center gap-1.5"><i data-lucide="${STATUS_ICON_MAP[item.status]}" class="w-3.5 h-3.5"></i> ${item.status}</span>
+                        ${item.progress ? `<span class="px-4 py-1.5 rounded text-xs font-black font-mono uppercase tracking-widest border border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-500 flex items-center gap-1.5">Progress: ${item.progress}</span>` : ''}
+                    </div>
+                    <h1 class="text-5xl md:text-6xl font-heading font-black text-zinc-900 dark:text-[var(--theme-col)] leading-none tracking-tight mb-4 drop-shadow-sm">${item.title}</h1>
+                    <div class="flex flex-wrap gap-6 text-base font-medium text-zinc-500 dark:text-zinc-400 mt-4">
+                        ${authors.length ? `<div class="flex items-center gap-2"><i data-lucide="pen-tool" class="w-5 h-5 text-zinc-400 dark:text-zinc-600"></i> ${authHtml}</div>` : ''}
+                        ${item.series ? `<div onclick="smartFilter(event, 'series', '${item.series}')" class="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 dark:hover:text-emerald-300 cursor-pointer transition-colors"><i data-lucide="library" class="w-5 h-5"></i> ${seriesText}</div>` : ''}
+                        ${item.universe ? `<div onclick="smartFilter(event, 'universe', '${item.universe}')" class="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 cursor-pointer transition-colors"><i data-lucide="globe" class="w-5 h-5"></i> ${item.universe}</div>` : ''}
+                    </div>
+                </div>
+                <div class="flex-1 overflow-y-auto custom-scrollbar p-10 pt-6 space-y-8">
+                    
+                    ${(item.review || item.rating) ? `
+                    <div class="bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-white/5 rounded-2xl p-6 relative clearfix min-h-[160px]">
+                         ${item.rating ? `
+                         <div class="float-right ml-6 mb-2 flex flex-col items-center gap-1 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 p-4 rounded-xl shadow-lg">
+                            <span class="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">VERDICT</span>
+                            <span class="text-3xl font-heading font-black uppercase ${TEXT_COLORS[item.rating]}">${RATING_LABELS[item.rating]}</span>
+                            <div class="flex gap-1 mt-1">
+                                ${[1, 2, 3, 4].map(i => `<i data-lucide="star" class="w-4 h-4 ${item.rating >= i ? STAR_FILLS[item.rating] : 'text-zinc-300 dark:text-zinc-800'} fill-current"></i>`).join('')}
+                            </div>
+                         </div>` : ''}
+                         
+                         ${item.review ? `
+                         <div class="relative z-10">
+                            <i data-lucide="quote" class="inline-block w-6 h-6 text-zinc-300 dark:text-[var(--theme-col)] opacity-50 mr-2 align-text-top"></i>
+                            <span class="text-zinc-700 dark:text-zinc-300 leading-relaxed italic text-lg whitespace-pre-wrap font-serif">${item.review}</span>
+                         </div>` : ''}
+                    </div>` : ''}
+
+                    ${item.description ? `
+                    <div class="prose prose-invert max-w-none">
+                        <h4 class="text-sm font-bold text-zinc-800 dark:text-[var(--theme-col)] uppercase tracking-widest mb-4 opacity-80 flex items-center gap-2"><i data-lucide="align-left" class="w-4 h-4"></i> Synopsis</h4>
+                        <div class="text-zinc-600 dark:text-zinc-300 leading-relaxed text-lg font-light whitespace-pre-wrap">${item.description}</div>
+                    </div>` : ''}
+
+                    ${item.notes ? `
+                    <div class="bg-amber-50 dark:bg-amber-500/5 border border-amber-200 dark:border-amber-500/10 rounded-xl p-6">
+                        <h4 class="text-xs font-bold text-amber-600 dark:text-amber-500 uppercase tracking-widest mb-3 flex items-center gap-2"><i data-lucide="sticky-note" class="w-4 h-4"></i> Notes</h4>
+                        <div class="text-zinc-600 dark:text-zinc-400 leading-relaxed whitespace-pre-wrap font-mono text-sm">${item.notes}</div>
+                    </div>` : ''}
+
+                    ${(item.children && item.children.length) ? `
+                    <div class="pt-8 border-t border-zinc-200 dark:border-white/5">
+                        <h3 class="text-xl font-heading font-bold text-zinc-800 dark:text-[var(--theme-col)] mb-6 flex items-center gap-3"><i data-lucide="layers" class="w-6 h-6"></i> ${childLabel}</h3>
+                        <div class="flex flex-col gap-3">${childrenHtml}</div>
+                    </div>` : ''}
+                </div>
+            </div>
+        </div>
+    `;
+
+	safeCreateIcons();
+}
+
+// =============================================================================
+// INFO MODAL UTILITIES
+// =============================================================================
+
+/**
+ * Sets the search input value and triggers a search.
+ * Closes the info modal if open.
+ * @param {string} query - The search query
+ */
+window.setSearch = function (query) {
+	const input = document.getElementById('searchInput');
+	if (!input) return;
+
+	input.value = query;
+	input.dispatchEvent(new Event('input'));
+
+	// Smooth scroll to top
+	window.scrollTo({ top: 0, behavior: 'smooth' });
+
+	// Close info modal
+	closeInfoModal();
+};
+
+// Global Shortcut Listener
+document.addEventListener('keydown', (e) => {
+	if (e.key === 'Escape') {
+		const infoModal = document.getElementById('infoModal');
+		const exportModal = document.getElementById('exportModal');
+
+		if (infoModal && !infoModal.classList.contains('hidden')) {
+			closeInfoModal();
+		}
+		if (exportModal && !exportModal.classList.contains('hidden')) {
+			closeExportModal();
+		}
+	}
+});

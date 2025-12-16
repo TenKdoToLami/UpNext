@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>{% block title %}UpNext{% endblock %}</title>
+	<link rel="icon" type="image/svg+xml" href="/static/img/symbol.svg">
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link
+		href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;700;800&display=swap"
+		rel="stylesheet">
+	<script src="https://cdn.tailwindcss.com"></script>
+	<script src="https://unpkg.com/lucide@latest"></script>
+	<link rel="stylesheet" href="/static/css/style.css">
+	<script>
+		tailwind.config = {
+			darkMode: 'class',
+			theme: {
+				extend: {
+					colors: {
+						zinc: { 850: '#1f1f22', 900: '#18181b', 950: '#09090b' }
+					},
+					fontFamily: {
+						sans: ['Inter', 'sans-serif'],
+						heading: ['Outfit', 'sans-serif'],
+					}
+				}
+			}
+		}
+	</script>
+	{% block extra_head %}{% endblock %}
+</head>
+
+<body
+	class="bg-slate-50 dark:bg-[#09090b] text-zinc-800 dark:text-zinc-300 min-h-screen selection:bg-indigo-500/30 dark:selection:bg-white/20 transition-colors duration-300">
+
+	{% include 'components/header.html' %}
+
+	<main class="w-full px-4 md:px-8 py-6">
+		{% block content %}{% endblock %}
+	</main>
+
+	{% include 'components/modals.html' %}
+
+	<!-- Global Scripts -->
+	<script type="module" src="/static/js/state.js"></script>
+	<script type="module" src="/static/js/constants.js"></script>
+	<script type="module" src="/static/js/dom_utils.js"></script>
+	<script type="module" src="/static/js/api_service.js"></script>
+	<script type="module" src="/static/js/render_utils.js"></script>
+	<script type="module" src="/static/js/wizard_logic.js"></script>
+	<script type="module" src="/static/js/main_helpers.js"></script>
+	<script type="module" src="/static/js/export_utils.js"></script>
+	<script type="module" src="/static/js/main.js"></script>
+
+	{% block extra_scripts %}{% endblock %}
+</body>
+
+</html>

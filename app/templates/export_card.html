@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>UpNext Library Export (Card View - {{ now.strftime("%Y-%m-%d") }})</title>
+	<style>
+		body {
+			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+			background: #0c0c0e;
+			padding: 40px;
+			color: #e4e4e7;
+		}
+
+		h1 {
+			text-align: center;
+			margin-bottom: 40px;
+			color: #fff;
+			font-weight: 800;
+			letter-spacing: -1px;
+		}
+
+		.grid-container {
+			display: grid;
+			grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+			gap: 24px;
+			max-width: 1600px;
+			margin: 0 auto;
+		}
+
+		.card {
+			background: #18181b;
+			border-radius: 12px;
+			overflow: hidden;
+			box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+			border: 1px solid #27272a;
+			display: flex;
+			flex-direction: column;
+			position: relative;
+			transition: transform 0.2s;
+		}
+
+		.cover-container {
+			width: 100%;
+			aspect-ratio: 2/3;
+			background: #27272a;
+			position: relative;
+		}
+
+		.cover {
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+		}
+
+		.no-cover {
+			width: 100%;
+			height: 100%;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			color: #52525b;
+			font-size: 14px;
+			text-align: center;
+			background: #18181b;
+		}
+
+		.content {
+			padding: 16px;
+			flex: 1;
+			display: flex;
+			flex-direction: column;
+		}
+
+		.title {
+			font-weight: 700;
+			font-size: 16px;
+			margin-bottom: 6px;
+			line-height: 1.3;
+			color: #fff;
+		}
+
+		.meta {
+			font-size: 12px;
+			color: #a1a1aa;
+			margin-bottom: 12px;
+		}
+
+		.badge-group {
+			position: absolute;
+			top: 10px;
+			left: 10px;
+			right: 10px;
+			display: flex;
+			justify-content: space-between;
+			gap: 4px;
+			z-index: 10;
+		}
+
+		.badge {
+			padding: 4px 8px;
+			border-radius: 6px;
+			font-size: 10px;
+			font-weight: 800;
+			text-transform: uppercase;
+			background: rgba(0, 0, 0, 0.8);
+			border: 1px solid rgba(255, 255, 255, 0.1);
+			max-width: 50%;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+			color: #fff;
+			backdrop-filter: blur(4px);
+		}
+
+		.progress-badge {
+			background: rgba(251, 191, 36, 0.9);
+			color: #451a03;
+			border: none;
+		}
+
+		.footer {
+			margin-top: auto;
+			padding-top: 12px;
+			border-top: 1px solid #27272a;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			font-size: 11px;
+			font-weight: bold;
+		}
+
+		.status-text {
+			text-transform: uppercase;
+			color: #a1a1aa;
+			letter-spacing: 0.05em;
+		}
+
+		.rating-text {
+			color: #f59e0b;
+			font-size: 12px;
+		}
+
+		/* Media Colors for Title and Border */
+		.media-Anime {
+			border-top: 4px solid {
+					{
+					MEDIA_COLOR_MAP.get('Anime', '#8b5cf6')
+				}
+			}
+
+			;
+		}
+
+		.media-Manga {
+			border-top: 4px solid {
+					{
+					MEDIA_COLOR_MAP.get('Manga', '#ec4899')
+				}
+			}
+
+			;
+		}
+
+		.media-Book {
+			border-top: 4px solid {
+					{
+					MEDIA_COLOR_MAP.get('Book', '#3b82f6')
+				}
+			}
+
+			;
+		}
+
+		.media-Movie {
+			border-top: 4px solid {
+					{
+					MEDIA_COLOR_MAP.get('Movie', '#ef4444')
+				}
+			}
+
+			;
+		}
+
+		.media-Series {
+			border-top: 4px solid {
+					{
+					MEDIA_COLOR_MAP.get('Series', '#f59e0b')
+				}
+			}
+
+			;
+		}
+	</style>
+</head>
+
+<body>
+	<h1>UpNext Library Export (Card View - {{ now.strftime("%Y-%m-%d") }}) - {{ items|length }} Entries</h1>
+	<div class="grid-container">
+		{% if not items %}
+		<p style="text-align:center; color:#999; font-size:16px; margin-top:50px;">No entries match the selected
+			filters.</p>
+		{% endif %}
+
+		{% for item in items %}
+		<!-- Card type class: media-Type -->
+		<div class="card media-{{ item.type|replace(' ', '') }}">
+			<!-- Cover -->
+			<div class="cover-container">
+				{% if 'coverUrl' in fields and item.coverUrl %}
+				<img src="images/{{ item.coverUrl }}" class="cover">
+				{% else %}
+				<div class="no-cover">{% if 'coverUrl' in fields %}No Image{% else %}N/A{% endif %}</div>
+				{% endif %}
+			</div>
+
+			<!-- Badges -->
+			<div class="badge-group">
+				{% if 'progress' in fields and item.progress %}
+				<span class="badge progress-badge">{{ item.progress }}</span>
+				{% endif %}
+				{% if 'type' in fields %}
+				<span class="badge status-badge"
+					style="color: {{ MEDIA_COLOR_MAP.get(item.type, '#333') }}; border-color: {{ MEDIA_COLOR_MAP.get(item.type, '#ccc') }};">
+					{{ item.type }}
+				</span>
+				{% endif %}
+			</div>
+
+			<!-- Content -->
+			<div class="content">
+				<div class="title">{{ item.title|default('Untitled') }}</div>
+
+				<!-- Meta -->
+				{% set meta_items = [] %}
+				{% if item.authors %}{% set _ = meta_items.append(item.authors|join(', ')) %}{% elif item.author %}{%
+				set _ = meta_items.append(item.author) %}{% endif %}
+				{% if 'universe' in fields and item.universe %}{% set _ = meta_items.append('U: ' + item.universe) %}{%
+				endif %}
+				{% if 'series' in fields and item.series %}
+				{% set s_str = 'S: ' + item.series + (' #' + item.seriesNumber if item.seriesNumber else '') %}
+				{% set _ = meta_items.append(s_str) %}
+				{% endif %}
+
+				{% if meta_items %}
+				<div class="meta">{{ meta_items|join(', ') }}</div>
+				{% endif %}
+
+				<!-- Footer -->
+				<div class="footer">
+					<span class="rating-text">
+						{% if 'rating' in fields and item.status in ['Completed', 'Anticipating'] and item.rating %}
+						{{ RATING_MAP.get(item.rating, '') }}
+						{% endif %}
+					</span>
+					{% if 'status' in fields %}
+					<span class="status-text" style="color: {{ STATUS_TEXT_MAP.get(item.status, '#333') }};">
+						{{ item.status }}
+					</span>
+					{% endif %}
+				</div>
+			</div>
+		</div>
+		{% endfor %}
+	</div>
+	<p style="text-align:center; margin-top: 30px; color:#999; font-size:12px;">Export generated by UpNext.</p>
+</body>
+
+</html>
