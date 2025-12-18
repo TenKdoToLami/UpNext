@@ -670,12 +670,13 @@ export function renderDetailView(item, content) {
             <div class="flex-1 flex flex-col h-full bg-white dark:bg-[#0c0c0e] relative">
                 <div class="p-10 pb-6 border-b border-zinc-100 dark:border-white/5 relative">
                     ${linksHtml ? `<div class="absolute top-8 right-16 mr-6 flex gap-2 z-20">${linksHtml}</div>` : ''}
-                    <div class="flex flex-wrap gap-2 mb-4 mt-2">
+                    <div class="flex flex-wrap gap-2 mb-4 mt-12">
                         <span class="media-badge px-4 py-1.5 rounded text-xs font-black uppercase tracking-widest flex items-center gap-1.5 transition-colors"><i data-lucide="${ICON_MAP[item.type]}" class="w-3.5 h-3.5"></i> ${item.type}</span>
                         <span class="${STATUS_COLOR_MAP[item.status]} px-4 py-1.5 rounded text-xs font-black uppercase tracking-widest border border-current/20 flex items-center gap-1.5"><i data-lucide="${STATUS_ICON_MAP[item.status]}" class="w-3.5 h-3.5"></i> ${item.status}</span>
                         ${item.progress ? `<span class="px-4 py-1.5 rounded text-xs font-black font-mono uppercase tracking-widest border border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-500 flex items-center gap-1.5">Progress: ${item.progress}</span>` : ''}
                     </div>
-                    <h1 class="text-5xl md:text-6xl font-heading font-black text-zinc-900 dark:text-[var(--theme-col)] leading-none tracking-tight mb-4 drop-shadow-sm">${item.title}</h1>
+                    <h1 class="text-5xl md:text-6xl font-heading font-black text-zinc-900 dark:text-[var(--theme-col)] leading-none tracking-tight mb-2 drop-shadow-sm">${item.title}</h1>
+                    ${item.alternateTitles && item.alternateTitles.length ? `<h2 class="text-xl text-zinc-500 dark:text-zinc-400 font-bold mb-4 font-heading">${item.alternateTitles.join(', ')}</h2>` : ''}
                     <div class="flex flex-wrap gap-6 text-base font-medium text-zinc-500 dark:text-zinc-400 mt-4">
                         ${authors.length ? `<div class="flex items-center gap-2"><i data-lucide="pen-tool" class="w-5 h-5 text-zinc-400 dark:text-zinc-600"></i> ${authHtml}</div>` : ''}
                         ${item.series ? `<div onclick="smartFilter(event, 'series', '${item.series}')" class="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 dark:hover:text-emerald-300 cursor-pointer transition-colors"><i data-lucide="library" class="w-5 h-5"></i> ${seriesText}</div>` : ''}
@@ -685,7 +686,8 @@ export function renderDetailView(item, content) {
                 <div class="flex-1 overflow-y-auto custom-scrollbar p-10 pt-6 space-y-8">
                     
                     ${(item.review || item.rating) ? `
-                    <div class="bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-white/5 rounded-2xl p-6 relative clearfix min-h-[160px]">
+                    <div class="bg-zinc-50 dark:bg-zinc-900/50 border border-[color:var(--theme-col)] rounded-2xl p-6 relative flow-root min-h-[160px]">
+                         <h4 class="text-sm font-bold text-[var(--theme-col)] uppercase tracking-widest mb-4 opacity-100 flex items-center gap-2"><i data-lucide="message-square" class="w-4 h-4"></i> Review</h4>
                          ${item.rating ? `
                          <div class="float-right ml-6 mb-2 flex flex-col items-center gap-1 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 p-4 rounded-xl shadow-lg">
                             <span class="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">VERDICT</span>
@@ -697,29 +699,28 @@ export function renderDetailView(item, content) {
                          
                          ${item.review ? `
                          <div class="relative z-10 group/rev">
-                            <i data-lucide="quote" class="inline-block w-6 h-6 text-zinc-300 dark:text-[var(--theme-col)] opacity-50 mr-2 align-text-top"></i>
                             <span id="detail-review-${item.id}" class="text-zinc-700 dark:text-zinc-300 leading-relaxed italic text-lg whitespace-pre-wrap font-serif line-clamp-6">${item.review}</span>
                             ${item.review.length > 500 ? `<button type="button" id="btn-detail-review-${item.id}" onclick="event.stopPropagation(); window.toggleExpand('${item.id}', 'detail-review')" class="text-xs text-[var(--theme-col)] font-bold mt-2 hover:underline relative z-20">Read More</button>` : ''}
                          </div>` : ''}
                     </div>` : ''}
 
                     ${item.description ? `
-                    <div class="prose prose-invert max-w-none group/desc">
-                        <h4 class="text-sm font-bold text-zinc-800 dark:text-[var(--theme-col)] uppercase tracking-widest mb-4 opacity-80 flex items-center gap-2"><i data-lucide="align-left" class="w-4 h-4"></i> Synopsis</h4>
+                    <div class="bg-zinc-50 dark:bg-zinc-900/5 border border-[color:var(--theme-col)] rounded-xl p-6 group/desc">
+                        <h4 class="text-sm font-bold text-[var(--theme-col)] uppercase tracking-widest mb-4 opacity-100 flex items-center gap-2"><i data-lucide="align-left" class="w-4 h-4"></i> Synopsis</h4>
                         <div id="detail-desc-${item.id}" class="text-zinc-600 dark:text-zinc-300 leading-relaxed text-lg font-light whitespace-pre-wrap line-clamp-6">${item.description}</div>
                          ${item.description.length > 500 ? `<button type="button" id="btn-detail-desc-${item.id}" onclick="event.stopPropagation(); window.toggleExpand('${item.id}', 'detail-desc')" class="text-xs text-[var(--theme-col)] font-bold mt-2 hover:underline relative z-20">Read More</button>` : ''}
                     </div>` : ''}
 
                     ${item.notes ? `
-                    <div class="bg-amber-50 dark:bg-amber-500/5 border border-amber-200 dark:border-amber-500/10 rounded-xl p-6 group/notes">
-                        <h4 class="text-xs font-bold text-amber-600 dark:text-amber-500 uppercase tracking-widest mb-3 flex items-center gap-2"><i data-lucide="sticky-note" class="w-4 h-4"></i> Notes</h4>
+                    <div class="bg-zinc-50 dark:bg-zinc-900/5 border border-[color:var(--theme-col)] rounded-xl p-6 group/notes">
+                        <h4 class="text-xs font-bold text-[var(--theme-col)] uppercase tracking-widest mb-3 flex items-center gap-2"><i data-lucide="sticky-note" class="w-4 h-4"></i> Notes</h4>
                         <div id="detail-notes-${item.id}" class="text-zinc-600 dark:text-zinc-400 leading-relaxed whitespace-pre-wrap font-mono text-sm line-clamp-6">${item.notes}</div>
-                         ${item.notes.length > 300 ? `<button type="button" id="btn-detail-notes-${item.id}" onclick="event.stopPropagation(); window.toggleExpand('${item.id}', 'detail-notes')" class="text-xs text-amber-600 dark:text-amber-500 font-bold mt-2 hover:underline relative z-20">Read More</button>` : ''}
+                         ${item.notes.length > 300 ? `<button type="button" id="btn-detail-notes-${item.id}" onclick="event.stopPropagation(); window.toggleExpand('${item.id}', 'detail-notes')" class="text-xs text-[var(--theme-col)] font-bold mt-2 hover:underline relative z-20">Read More</button>` : ''}
                     </div>` : ''}
 
                     ${(item.children && item.children.length) ? `
-                    <div class="pt-8 border-t border-zinc-200 dark:border-white/5">
-                        <h3 class="text-xl font-heading font-bold text-zinc-800 dark:text-[var(--theme-col)] mb-6 flex items-center gap-3"><i data-lucide="layers" class="w-6 h-6"></i> ${childLabel}</h3>
+                    <div class="bg-zinc-50 dark:bg-zinc-900/5 border border-[color:var(--theme-col)] rounded-xl p-6">
+                        <h3 class="text-xl font-heading font-bold text-[var(--theme-col)] mb-6 flex items-center gap-3"><i data-lucide="layers" class="w-6 h-6"></i> ${childLabel}</h3>
                         <div class="flex flex-col gap-3">${childrenHtml}</div>
                     </div>` : ''}
                 </div>

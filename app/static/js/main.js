@@ -474,6 +474,7 @@ window.openDetail = (id) => {
 
     const typeColorVar = `var(--col-${item.type.toLowerCase()})`;
     modalContent.style.setProperty('--theme-col', typeColorVar);
+    modalContent.style.borderColor = typeColorVar;
     modalContent.classList.add('border-[color:var(--theme-col)]');
 
     modal.classList.remove('hidden');
