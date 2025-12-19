@@ -1,6 +1,7 @@
+import os
 import logging
 from flask import Flask
-from app.config import APP_NAME, TEMPLATE_DIR, STATIC_DIR
+from app.config import APP_NAME, TEMPLATE_DIR, STATIC_DIR, DATA_DIR
 from app.utils.logging_setup import setup_logging
 from app.services.data_manager import DataManager
 
@@ -24,6 +25,9 @@ def create_app():
     db.init_app(app)
     
     # Ensure DB exists
+    if not os.path.exists(DATA_DIR):
+        os.makedirs(DATA_DIR)
+
     with app.app_context():
         db.create_all()
     
