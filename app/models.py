@@ -8,6 +8,10 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.database import db
 
 class MediaItem(db.Model):
+    """
+    SQLAlchemy model for a media item (Anime, Book, Manga, etc.).
+    Uses JSON columns for flexible list storage.
+    """
     __tablename__ = "media_items"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -17,23 +21,24 @@ class MediaItem(db.Model):
     rating: Mapped[int] = mapped_column(Integer, default=0)
     progress: Mapped[str] = mapped_column(String(100), default="")
     
-    # Metadata
+    # Text content
     description: Mapped[str] = mapped_column(Text, default="")
     review: Mapped[str] = mapped_column(Text, default="")
     notes: Mapped[str] = mapped_column(Text, default="")
     
+    # Categorization
     universe: Mapped[str] = mapped_column(String(100), default="")
     series: Mapped[str] = mapped_column(String(100), default="")
     series_number: Mapped[str] = mapped_column(String(50), default="")
     
+    # Image storage
     cover_url: Mapped[str] = mapped_column(String(255), default="")
-    # New columns for DB image storage
     cover_image: Mapped[Optional[bytes]] = mapped_column(LargeBinary, nullable=True)
     cover_mime: Mapped[String] = mapped_column(String(50), default="")
     
     is_hidden: Mapped[bool] = mapped_column(Boolean, default=False)
     
-    # JSON columns for lists
+    # Complex metadata stored as JSON
     authors: Mapped[List[str]] = mapped_column(JSON, default=list)
     alternate_titles: Mapped[List[str]] = mapped_column(JSON, default=list)
     external_links: Mapped[List[dict]] = mapped_column(JSON, default=list)
@@ -44,11 +49,15 @@ class MediaItem(db.Model):
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def to_dict(self):
-        """Convert model to dictionary matching the original JSON structure."""
+        """
+        Convert the model instance to a dictionary for JSON responses.
+        Handles cover URL generation based on stored image or external URL.
+        """
         # Determine cover URL logic
         c_url = self.cover_url
         if self.cover_image:
-            # Use dynamic route. Append timestamp cache buster if possible
+            # Use dynamic route for internal images. 
+            # Append timestamp cache buster to force browser refresh on update.
             ts = int(self.updated_at.timestamp()) if self.updated_at else 0
             c_url = f"{self.id}?v={ts}"
             

@@ -9,6 +9,10 @@ Handles all export functionality including:
 Routes:
     GET /api/export - Export library data in various formats
     GET /api/export/full - Export complete application backup
+
+Usage:
+    This Blueprint can be registered in any Flask application to provide export capabilities.
+    It requires a `DataManager` service to fetch items and assumes items are dictionaries.
 """
 
 import os

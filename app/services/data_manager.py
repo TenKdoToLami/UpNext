@@ -1,36 +1,40 @@
 """
 Data Manager Service for UpNext.
 
-Handles persistence of library items to the JSON database.
+Handles persistence of library items using SQLAlchemy.
 """
 
-from datetime import datetime
 import logging
-from typing import List, Dict, Any, Union
+from datetime import datetime
+from typing import Any, Dict, List, Optional, Union
 
 from app.database import db
 from app.models import MediaItem
-
-
 
 logger = logging.getLogger(__name__)
 
 
 class DataManager:
     """
-    Handles data persistence for the application using a JSON file.
+    Handles data persistence for the application using SQLAlchemy models.
+    Provides methods for CRUD operations on MediaItem objects.
     """
 
     def __init__(self):
-        # DB is initialized in app creation
-        pass
-
-    def _ensure_structure(self) -> None:
-        # DB tables are created in app creation
+        """
+        Initialize the DataManager.
+        
+        This service wraps SQLAlchemy calls. In a larger app, you might inject the db session here.
+        """
         pass
 
     def get_items(self) -> List[Dict[str, Any]]:
-        """Retrieves all items from the database."""
+        """
+        Retrieves all media items from the database.
+        
+        Returns:
+            List[Dict[str, Any]]: A list of all items serialized as dictionaries.
+        """
         try:
             items = MediaItem.query.all()
             return [item.to_dict() for item in items]
@@ -38,8 +42,16 @@ class DataManager:
             logger.error(f"Error retrieving items: {e}")
             return []
 
-    def get_item(self, item_id: str) -> Union[Dict[str, Any], None]:
-        """Retrieve a single item by ID."""
+    def get_item(self, item_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Retrieve a single media item by its ID.
+        
+        Args:
+            item_id (str): The unique identifier of the item.
+            
+        Returns:
+            Optional[Dict[str, Any]]: The serialized item if found, else None.
+        """
         try:
             item = db.session.get(MediaItem, item_id)
             return item.to_dict() if item else None
@@ -48,31 +60,44 @@ class DataManager:
             return None
 
     def add_item(self, data: Dict[str, Any]) -> bool:
-        """Add a new item to the database."""
+        """
+        Add a new media item to the database.
+        
+        Args:
+            data (Dict[str, Any]): Dictionary containing item data.
+            
+        Returns:
+            bool: True if successful, False otherwise.
+        """
         try:
             new_item = MediaItem(
-                id=data['id'],
-                title=data['title'],
-                type=data['type'],
-                status=data.get('status', 'Planning'),
-                rating=data.get('rating') if data.get('rating') is not None else 0,
-                progress=data.get('progress', ''),
-                description=data.get('description', ''),
-                review=data.get('review', ''),
-                notes=data.get('notes', ''),
-                universe=data.get('universe', ''),
-                series=data.get('series', ''),
-                series_number=data.get('seriesNumber', ''),
-                cover_url=data.get('coverUrl', ''),
-                is_hidden=data.get('isHidden', False),
-                authors=data.get('authors', []),
-                alternate_titles=data.get('alternateTitles', []),
-                external_links=data.get('externalLinks', []),
-                children=data.get('children', []),
-                created_at=datetime.fromisoformat(data['createdAt']) if data.get('createdAt') else None,
-                updated_at=datetime.fromisoformat(data['updatedAt']) if data.get('updatedAt') else None,
-                cover_image=data.get('cover_image'),
-                cover_mime=data.get('cover_mime')
+                id=data["id"],
+                title=data["title"],
+                type=data["type"],
+                status=data.get("status", "Planning"),
+                # Ensure rating is never None to avoid IntegrityError
+                rating=data.get("rating") if data.get("rating") is not None else 0,
+                progress=data.get("progress", ""),
+                description=data.get("description", ""),
+                review=data.get("review", ""),
+                notes=data.get("notes", ""),
+                universe=data.get("universe", ""),
+                series=data.get("series", ""),
+                series_number=data.get("seriesNumber", ""),
+                cover_url=data.get("coverUrl", ""),
+                is_hidden=data.get("isHidden", False),
+                authors=data.get("authors", []),
+                alternate_titles=data.get("alternateTitles", []),
+                external_links=data.get("externalLinks", []),
+                children=data.get("children", []),
+                created_at=datetime.fromisoformat(data["createdAt"])
+                if data.get("createdAt")
+                else datetime.utcnow(),
+                updated_at=datetime.fromisoformat(data["updatedAt"])
+                if data.get("updatedAt")
+                else datetime.utcnow(),
+                cover_image=data.get("cover_image"),
+                cover_mime=data.get("cover_mime"),
             )
             db.session.add(new_item)
             db.session.commit()
@@ -83,38 +108,51 @@ class DataManager:
             return False
 
     def update_item(self, item_id: str, data: Dict[str, Any]) -> bool:
-        """Update an existing item."""
+        """
+        Update an existing media item.
+        
+        Args:
+            item_id (str): The ID of the item to update.
+            data (Dict[str, Any]): Dictionary containing updated fields.
+            
+        Returns:
+            bool: True if successful, False otherwise.
+        """
         try:
             item = db.session.get(MediaItem, item_id)
             if not item:
                 return False
+
+            # Update fields selectively
+            item.title = data.get("title", item.title)
+            item.type = data.get("type", item.type)
+            item.status = data.get("status", item.status)
             
-            # Update fields
-            item.title = data.get('title', item.title)
-            item.type = data.get('type', item.type)
-            item.status = data.get('status', item.status)
-            item.rating = data.get('rating') if data.get('rating') is not None else (item.rating if 'rating' not in data else 0)
-            item.progress = data.get('progress', item.progress)
-            item.description = data.get('description', item.description)
-            item.review = data.get('review', item.review)
-            item.notes = data.get('notes', item.notes)
-            item.universe = data.get('universe', item.universe)
-            item.series = data.get('series', item.series)
-            item.series_number = data.get('seriesNumber', item.series_number)
-            item.cover_url = data.get('coverUrl', item.cover_url)
-            item.is_hidden = data.get('isHidden', item.is_hidden)
-            item.authors = data.get('authors', item.authors)
-            item.alternate_titles = data.get('alternateTitles', item.alternate_titles)
-            item.external_links = data.get('externalLinks', item.external_links)
-            item.children = data.get('children', item.children)
+            # Sanitized rating handling
+            if "rating" in data:
+                item.rating = data["rating"] if data["rating"] is not None else 0
             
-            if 'cover_image' in data:
-                item.cover_image = data['cover_image']
-            if 'cover_mime' in data:
-                item.cover_mime = data['cover_mime']
-            
-            if data.get('updatedAt'):
-                item.updated_at = datetime.fromisoformat(data['updatedAt'])
+            item.progress = data.get("progress", item.progress)
+            item.description = data.get("description", item.description)
+            item.review = data.get("review", item.review)
+            item.notes = data.get("notes", item.notes)
+            item.universe = data.get("universe", item.universe)
+            item.series = data.get("series", item.series)
+            item.series_number = data.get("seriesNumber", item.series_number)
+            item.cover_url = data.get("coverUrl", item.cover_url)
+            item.is_hidden = data.get("isHidden", item.is_hidden)
+            item.authors = data.get("authors", item.authors)
+            item.alternate_titles = data.get("alternateTitles", item.alternate_titles)
+            item.external_links = data.get("externalLinks", item.external_links)
+            item.children = data.get("children", item.children)
+
+            if "cover_image" in data:
+                item.cover_image = data["cover_image"]
+            if "cover_mime" in data:
+                item.cover_mime = data["cover_mime"]
+
+            if data.get("updatedAt"):
+                item.updated_at = datetime.fromisoformat(data["updatedAt"])
             else:
                 item.updated_at = datetime.utcnow()
 
@@ -126,28 +164,25 @@ class DataManager:
             return False
 
     def delete_item(self, item_id: str) -> bool:
-        """Delete an item by ID."""
+        """
+        Delete a media item by its ID.
+        
+        Args:
+            item_id (str): The ID of the item to delete.
+            
+        Returns:
+            bool: True if the item was found and deleted, False otherwise.
+        """
         try:
             item = db.session.get(MediaItem, item_id)
             if item:
                 db.session.delete(item)
                 db.session.commit()
                 return True
-            return False # Item not found, treat as handled or error? idempotent usually true.
+            return False
         except Exception as e:
             logger.error(f"Error deleting item {item_id}: {e}")
             db.session.rollback()
             return False
 
-    # Deprecated/Compatibility methods to be removed or mapped
-    def load_items(self) -> List[Dict[str, Any]]:
-        return self.get_items()
-    
-    def save_items(self, items: List[Dict[str, Any]]) -> bool:
-        # This method is dangerous in SQL context as it implies bulk replace.
-        # We will log a warning and return False to force usage of new methods.
-        # OR we could loop and upsert... which is safer for transition but slow.
-        # Let's force refactoring of api.py by NOT implementing this fully.
-        logger.warning("save_items (bulk) is deprecated and not supported in SQL mode. Use update_item/add_item.")
-        return False
 

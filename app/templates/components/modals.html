@@ -273,10 +273,14 @@
 	<div class="bg-white dark:bg-[#0c0c0e] border border-zinc-200 dark:border-zinc-800 rounded-3xl w-full max-w-2xl h-[650px] max-h-[90vh] overflow-hidden flex flex-col shadow-2xl transform scale-95 transition-all duration-200 animate-enter"
 		id="modalContent">
 		<div
-			class="px-8 py-6 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center bg-white dark:bg-[#0c0c0e]">
+			class="px-8 py-6 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center bg-white dark:bg-[#0c0c0e] relative">
 			<h2 class="text-xl font-heading font-bold text-zinc-900 dark:text-white tracking-wide mx-auto"
 				id="modalTitle">New Entry
 			</h2>
+			<button onclick="closeModal()"
+				class="absolute right-8 text-zinc-400 hover:text-red-500 dark:hover:text-white transition-colors">
+				<i data-lucide="x" class="w-5 h-5"></i>
+			</button>
 		</div>
 		<div class="flex flex-1 overflow-hidden relative">
 			<!-- Edit Mode Sidebar -->
@@ -925,15 +929,5 @@
 				<i data-lucide="download" class="w-4 h-4"></i> Download ZIP
 			</button>
 		</div>
-	</div>
-</div>
-
-<!-- TEST MODAL FOR VERIFICATION -->
-<div id="testModal"
-	class="fixed inset-0 z-[80] flex items-center justify-center bg-black/90 backdrop-blur-md hidden opacity-0 transition-opacity duration-200"
-	onclick="if(event.target === this) closeExportModal()">
-	<div class="bg-[#0c0c0e] border border-zinc-800 rounded-3xl w-full max-w-sm p-8 flex flex-col items-center justify-center shadow-2xl transform scale-95 transition-all duration-200"
-		id="testModalContent">
-		<p class="text-white text-xl font-bold">I work</p>
 	</div>
 </div>

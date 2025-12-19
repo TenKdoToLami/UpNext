@@ -1,6 +1,9 @@
 /**
  * @fileoverview Global application state management for UpNext.
  * Contains the central state object and state mutation helpers.
+ * 
+ * This module is designed to be a lightweight Redux-like store.
+ * You can import 'state' to read data and 'setState' to mutate it.
  * @module state
  */
 
@@ -40,16 +43,12 @@ export const state = {
 	isEditMode: false,
 	TOTAL_STEPS: 11,
 
-	// Export state (legacy, may be unused)
-	exportFieldStates: {},
-
 	// Theme state
 	theme: 'dark'
 };
 
 /**
  * Updates a single state property.
- * Provides a centralized way to modify state for future reactivity.
  * @param {string} key - The state property to update
  * @param {*} value - The new value
  */
@@ -75,3 +74,4 @@ export function resetFormState() {
 	state.currentChildren = [];
 	state.currentLinks = [];
 }
+

@@ -170,8 +170,7 @@ export function initEditMode(id) {
 	submitBtn.classList.remove('hidden');
 	submitBtn.innerText = 'Save Changes';
 
-	// Populate Sidebar
-	renderSidebarNav();
+
 
 	// Render Form Content
 	renderTypeSelection();
@@ -199,6 +198,9 @@ export function initEditMode(id) {
 
 	// Init Scroll Spy
 	initScrollSpy();
+
+	// Populate Sidebar (Call last to ensure visibility checks work)
+	renderSidebarNav();
 }
 
 /**

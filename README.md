@@ -9,7 +9,7 @@ UpNext is a beautiful, local web application designed to help you track your med
 -   **Rich Metadata**: Store authors, studios, alternative titles, series ordering, and universes (e.g., MCU).
 -   **Privacy & Review**: Mark items as "Hidden" and add personal reviews with a 4-point rating system.
 -   **Modern UI**: Responsive design with dark mode, grid/list views, and vibrant aesthetics.
--   **Portable**: Runs locally with a portable SQLite database—your data stays yours.
+-   **Portable**: Runs locally with a portable SQLite database (`data/library.db`)—your data stays yours.
 -   **Export**: Export your library to JSON or HTML cards/lists.
 
 ## 🚀 Getting Started

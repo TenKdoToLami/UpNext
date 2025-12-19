@@ -58,7 +58,6 @@ The project follows a clean, modular structure:
     -   `clean.py`: Cleanup utilities.
     -   `convert_icon.py`: Icon processing tools.
 -   **`data/`**: User data storage (database, uploaded images).
--   **`UpNext.spec`**: PyInstaller build configuration (inside `scripts/`).
 
 ## Key Components
 
@@ -70,7 +69,9 @@ A single wrapper script that handles the entire development lifecycle:
 -   **Clean**: Removes build artifacts and temporary files.
 
 ### Data Persistence
-Data is stored locally in `data/library.db`, using SQLite for reliability while remaining portable. Images are stored in `data/images/`.
+Data is stored locally in `data/library.db` using SQLite. This ensures reliability and relational integrity while remaining highly portable. 
+
+**Note on Images**: Cover images are stored directly in the SQLite database as binary blobs (`LargeBinary`). This allows the entire library (metadata + images) to be backed up by copying a single `.db` file. We previously used JSON, but have migrated to SQLite for better performance and data integrity.
 
 ### Build System
 The build process is fully automated via `scripts/build.py`:
