@@ -111,7 +111,14 @@ function populateFormFromItem(id) {
 	safeVal('notes', item.notes || '');
 	safeVal('review', item.review || '');
 	safeVal('progress', item.progress || '');
-	safeVal('rating', item.rating || 2);
+	const rVal = item.rating || 2;
+	safeVal('rating', rVal);
+	// Manually trigger label update since setting value doesn't fire event
+	const rLabel = document.getElementById('ratingLabel');
+	if (rLabel) {
+		rLabel.innerText = RATING_LABELS[rVal];
+		rLabel.className = `text-4xl font-black uppercase tracking-tighter drop-shadow-2xl transition-all transform hover:scale-105 ${TEXT_COLORS[rVal]}`;
+	}
 
 	if (item.coverUrl) {
 		safeText('currentCoverName', item.coverUrl);
@@ -140,39 +147,151 @@ export function initEditMode(id) {
 	state.isEditMode = true;
 	state.currentStep = 1;
 
+	// Enable full screen & Scroll Mode
+	document.getElementById('modalContent').classList.add('full-screen-modal');
+	document.getElementById('entryForm').classList.add('scroll-mode');
+	const sidebar = document.getElementById('editSidebar');
+	sidebar.classList.remove('hidden');
+	sidebar.classList.add('flex');
+	sidebar.scrollTop = 0; // Reset scroll position
+
+	// Hide Wizard specific UI
+	document.getElementById('wizardDots').classList.add('hidden');
+	document.getElementById('prevBtn').classList.add('hidden');
+	document.getElementById('nextBtn').classList.add('hidden');
+	document.getElementById('stepIndicator').innerText = '';
+
+	// Ensure form container is ready
+	document.getElementById('entryForm').classList.remove('h-full', 'overflow-hidden');
+	document.getElementById('entryForm').classList.add('h-auto');
+
+	// Show Save Button
+	const submitBtn = document.getElementById('submitBtn');
+	submitBtn.classList.remove('hidden');
+	submitBtn.innerText = 'Save Changes';
+
+	// Populate Sidebar
+	renderSidebarNav();
+
+	// Render Form Content
 	renderTypeSelection();
 	renderStatusSelection();
 	renderLinks();
 	updateDynamicLinks();
 
-	// Configure UI for edit mode (show all steps at once)
+	// Show all steps (CSS handles layout via .scroll-mode)
 	document.querySelectorAll('.wizard-step').forEach(el => {
-		el.classList.remove('absolute', 'inset-0', 'hidden', 'overflow-y-auto', 'items-center', 'justify-center', 'text-center');
-		el.style.display = 'block';
-		el.classList.add('relative', 'block', 'mb-6', 'w-full');
+		el.classList.remove('hidden');
 	});
 
-	document.getElementById('entryForm').classList.remove('h-full', 'overflow-hidden');
-	document.getElementById('entryForm').classList.add('h-auto');
-	document.getElementById('wizardDots').classList.add('hidden');
-	document.getElementById('prevBtn').classList.add('hidden');
-	document.getElementById('nextBtn').classList.add('hidden');
-
-	const submitBtn = document.getElementById('submitBtn');
-	submitBtn.classList.remove('hidden');
-	submitBtn.innerText = 'Save Changes';
-
+	// Titles
 	const item = state.items.find(i => i.id === id);
 	document.getElementById('modalTitle').innerText = item ? `Edit ${item.title}` : 'Edit Entry';
-
 	document.querySelectorAll('.edit-only-header').forEach(el => el.classList.remove('hidden'));
 
 	updateFormUI();
 
+	// Select visuals
 	const type = document.getElementById('type').value;
 	const status = document.getElementById('status').value;
 	selectTypeVisuals(type);
 	selectStatusVisuals(status);
+
+	// Init Scroll Spy
+	initScrollSpy();
+}
+
+/**
+ * Renders the sidebar navigation for edit mode.
+ */
+function renderSidebarNav() {
+	const nav = document.getElementById('editSidebarNav');
+	if (!nav) return;
+
+	// Define sections based on steps
+	const sections = [
+		{ id: 'step-1', label: 'Media Type', icon: 'monitor' },
+		{ id: 'step-2', label: 'Status', icon: 'activity' },
+		{ id: 'step-3', label: 'Basic Info', icon: 'file-text' },
+		{ id: 'step-4', label: 'Progress', icon: 'bookmark' }, // Conditionally hidden by CSS/JS
+		{ id: 'step-5', label: 'Cover Image', icon: 'image' },
+		{ id: 'step-6', label: 'External Links', icon: 'link' },
+		{ id: 'step-7', label: 'Description', icon: 'align-left' },
+		{ id: 'step-8', label: 'Notes', icon: 'sticky-note' },
+		{ id: 'step-9', label: 'Review & Rating', icon: 'star' },
+		{ id: 'step-10', label: 'Seasons/Volumes', icon: 'layers' }, // Conditionally hidden
+		{ id: 'step-11', label: 'Privacy', icon: 'shield' } // Conditionally hidden
+	];
+
+	nav.innerHTML = sections.map(sec => `
+        <button onclick="scrollToSection('${sec.id}')" id="nav-${sec.id}" class="sidebar-link group">
+            <i data-lucide="${sec.icon}" class="w-4 h-4 opacity-70 group-hover:opacity-100"></i> ${sec.label}
+        </button>
+    `).join('');
+
+	safeCreateIcons();
+	// Hide links for hidden sections needs to be handled dynamically:
+	// We can rely on IntersectionObserver to ignore hidden sections or duplicate updateFormUI logic here.
+	// For now, let's auto-hide links if their target section is hidden.
+	updateSidebarVisibility();
+}
+
+window.scrollToSection = (id) => {
+	const el = document.getElementById(id);
+	if (el) {
+		el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+		// Manually trigger highlight immediately for better responsiveness
+		document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+		const navLink = document.getElementById(`nav-${id}`);
+		if (navLink) navLink.classList.add('active');
+	}
+};
+
+window.updateSidebarVisibility = () => {
+	// Basic check to hide nav items if the section is hidden
+	const nav = document.getElementById('editSidebarNav');
+	if (!nav) return;
+
+	Array.from(nav.children).forEach(btn => {
+		const sectionId = btn.id.replace('nav-', '');
+		const section = document.getElementById(sectionId);
+		if (section && (section.classList.contains('hidden') || section.style.display === 'none')) {
+			btn.classList.add('hidden');
+		} else {
+			btn.classList.remove('hidden');
+		}
+	});
+};
+
+function updateSidebarVisibility() {
+	window.updateSidebarVisibility();
+}
+
+// Simple Scroll Spy
+let scrollSpyObserver = null;
+function initScrollSpy() {
+	if (scrollSpyObserver) scrollSpyObserver.disconnect();
+
+	const options = {
+		root: document.getElementById('formScrollWrapper'),
+		threshold: 0.2, // Lower threshold to catch taller sections
+		rootMargin: "-20% 0px -20% 0px" // Trigger when element is near center
+	};
+
+	scrollSpyObserver = new IntersectionObserver((entries) => {
+		entries.forEach(entry => {
+			if (entry.isIntersecting) {
+				document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+				const navLink = document.getElementById(`nav-${entry.target.id}`);
+				if (navLink) navLink.classList.add('active');
+			}
+		});
+	}, options);
+
+	document.querySelectorAll('.wizard-step').forEach(step => {
+		scrollSpyObserver.observe(step);
+	});
 }
 
 /**
@@ -181,6 +300,14 @@ export function initEditMode(id) {
  */
 export function initWizard(isEdit) {
 	state.isEditMode = false;
+
+	// Reset Full Screen & Sidebar
+	document.getElementById('modalContent').classList.remove('full-screen-modal');
+	document.getElementById('entryForm').classList.remove('scroll-mode');
+	document.getElementById('editSidebar').classList.add('hidden');
+	document.getElementById('editSidebar').classList.remove('flex');
+	if (scrollSpyObserver) scrollSpyObserver.disconnect();
+
 	renderTypeSelection();
 	renderStatusSelection();
 
@@ -192,13 +319,13 @@ export function initWizard(isEdit) {
 	document.querySelectorAll('.wizard-step').forEach(el => {
 		el.classList.add('absolute', 'inset-0', 'hidden');
 		el.classList.remove('relative', 'block', 'mb-6', 'w-full', 'max-w-4xl', 'mx-auto', 'flex', 'flex-col');
+		// Ensure style display block from edit mode is removed
 		el.style.display = 'none';
 	});
 
 	restoreStepClasses();
 
 	document.getElementById('wizardDots').classList.remove('hidden');
-	document.getElementById('sidebar')?.classList.remove('hidden');
 	document.getElementById('prevBtn').classList.add('hidden');
 	document.getElementById('nextBtn').classList.remove('hidden');
 	document.getElementById('submitBtn').classList.add('hidden');
@@ -700,7 +827,7 @@ export function renderDetailView(item, content) {
                          ${item.review ? `
                          <div class="relative z-10 group/rev">
                             <span id="detail-review-${item.id}" class="text-zinc-700 dark:text-zinc-300 leading-relaxed italic text-lg whitespace-pre-wrap font-serif line-clamp-6">${item.review}</span>
-                            ${item.review.length > 500 ? `<button type="button" id="btn-detail-review-${item.id}" onclick="event.stopPropagation(); window.toggleExpand('${item.id}', 'detail-review')" class="text-xs text-[var(--theme-col)] font-bold mt-2 hover:underline relative z-20">Read More</button>` : ''}
+                            ${item.review.length > 0 ? `<button type="button" id="btn-detail-review-${item.id}" onclick="event.stopPropagation(); window.toggleExpand('${item.id}', 'detail-review')" class="text-xs text-[var(--theme-col)] font-bold mt-2 hover:underline relative z-20">Read More</button>` : ''}
                          </div>` : ''}
                     </div>` : ''}
 
@@ -708,14 +835,14 @@ export function renderDetailView(item, content) {
                     <div class="bg-zinc-50 dark:bg-zinc-900/5 border border-[color:var(--theme-col)] rounded-xl p-6 group/desc">
                         <h4 class="text-sm font-bold text-[var(--theme-col)] uppercase tracking-widest mb-4 opacity-100 flex items-center gap-2"><i data-lucide="align-left" class="w-4 h-4"></i> Synopsis</h4>
                         <div id="detail-desc-${item.id}" class="text-zinc-600 dark:text-zinc-300 leading-relaxed text-lg font-light whitespace-pre-wrap line-clamp-6">${item.description}</div>
-                         ${item.description.length > 500 ? `<button type="button" id="btn-detail-desc-${item.id}" onclick="event.stopPropagation(); window.toggleExpand('${item.id}', 'detail-desc')" class="text-xs text-[var(--theme-col)] font-bold mt-2 hover:underline relative z-20">Read More</button>` : ''}
+                         ${item.description.length > 0 ? `<button type="button" id="btn-detail-desc-${item.id}" onclick="event.stopPropagation(); window.toggleExpand('${item.id}', 'detail-desc')" class="text-xs text-[var(--theme-col)] font-bold mt-2 hover:underline relative z-20">Read More</button>` : ''}
                     </div>` : ''}
 
                     ${item.notes ? `
                     <div class="bg-zinc-50 dark:bg-zinc-900/5 border border-[color:var(--theme-col)] rounded-xl p-6 group/notes">
                         <h4 class="text-xs font-bold text-[var(--theme-col)] uppercase tracking-widest mb-3 flex items-center gap-2"><i data-lucide="sticky-note" class="w-4 h-4"></i> Notes</h4>
                         <div id="detail-notes-${item.id}" class="text-zinc-600 dark:text-zinc-400 leading-relaxed whitespace-pre-wrap font-mono text-sm line-clamp-6">${item.notes}</div>
-                         ${item.notes.length > 300 ? `<button type="button" id="btn-detail-notes-${item.id}" onclick="event.stopPropagation(); window.toggleExpand('${item.id}', 'detail-notes')" class="text-xs text-[var(--theme-col)] font-bold mt-2 hover:underline relative z-20">Read More</button>` : ''}
+                         ${item.notes.length > 0 ? `<button type="button" id="btn-detail-notes-${item.id}" onclick="event.stopPropagation(); window.toggleExpand('${item.id}', 'detail-notes')" class="text-xs text-[var(--theme-col)] font-bold mt-2 hover:underline relative z-20">Read More</button>` : ''}
                     </div>` : ''}
 
                     ${(item.children && item.children.length) ? `
@@ -729,6 +856,22 @@ export function renderDetailView(item, content) {
     `;
 
 	safeCreateIcons();
+
+	// Check for overflow and hide 'Read More' buttons if not needed
+	setTimeout(() => {
+		['detail-review', 'detail-desc', 'detail-notes'].forEach(key => {
+			const contentEl = document.getElementById(`${key}-${item.id}`);
+			const btnEl = document.getElementById(`btn-${key}-${item.id}`);
+			if (contentEl && btnEl) {
+				// If scrollHeight is not significantly larger than clientHeight, hide button
+				if (contentEl.scrollHeight <= contentEl.clientHeight + 4) {
+					btnEl.classList.add('hidden');
+				} else {
+					btnEl.classList.remove('hidden');
+				}
+			}
+		});
+	}, 50);
 }
 
 // =============================================================================

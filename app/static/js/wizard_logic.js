@@ -296,6 +296,8 @@ export function updateFormUI() {
 
 	// Privacy: only show in hidden mode
 	toggle('step-11', state.isHidden);
+
+	if (window.updateSidebarVisibility) window.updateSidebarVisibility();
 }
 
 /**

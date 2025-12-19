@@ -278,263 +278,275 @@
 				id="modalTitle">New Entry
 			</h2>
 		</div>
-		<div id="formScrollWrapper" class="p-8 overflow-y-auto custom-scrollbar flex-1 bg-zinc-50 dark:bg-zinc-950/30">
-			<form id="entryForm" class="h-full relative overflow-hidden" onsubmit="return false;">
+		<div class="flex flex-1 overflow-hidden relative">
+			<!-- Edit Mode Sidebar -->
+			<div id="editSidebar"
+				class="hidden w-64 shrink-0 bg-white dark:bg-[#0c0c0e] border-r border-zinc-200 dark:border-zinc-800 flex-col overflow-y-auto custom-scrollbar py-6 pl-6 pr-2">
+				<nav class="space-y-1" id="editSidebarNav">
+					<!-- Links populated by JS -->
+				</nav>
+			</div>
 
-				<!-- Step 1: Media Type -->
-				<div id="step-1"
-					class="wizard-step absolute inset-0 p-8 flex flex-col items-center justify-center text-center space-y-8 overflow-y-auto custom-scrollbar">
-					<h3
-						class="edit-only-header hidden text-lg font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-4">
-						Media Type</h3>
-					<div class="w-full max-w-2xl shrink-0 pb-10">
-						<input type="hidden" id="type">
-						<div id="typeSelectionContainer" class="w-full"></div>
-					</div>
-				</div>
+			<div id="formScrollWrapper"
+				class="p-8 overflow-y-auto custom-scrollbar flex-1 bg-zinc-50 dark:bg-zinc-950/30 scroll-smooth">
+				<form id="entryForm" class="h-full relative overflow-hidden" onsubmit="return false;">
 
-				<!-- Step 2: Status -->
-				<div id="step-2"
-					class="wizard-step absolute inset-0 p-8 flex flex-col items-center justify-center text-center space-y-8 hidden overflow-y-auto custom-scrollbar">
-					<h3
-						class="edit-only-header hidden text-lg font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-4">
-						Status</h3>
-					<input type="hidden" id="status">
-					<div id="statusSelectionContainer" class="w-full max-w-lg shrink-0 pb-10">
-					</div>
-				</div>
-
-				<!-- Step 3: Basic Info -->
-				<div id="step-3"
-					class="wizard-step absolute inset-0 p-8 flex flex-col hidden overflow-y-auto custom-scrollbar">
-					<div class="space-y-6">
-						<div class="space-y-2">
-							<label class="text-xs font-bold text-zinc-500 uppercase tracking-wider ml-1">Title <span
-									class="text-red-500">*</span></label>
-							<input type="text" id="title" required
-								class="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-5 py-4 text-xl font-heading font-bold text-zinc-900 dark:text-white outline-none focus:border-zinc-400 dark:focus:border-white/20 focus:ring-1 focus:ring-zinc-400 dark:focus:ring-white/20 placeholder:text-zinc-400 dark:placeholder:text-zinc-700 transition-all"
-								placeholder="Enter title...">
+					<!-- Step 1: Media Type -->
+					<div id="step-1"
+						class="wizard-step absolute inset-0 p-8 flex flex-col items-center justify-center text-center space-y-8 overflow-y-auto custom-scrollbar">
+						<h3
+							class="edit-only-header hidden text-lg font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-4">
+							Media Type</h3>
+						<div class="w-full max-w-2xl shrink-0 pb-10">
+							<input type="hidden" id="type">
+							<div id="typeSelectionContainer" class="w-full"></div>
 						</div>
+					</div>
 
-						<div class="space-y-2">
-							<label class="text-xs font-bold text-zinc-500 uppercase tracking-wider ml-1">Alternate
-								Titles <span
-									class="text-zinc-400 dark:text-zinc-600 font-normal normal-case">(Optional)</span></label>
-							<div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 flex flex-wrap gap-2 min-h-[54px] focus-within:border-zinc-400 dark:focus-within:border-zinc-600 focus-within:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-600 transition-all"
-								id="altTitleTagsContainer">
-								<input id="altTitleInput"
-									class="bg-transparent text-sm outline-none flex-1 min-w-[80px] text-zinc-700 dark:text-zinc-200 p-1 placeholder-zinc-400"
-									placeholder="Type & Enter...">
-							</div>
+					<!-- Step 2: Status -->
+					<div id="step-2"
+						class="wizard-step absolute inset-0 p-8 flex flex-col items-center justify-center text-center space-y-8 hidden overflow-y-auto custom-scrollbar">
+						<h3
+							class="edit-only-header hidden text-lg font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-4">
+							Status</h3>
+						<input type="hidden" id="status">
+						<div id="statusSelectionContainer" class="w-full max-w-lg shrink-0 pb-10">
 						</div>
+					</div>
 
-						<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+					<!-- Step 3: Basic Info -->
+					<div id="step-3"
+						class="wizard-step absolute inset-0 p-8 flex flex-col hidden overflow-y-auto custom-scrollbar">
+						<div class="space-y-6">
 							<div class="space-y-2">
-								<label class="text-xs font-bold text-zinc-500 uppercase tracking-wider ml-1">Authors
-									/ Studios <span
+								<label class="text-xs font-bold text-zinc-500 uppercase tracking-wider ml-1">Title <span
+										class="text-red-500">*</span></label>
+								<input type="text" id="title" required
+									class="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-5 py-4 text-xl font-heading font-bold text-zinc-900 dark:text-white outline-none focus:border-zinc-400 dark:focus:border-white/20 focus:ring-1 focus:ring-zinc-400 dark:focus:ring-white/20 placeholder:text-zinc-400 dark:placeholder:text-zinc-700 transition-all"
+									placeholder="Enter title...">
+							</div>
+
+							<div class="space-y-2">
+								<label class="text-xs font-bold text-zinc-500 uppercase tracking-wider ml-1">Alternate
+									Titles <span
 										class="text-zinc-400 dark:text-zinc-600 font-normal normal-case">(Optional)</span></label>
 								<div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 flex flex-wrap gap-2 min-h-[54px] focus-within:border-zinc-400 dark:focus-within:border-zinc-600 focus-within:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-600 transition-all"
-									id="authorTagsContainer">
-									<input id="authorInput" list="authorOptions"
+									id="altTitleTagsContainer">
+									<input id="altTitleInput"
 										class="bg-transparent text-sm outline-none flex-1 min-w-[80px] text-zinc-700 dark:text-zinc-200 p-1 placeholder-zinc-400"
 										placeholder="Type & Enter...">
 								</div>
 							</div>
-							<div class="space-y-2">
-								<label class="text-xs font-bold text-zinc-500 uppercase tracking-wider ml-1">Universe
-									<span
-										class="text-zinc-400 dark:text-zinc-600 font-normal normal-case">(Optional)</span></label>
-								<input type="text" id="universe" list="universeOptions"
-									class="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-zinc-700 dark:text-zinc-200 outline-none focus:border-zinc-400 dark:focus:border-zinc-600 focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-600 transition-all placeholder-zinc-400"
-									placeholder="e.g. MCU, Cosmere">
-							</div>
-						</div>
 
-						<div id="seriesWrapper" class="hidden space-y-2">
-							<label
-								class="text-xs font-bold text-emerald-600 dark:text-emerald-500 uppercase tracking-wider ml-1">Series
-								/
-								Collection <span
-									class="text-zinc-400 dark:text-zinc-600 font-normal normal-case">(Optional)</span></label>
-							<div class="flex gap-4">
-								<input type="text" id="series" list="seriesOptions"
-									class="flex-1 bg-white dark:bg-zinc-900 border border-emerald-500/30 dark:border-emerald-900/40 rounded-xl px-4 py-3 text-zinc-700 dark:text-zinc-200 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all placeholder-zinc-400"
-									placeholder="Series Name">
-								<input type="text" id="seriesNumber"
-									class="w-24 bg-white dark:bg-zinc-900 border border-emerald-500/30 dark:border-emerald-900/40 rounded-xl px-2 py-3 text-zinc-700 dark:text-zinc-200 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 text-center transition-all placeholder-zinc-400"
-									placeholder="# Vol">
-							</div>
-						</div>
-
-						<input type="hidden" id="itemId">
-					</div>
-				</div>
-
-				<!-- Step 4: Current Progress -->
-				<div id="step-4"
-					class="wizard-step absolute inset-0 p-8 flex flex-col items-center justify-center text-center space-y-8 hidden overflow-y-auto custom-scrollbar">
-					<div class="space-y-4 w-full max-w-md">
-						<label
-							class="text-xs font-bold text-amber-600 dark:text-amber-500 uppercase tracking-wider ml-1">Current
-							Progress <span
-								class="text-zinc-400 dark:text-zinc-600 font-normal normal-case">(Optional)</span></label>
-						<input type="text" id="progress"
-							class="w-full bg-white dark:bg-zinc-900 border border-amber-500/30 dark:border-amber-900/40 rounded-xl px-4 py-3 text-zinc-700 dark:text-zinc-200 outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all font-mono text-center text-lg placeholder-zinc-400"
-							placeholder="e.g. Chapter 10, S01E05...">
-						<p class="text-xs text-zinc-500" id="progressHelp">Track where you are currently at.</p>
-					</div>
-				</div>
-
-				<!-- Step 5: Cover Image -->
-				<div id="step-5"
-					class="wizard-step absolute inset-0 p-8 flex flex-col items-center justify-center text-center space-y-6 hidden">
-					<div class="w-full max-w-md space-y-4">
-						<div id="imagePreview"
-							class="w-48 h-72 bg-white dark:bg-zinc-900 border-2 border-dashed border-zinc-300 dark:border-zinc-700 rounded-xl mx-auto flex items-center justify-center overflow-hidden relative group cursor-pointer transition-all hover:border-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800/50"
-							onclick="document.getElementById('coverImage').click()">
-							<input type="file" id="coverImage" accept="image/*" class="hidden"
-								onchange="previewImage(this)">
-							<div id="previewPlaceholder"
-								class="flex flex-col items-center gap-3 text-zinc-400 dark:text-zinc-500 group-hover:text-zinc-600 dark:group-hover:text-zinc-300">
-								<i data-lucide="image-plus" class="w-10 h-10"></i>
-								<span class="text-xs font-bold uppercase tracking-wider">Upload</span>
-							</div>
-							<img id="previewImg" src="" class="absolute inset-0 w-full h-full object-cover hidden">
-						</div>
-						<div id="currentCoverName" class="text-xs text-zinc-500 font-mono"></div>
-						<p class="text-xs text-zinc-500 dark:text-zinc-600">(Optional) Click to select an image</p>
-					</div>
-				</div>
-
-				<!-- Step 6: External Links -->
-				<div id="step-6"
-					class="wizard-step absolute inset-0 p-8 flex flex-col hidden overflow-y-auto custom-scrollbar">
-					<h3
-						class="edit-only-header hidden text-lg font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-4">
-						External Links</h3>
-					<div class="space-y-6">
-						<div id="dynamicLinkButtons" class="flex flex-wrap gap-3 mb-6"></div>
-
-						<div
-							class="flex justify-between items-center ml-1 border-b border-zinc-200 dark:border-zinc-800 pb-2">
-							<label class="text-xs font-bold text-zinc-500 uppercase tracking-wider">Added
-								Links <span
-									class="text-zinc-400 dark:text-zinc-600 font-normal normal-case">(Optional)</span></label>
-							<button type="button" onclick="addLink()"
-								class="text-xs text-indigo-500 dark:text-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-300 flex items-center gap-1 font-bold"><i
-									data-lucide="plus" class="w-3 h-3"></i> Custom Link</button>
-						</div>
-						<div id="linksContainer" class="space-y-3"></div>
-						<datalist id="linkNameOptions">
-							<option value="MyAnimeList"></option>
-							<option value="CSFD"></option>
-							<option value="IMDB"></option>
-							<option value="Wikipedia"></option>
-							<option value="Fandom"></option>
-							<option value="Goodreads"></option>
-						</datalist>
-					</div>
-				</div>
-
-				<!-- Step 7: Description -->
-				<div id="step-7" class="wizard-step absolute inset-0 p-8 flex flex-col hidden">
-					<h3
-						class="edit-only-header hidden text-lg font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-4">
-						Description</h3>
-					<textarea id="description"
-						class="flex-1 w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-5 py-4 text-zinc-700 dark:text-zinc-300 outline-none focus:border-zinc-400 dark:focus:border-zinc-600 focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-600 resize-none custom-scrollbar transition-all leading-relaxed text-lg placeholder:text-zinc-400"
-						placeholder="What is this about? (Optional)"></textarea>
-				</div>
-
-				<!-- Step 8: Notes -->
-				<div id="step-8" class="wizard-step absolute inset-0 p-8 flex flex-col hidden">
-					<h3
-						class="edit-only-header hidden text-lg font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-4">
-						Notes</h3>
-					<textarea id="notes"
-						class="flex-1 w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-5 py-4 text-zinc-700 dark:text-zinc-300 outline-none focus:border-zinc-400 dark:focus:border-zinc-600 focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-600 resize-none custom-scrollbar transition-all leading-relaxed font-mono text-sm placeholder:text-zinc-400"
-						placeholder="Private notes, reminders, or details... (Optional)"></textarea>
-				</div>
-
-				<!-- Step 9: Review & Rating -->
-				<div id="step-9"
-					class="wizard-step absolute inset-0 p-8 flex flex-col hidden overflow-y-auto custom-scrollbar">
-					<div id="reviewWrapper" class="space-y-4 mb-8">
-						<label
-							class="text-xs font-bold text-indigo-500 dark:text-indigo-400 uppercase tracking-wider ml-1">Personal
-							Review <span
-								class="text-zinc-400 dark:text-zinc-600 font-normal normal-case">(Optional)</span></label>
-						<textarea id="review" rows="6"
-							class="w-full bg-white dark:bg-zinc-900 border border-indigo-200 dark:border-indigo-900/40 rounded-xl px-5 py-4 text-zinc-700 dark:text-zinc-300 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 resize-none custom-scrollbar transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-700"
-							placeholder="Write your comprehensive review..."></textarea>
-					</div>
-
-					<div id="ratingSection">
-						<div
-							class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-8 relative overflow-hidden group">
-							<div
-								class="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-							</div>
-							<div class="flex flex-col items-center justify-center gap-4 relative z-10 py-4">
-								<input type="range" id="rating" min="1" max="4" step="1" value="2"
-									class="w-full max-w-xs h-2 bg-zinc-200 dark:bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-indigo-500 dark:accent-white hover:accent-indigo-400 transition-all">
-
-								<div class="text-center">
-									<div id="ratingLabel"
-										class="text-4xl font-black uppercase text-amber-500 dark:text-amber-400 tracking-tighter drop-shadow-2xl transition-all transform hover:scale-105">
-										Ok</div>
+							<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+								<div class="space-y-2">
+									<label class="text-xs font-bold text-zinc-500 uppercase tracking-wider ml-1">Authors
+										/ Studios <span
+											class="text-zinc-400 dark:text-zinc-600 font-normal normal-case">(Optional)</span></label>
+									<div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 flex flex-wrap gap-2 min-h-[54px] focus-within:border-zinc-400 dark:focus-within:border-zinc-600 focus-within:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-600 transition-all"
+										id="authorTagsContainer">
+										<input id="authorInput" list="authorOptions"
+											class="bg-transparent text-sm outline-none flex-1 min-w-[80px] text-zinc-700 dark:text-zinc-200 p-1 placeholder-zinc-400"
+											placeholder="Type & Enter...">
+									</div>
 								</div>
-
+								<div class="space-y-2">
+									<label
+										class="text-xs font-bold text-zinc-500 uppercase tracking-wider ml-1">Universe
+										<span
+											class="text-zinc-400 dark:text-zinc-600 font-normal normal-case">(Optional)</span></label>
+									<input type="text" id="universe" list="universeOptions"
+										class="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-zinc-700 dark:text-zinc-200 outline-none focus:border-zinc-400 dark:focus:border-zinc-600 focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-600 transition-all placeholder-zinc-400"
+										placeholder="e.g. MCU, Cosmere">
+								</div>
 							</div>
+
+							<div id="seriesWrapper" class="hidden space-y-2">
+								<label
+									class="text-xs font-bold text-emerald-600 dark:text-emerald-500 uppercase tracking-wider ml-1">Series
+									/
+									Collection <span
+										class="text-zinc-400 dark:text-zinc-600 font-normal normal-case">(Optional)</span></label>
+								<div class="flex gap-4">
+									<input type="text" id="series" list="seriesOptions"
+										class="flex-1 bg-white dark:bg-zinc-900 border border-emerald-500/30 dark:border-emerald-900/40 rounded-xl px-4 py-3 text-zinc-700 dark:text-zinc-200 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all placeholder-zinc-400"
+										placeholder="Series Name">
+									<input type="text" id="seriesNumber"
+										class="w-24 bg-white dark:bg-zinc-900 border border-emerald-500/30 dark:border-emerald-900/40 rounded-xl px-2 py-3 text-zinc-700 dark:text-zinc-200 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 text-center transition-all placeholder-zinc-400"
+										placeholder="# Vol">
+								</div>
+							</div>
+
+							<input type="hidden" id="itemId">
 						</div>
 					</div>
-				</div>
 
-				<!-- Step 10: Seasons/Children -->
-				<div id="step-10" class="wizard-step absolute inset-0 p-8 flex flex-col hidden">
-					<div class="flex justify-between items-center mb-6">
+					<!-- Step 4: Current Progress -->
+					<div id="step-4"
+						class="wizard-step absolute inset-0 p-8 flex flex-col items-center justify-center text-center space-y-8 hidden overflow-y-auto custom-scrollbar">
+						<div class="space-y-4 w-full max-w-md">
+							<label
+								class="text-xs font-bold text-amber-600 dark:text-amber-500 uppercase tracking-wider ml-1">Current
+								Progress <span
+									class="text-zinc-400 dark:text-zinc-600 font-normal normal-case">(Optional)</span></label>
+							<input type="text" id="progress"
+								class="w-full bg-white dark:bg-zinc-900 border border-amber-500/30 dark:border-amber-900/40 rounded-xl px-4 py-3 text-zinc-700 dark:text-zinc-200 outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all font-mono text-center text-lg placeholder-zinc-400"
+								placeholder="e.g. Chapter 10, S01E05...">
+							<p class="text-xs text-zinc-500" id="progressHelp">Track where you are currently at.</p>
+						</div>
+					</div>
+
+					<!-- Step 5: Cover Image -->
+					<div id="step-5"
+						class="wizard-step absolute inset-0 p-8 flex flex-col items-center justify-center text-center space-y-6 hidden">
+						<div class="w-full max-w-md space-y-4">
+							<div id="imagePreview"
+								class="w-48 h-72 bg-white dark:bg-zinc-900 border-2 border-dashed border-zinc-300 dark:border-zinc-700 rounded-xl mx-auto flex items-center justify-center overflow-hidden relative group cursor-pointer transition-all hover:border-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800/50"
+								onclick="document.getElementById('coverImage').click()">
+								<input type="file" id="coverImage" accept="image/*" class="hidden"
+									onchange="previewImage(this)">
+								<div id="previewPlaceholder"
+									class="flex flex-col items-center gap-3 text-zinc-400 dark:text-zinc-500 group-hover:text-zinc-600 dark:group-hover:text-zinc-300">
+									<i data-lucide="image-plus" class="w-10 h-10"></i>
+									<span class="text-xs font-bold uppercase tracking-wider">Upload</span>
+								</div>
+								<img id="previewImg" src="" class="absolute inset-0 w-full h-full object-cover hidden">
+							</div>
+							<div id="currentCoverName" class="text-xs text-zinc-500 font-mono"></div>
+							<p class="text-xs text-zinc-500 dark:text-zinc-600">(Optional) Click to select an image</p>
+						</div>
+					</div>
+
+					<!-- Step 6: External Links -->
+					<div id="step-6"
+						class="wizard-step absolute inset-0 p-8 flex flex-col hidden overflow-y-auto custom-scrollbar">
 						<h3
-							class="text-2xl font-heading font-bold text-zinc-900 dark:text-white flex items-center gap-3">
-							<i data-lucide="layers" class="w-6 h-6 text-zinc-400 dark:text-zinc-600"></i> <span
-								id="childLabel">Seasons</span>
-						</h3>
-						<button type="button" onclick="addChild()"
-							class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all shadow-lg flex items-center gap-2"><i
-								data-lucide="plus" class="w-4 h-4"></i> Add New</button>
-					</div>
+							class="edit-only-header hidden text-lg font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-4">
+							External Links</h3>
+						<div class="space-y-6">
+							<div id="dynamicLinkButtons" class="flex flex-wrap gap-3 mb-6"></div>
 
-					<div id="childrenWrapper"
-						class="flex-1 bg-zinc-100 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 overflow-hidden flex flex-col">
-						<div id="childrenContainer" class="flex-1 overflow-y-auto custom-scrollbar space-y-3 pr-2">
+							<div
+								class="flex justify-between items-center ml-1 border-b border-zinc-200 dark:border-zinc-800 pb-2">
+								<label class="text-xs font-bold text-zinc-500 uppercase tracking-wider">Added
+									Links <span
+										class="text-zinc-400 dark:text-zinc-600 font-normal normal-case">(Optional)</span></label>
+								<button type="button" onclick="addLink()"
+									class="text-xs text-indigo-500 dark:text-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-300 flex items-center gap-1 font-bold"><i
+										data-lucide="plus" class="w-3 h-3"></i> Custom Link</button>
+							</div>
+							<div id="linksContainer" class="space-y-3"></div>
+							<datalist id="linkNameOptions">
+								<option value="MyAnimeList"></option>
+								<option value="CSFD"></option>
+								<option value="IMDB"></option>
+								<option value="Wikipedia"></option>
+								<option value="Fandom"></option>
+								<option value="Goodreads"></option>
+							</datalist>
 						</div>
 					</div>
-				</div>
 
-				<!-- Step 11: Privacy Setting -->
-				<div id="step-11"
-					class="wizard-step absolute inset-0 p-8 flex flex-col items-center justify-center text-center space-y-8 hidden">
-					<div class="space-y-6 w-full max-w-sm">
-						<label for="isHidden"
-							class="p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex flex-col items-center gap-4 cursor-pointer hover:border-red-500/50 hover:bg-red-500/5 transition-all group shadow-xl">
-							<div class="flex items-center gap-4 pointer-events-none">
-								<input type="checkbox" id="isHidden"
-									class="h-6 w-6 rounded border-zinc-300 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 text-red-500 focus:ring-red-500 transition-all pointer-events-auto">
-								<span
-									class="text-xl font-bold text-zinc-700 dark:text-zinc-300 group-hover:text-red-500 dark:group-hover:text-red-400 select-none">Mark
-									as Hidden</span>
-							</div>
-							<p class="text-xs text-zinc-500 px-4 pointer-events-none">Hidden items are excluded from
-								the public grid view by default.</p>
-						</label>
+					<!-- Step 7: Description -->
+					<div id="step-7" class="wizard-step absolute inset-0 p-8 flex flex-col hidden">
+						<h3
+							class="edit-only-header hidden text-lg font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-4">
+							Description</h3>
+						<textarea id="description" rows="12"
+							class="flex-1 w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-5 py-4 text-zinc-700 dark:text-zinc-300 outline-none focus:border-zinc-400 dark:focus:border-zinc-600 focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-600 resize-none custom-scrollbar transition-all leading-relaxed text-lg placeholder:text-zinc-400"
+							placeholder="What is this about? (Optional)"></textarea>
 					</div>
-				</div>
 
-				<!-- Datalists for Autocomplete -->
-				<datalist id="authorOptions"></datalist>
-				<datalist id="universeOptions"></datalist>
-				<datalist id="seriesOptions"></datalist>
+					<!-- Step 8: Notes -->
+					<div id="step-8" class="wizard-step absolute inset-0 p-8 flex flex-col hidden">
+						<h3
+							class="edit-only-header hidden text-lg font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-4">
+							Notes</h3>
+						<textarea id="notes" rows="12"
+							class="flex-1 w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-5 py-4 text-zinc-700 dark:text-zinc-300 outline-none focus:border-zinc-400 dark:focus:border-zinc-600 focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-600 resize-none custom-scrollbar transition-all leading-relaxed font-mono text-sm placeholder:text-zinc-400"
+							placeholder="Private notes, reminders, or details... (Optional)"></textarea>
+					</div>
 
-			</form>
+					<!-- Step 9: Review & Rating -->
+					<div id="step-9"
+						class="wizard-step absolute inset-0 p-8 flex flex-col hidden overflow-y-auto custom-scrollbar">
+						<div id="reviewWrapper" class="space-y-4 mb-8">
+							<label
+								class="text-xs font-bold text-indigo-500 dark:text-indigo-400 uppercase tracking-wider ml-1">Personal
+								Review <span
+									class="text-zinc-400 dark:text-zinc-600 font-normal normal-case">(Optional)</span></label>
+							<textarea id="review" rows="6"
+								class="w-full bg-white dark:bg-zinc-900 border border-indigo-200 dark:border-indigo-900/40 rounded-xl px-5 py-4 text-zinc-700 dark:text-zinc-300 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 resize-none custom-scrollbar transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-700"
+								placeholder="Write your comprehensive review..."></textarea>
+						</div>
+
+						<div id="ratingSection">
+							<div
+								class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-8 relative overflow-hidden group">
+								<div
+									class="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+								</div>
+								<div class="flex flex-col items-center justify-center gap-4 relative z-10 py-4">
+									<input type="range" id="rating" min="1" max="4" step="1" value="2"
+										class="w-full max-w-xs h-2 bg-zinc-200 dark:bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-indigo-500 dark:accent-white hover:accent-indigo-400 transition-all">
+
+									<div class="text-center">
+										<div id="ratingLabel"
+											class="text-4xl font-black uppercase text-amber-500 dark:text-amber-400 tracking-tighter drop-shadow-2xl transition-all transform hover:scale-105">
+											Ok</div>
+									</div>
+
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<!-- Step 10: Seasons/Children -->
+					<div id="step-10" class="wizard-step absolute inset-0 p-8 flex flex-col hidden">
+						<div class="flex justify-between items-center mb-6">
+							<h3
+								class="text-2xl font-heading font-bold text-zinc-900 dark:text-white flex items-center gap-3">
+								<i data-lucide="layers" class="w-6 h-6 text-zinc-400 dark:text-zinc-600"></i> <span
+									id="childLabel">Seasons</span>
+							</h3>
+							<button type="button" onclick="addChild()"
+								class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all shadow-lg flex items-center gap-2"><i
+									data-lucide="plus" class="w-4 h-4"></i> Add New</button>
+						</div>
+
+						<div id="childrenWrapper"
+							class="flex-1 bg-zinc-100 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 overflow-hidden flex flex-col">
+							<div id="childrenContainer" class="flex-1 overflow-y-auto custom-scrollbar space-y-3 pr-2">
+							</div>
+						</div>
+					</div>
+
+					<!-- Step 11: Privacy Setting -->
+					<div id="step-11"
+						class="wizard-step absolute inset-0 p-8 flex flex-col items-center justify-center text-center space-y-8 hidden">
+						<div class="space-y-6 w-full max-w-sm">
+							<label for="isHidden"
+								class="p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex flex-col items-center gap-4 cursor-pointer hover:border-red-500/50 hover:bg-red-500/5 transition-all group shadow-xl">
+								<div class="flex items-center gap-4 pointer-events-none">
+									<input type="checkbox" id="isHidden"
+										class="h-6 w-6 rounded border-zinc-300 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 text-red-500 focus:ring-red-500 transition-all pointer-events-auto">
+									<span
+										class="text-xl font-bold text-zinc-700 dark:text-zinc-300 group-hover:text-red-500 dark:group-hover:text-red-400 select-none">Mark
+										as Hidden</span>
+								</div>
+								<p class="text-xs text-zinc-500 px-4 pointer-events-none">Hidden items are excluded from
+									the public grid view by default.</p>
+							</label>
+						</div>
+					</div>
+
+					<!-- Datalists for Autocomplete -->
+					<datalist id="authorOptions"></datalist>
+					<datalist id="universeOptions"></datalist>
+					<datalist id="seriesOptions"></datalist>
+
+				</form>
+			</div>
 		</div>
 
 		<!-- Wizard Footer Navigation -->

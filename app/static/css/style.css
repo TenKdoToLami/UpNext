@@ -297,3 +297,101 @@ html.dark .media-badge {
 	color: white;
 	box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
 }
+
+/* Edit Modal Layout */
+.full-screen-modal {
+	/* Original max-w-2xl is ~42rem. Sidebar is w-64 (16rem). Total ~58rem. 
+       max-w-5xl is 64rem. Let's match roughly 2xl + sidebar */
+	width: 60rem !important;
+	max-width: 95vw !important;
+	height: 90vh !important;
+	/* Keep height expanded as requested previously */
+	max-height: 90vh !important;
+}
+
+/* Ensure sidebar stays fixed width and content takes remaining */
+#editSidebar {
+	width: 16rem;
+	/* w-64 */
+	flex-shrink: 0;
+}
+
+/* Sidebar Navigation */
+.sidebar-link {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	padding: 0.75rem 1rem;
+	border-radius: 0.75rem;
+	font-size: 0.875rem;
+	font-weight: 600;
+	color: #71717a;
+	/* zinc-500 */
+	transition: all 0.2s;
+	width: 100%;
+	text-align: left;
+}
+
+html.dark .sidebar-link {
+	color: #a1a1aa;
+	/* zinc-400 */
+}
+
+.sidebar-link:hover {
+	background-color: #f4f4f5;
+	/* zinc-100 */
+	color: #18181b;
+	/* zinc-900 */
+}
+
+html.dark .sidebar-link:hover {
+	background-color: #18181b;
+	/* zinc-900 */
+	color: #fff;
+}
+
+.sidebar-link.active {
+	background-color: #18181b;
+	/* zinc-900 */
+	color: #fff;
+}
+
+html.dark .sidebar-link.active {
+	background-color: #fff;
+	color: #000;
+}
+
+/* Scroll Mode Overrides (Disable Wizard Absolute Positioning) */
+.scroll-mode .wizard-step {
+	position: relative !important;
+	inset: auto !important;
+	display: flex !important;
+	/* Changed from block to flex to support items-center */
+	flex-direction: column !important;
+	height: auto !important;
+	opacity: 1 !important;
+	transform: none !important;
+	padding: 0 0 3rem 0 !important;
+	border-bottom: 1px solid #e4e4e7;
+	/* zinc-200 */
+	margin-bottom: 2rem;
+}
+
+/* Ensure hidden steps stay hidden in scroll mode */
+.scroll-mode .wizard-step.hidden {
+	display: none !important;
+}
+
+html.dark .scroll-mode .wizard-step {
+	border-bottom-color: #27272a;
+	/* zinc-800 */
+}
+
+.scroll-mode .wizard-step:last-child {
+	border-bottom: none;
+	margin-bottom: 0;
+}
+
+.scroll-mode .edit-only-header {
+	display: block !important;
+}
