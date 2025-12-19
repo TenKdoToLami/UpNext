@@ -107,29 +107,15 @@ def collect_cover_images(items, include_covers):
 def add_images_to_zip(zf, item_ids):
     """Add cover images to a ZIP file from the database."""
     from app.models import MediaItem
+    from app.database import db
     import mimetypes
 
     for item_id in item_ids:
-        item = MediaItem.query.get(item_id)
+        item = db.session.get(MediaItem, item_id)
         if item and item.cover_image:
-            # Determine extension
             ext = ".jpg"
             if item.cover_mime:
                  ext = mimetypes.guess_extension(item.cover_mime) or ".jpg"
-            
-            # The coverUrl in the export might still point to the API URL 'uuid?v=...'
-            # We can save it in the ZIP as 'images/{uuid}{ext}'
-            # But the HTML export renders <img src="{{ item.coverUrl }}">
-            # If we change how we bundle, we might need to adjust the HTML or just let it link to the server?
-            # Standard export usually packages resources.
-            # If I stick to 'images/{filename}' structure in zip, HTML needs to match.
-            # But item.coverUrl is now 'uuid?v=ts'.
-            # I should probably save it as '{uuid}{ext}' and maybe the HTML needs to know?
-            # Wait, the current export logic dumps the 'items' dicts.
-            # The 'coverUrl' field in those dicts is what's used.
-            # If I export a static HTML, it needs valid relative paths.
-            # If coverUrl is 'uuid?v=ts', that's not a file path.
-            # So I should probably update the exported item's coverUrl to be the filename in the zip.
             
             filename = f"{item_id}{ext}"
             zf.writestr(f"images/{filename}", item.cover_image)
@@ -174,15 +160,14 @@ def export_json(items, fields, images):
 def _process_items_for_export(items, images):
     """Refreshes item cover URLs for zip export."""
     from app.models import MediaItem
+    from app.database import db
     import mimetypes
     
     processed = []
-    # Optimization: If we have many items, this Loop+Query is slow.
-    # But for a personal library (100-1000 items) it's acceptable.
     for item in items:
         new_item = item.copy()
         if new_item.get('id') in images:
-             media_item = MediaItem.query.get(new_item['id'])
+             media_item = db.session.get(MediaItem, new_item['id'])
              ext = ".jpg"
              if media_item and media_item.cover_mime:
                  ext = mimetypes.guess_extension(media_item.cover_mime) or ".jpg"
@@ -309,8 +294,6 @@ def export_html(items, fields, format_param, images):
     memory_file = io.BytesIO()
     with zipfile.ZipFile(memory_file, 'w') as zf:
         zf.writestr('upnext_library.html', html_content)
-        # JSON data removed based on user feedback
-        # zf.writestr('upnext_data.json', json_data)
         add_images_to_zip(zf, images)
     
     return create_zip_response(generate_zip_filename('upnext_export'), memory_file)

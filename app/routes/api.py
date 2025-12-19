@@ -106,8 +106,3 @@ def _validate_item(data: Dict[str, Any]) -> None:
         raise ValueError(f"Invalid media type: {data.get('type')}")
     if data.get("status") not in STATUS_TYPES:
         raise ValueError(f"Invalid status: {data.get('status')}")
-
-
-
-
-

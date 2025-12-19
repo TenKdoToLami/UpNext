@@ -5,7 +5,7 @@
  */
 
 import { state } from './state.js';
-import { loadItems } from './api_service.js';
+import { loadItems, deleteItem, saveItem } from './api_service.js';
 import { renderFilters, renderGrid } from './render_utils.js';
 import { safeCreateIcons, toggleExpand } from './dom_utils.js';
 import { RATING_LABELS, TEXT_COLORS } from './constants.js';
@@ -17,8 +17,8 @@ import {
 } from './main_helpers.js';
 import { updateWizardUI } from './wizard_logic.js';
 import {
-    openExportModal, closeExportModal, toggleExportField, triggerExport,
-    renderExportFields, selectExportCategory, backToExportCategories,
+    openExportModal, closeExportModal, triggerExport,
+    selectExportCategory, backToExportCategories,
     updateExportOptions, toggleVisualField,
     toggleExportTypeFilter, toggleExportStatusFilter, toggleExportRatingFilter
 } from './export_utils.js';
@@ -47,6 +47,10 @@ window.toggleTheme = () => {
         localStorage.setItem('theme', 'dark');
     }
     updateThemeIcon();
+    // Re-render stats if modal is open to update chart colors
+    if (!document.getElementById('statsModal').classList.contains('hidden')) {
+        if (window.openStatsModal) window.openStatsModal();
+    }
 };
 
 function updateThemeIcon() {
@@ -76,9 +80,7 @@ function updateThemeIcon() {
 // Export functions
 window.openExportModal = openExportModal;
 window.closeExportModal = closeExportModal;
-window.toggleExportField = toggleExportField;
 window.triggerExport = triggerExport;
-window.renderExportFields = renderExportFields;
 window.selectExportCategory = selectExportCategory;
 window.backToExportCategories = backToExportCategories;
 window.updateExportOptions = updateExportOptions;
@@ -436,7 +438,7 @@ window.saveEntry = async () => {
         const file = document.getElementById('coverImage').files[0];
         if (file) formData.append('image', file);
 
-        await fetch('/api/items', { method: 'POST', body: formData });
+        await saveItem(formData);
         closeModal();
         loadItems();
     } catch (e) {
@@ -493,10 +495,11 @@ window.closeDetail = () => {
 window.editFromDetail = (id) => { window.closeDetail(); window.openModal(id); };
 
 window.deleteFromDetail = async (id) => {
-    if (!confirm('Delete this entry?')) return;
-    await fetch(`/api/items/${id}`, { method: 'DELETE' });
-    window.closeDetail();
-    loadItems();
+    const deleted = await deleteItem(id);
+    if (deleted) {
+        window.closeDetail();
+        loadItems();
+    }
 };
 
 // =============================================================================

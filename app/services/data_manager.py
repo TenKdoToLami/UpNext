@@ -36,7 +36,7 @@ class DataManager:
             List[Dict[str, Any]]: A list of all items serialized as dictionaries.
         """
         try:
-            items = MediaItem.query.all()
+            items = db.session.execute(db.select(MediaItem)).scalars().all()
             return [item.to_dict() for item in items]
         except Exception as e:
             logger.error(f"Error retrieving items: {e}")

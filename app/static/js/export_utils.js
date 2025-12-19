@@ -42,6 +42,7 @@ export function openExportModal() {
 	try {
 		if (typeof window.closeModal === 'function') window.closeModal();
 		if (typeof window.closeInfoModal === 'function') window.closeInfoModal();
+		if (typeof window.closeStatsModal === 'function') window.closeStatsModal();
 	} catch (e) { /* Ignore errors from closing other modals */ }
 
 	const modal = document.getElementById('exportModal');
@@ -615,16 +616,3 @@ function refreshIcons() {
 	}
 }
 
-// ============================================================================
-// LEGACY COMPATIBILITY
-// ============================================================================
-
-/** @deprecated Use updateExportOptions instead */
-export function renderExportFields() {
-	updateExportOptions();
-}
-
-/** @deprecated Use toggleVisualField instead */
-export function toggleExportField(id) {
-	toggleVisualField(id);
-}

@@ -8,8 +8,6 @@ logger = logging.getLogger("Cleaner")
 
 def clean_project():
     """Cleans temporary files and directories from the project."""
-    
-    
     # Root dir is one level up from this script
     root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     

@@ -10,7 +10,6 @@ logging.basicConfig(level=logging.INFO, format='%(message)s')
 logger = logging.getLogger("Builder")
 
 
-
 def build_project():
     """Builds the project executable and documentation."""
     logger.info("🚀 Starting Project Build...")

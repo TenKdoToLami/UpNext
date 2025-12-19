@@ -1,0 +1,211 @@
+<!-- Stats Modal -->
+<div id="statsModal"
+	class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 opacity-0 hidden transition-opacity duration-300"
+	role="dialog" aria-modal="true">
+
+	<!-- Backdrop -->
+	<div class="absolute inset-0 bg-white/60 dark:bg-black/80 backdrop-blur-sm transition-opacity"
+		onclick="window.closeStatsModal()"></div>
+
+	<!-- Modal Content -->
+	<div id="statsModalContent"
+		class="relative w-full max-w-5xl bg-white dark:bg-[#121214] rounded-3xl shadow-2xl overflow-hidden transform scale-95 transition-all duration-300 border border-zinc-200 dark:border-zinc-800 flex flex-col h-[90vh]">
+
+		<div
+			class="px-8 pt-6 pb-0 flex items-center justify-between shrink-0 bg-white dark:bg-[#121214] z-10 sticky top-0">
+			<div>
+				<h2 class="text-3xl font-black font-heading tracking-tight text-zinc-800 dark:text-white">
+					Library Statistics
+				</h2>
+				<p class="text-sm text-zinc-500 dark:text-zinc-400 mt-1 font-medium">
+					Insights into your media consumption
+				</p>
+			</div>
+			<div class="flex items-center gap-2">
+				<button onclick="window.closeStatsModal()"
+					class="w-10 h-10 rounded-full flex items-center justify-center text-zinc-400 hover:text-red-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all">
+					<i data-lucide="x" class="w-5 h-5"></i>
+				</button>
+			</div>
+		</div>
+
+		<!-- Body -->
+		<div class="overflow-y-auto custom-scrollbar flex-1 bg-zinc-50/50 dark:bg-zinc-950/30">
+
+			<!-- Global Filters -->
+			<div id="globalFilters" class="flex flex-wrap gap-2 justify-center mb-8"></div>
+
+			<div class="px-8 pb-8 pt-4">
+				<!-- Key Metrics Grid -->
+				<!-- Populated via JS -->
+				<div id="keyMetrics" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"></div>
+
+				<!-- Charts Row -->
+				<div class="grid grid-cols-1 gap-8 items-start">
+
+					<!-- Type Distribution -->
+					<div
+						class="bg-white dark:bg-[#18181b] p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 flex flex-col items-center">
+						<div class="w-full flex items-center justify-between mb-4 cursor-pointer"
+							onclick="window.toggleChart('typeChartContainer')">
+							<h3 class="text-lg font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-2">
+								<i data-lucide="pie-chart" class="w-5 h-5 text-indigo-500"></i> Distribution
+							</h3>
+							<div class="flex items-center gap-3">
+								<div class="flex bg-zinc-100 dark:bg-zinc-800 rounded-lg p-1"
+									onclick="event.stopPropagation()">
+									<button onclick="window.setChartType('typeChart', 'doughnut')"
+										class="p-1.5 rounded-md hover:bg-white dark:hover:bg-zinc-700 text-zinc-500 dark:text-zinc-400 transition-all"
+										title="Doughnut">
+										<i data-lucide="circle-dot" class="w-4 h-4"></i>
+									</button>
+									<button onclick="window.setChartType('typeChart', 'pie')"
+										class="p-1.5 rounded-md hover:bg-white dark:hover:bg-zinc-700 text-zinc-500 dark:text-zinc-400 transition-all"
+										title="Pie">
+										<i data-lucide="pie-chart" class="w-4 h-4"></i>
+									</button>
+									<button onclick="window.setChartType('typeChart', 'polarArea')"
+										class="p-1.5 rounded-md hover:bg-white dark:hover:bg-zinc-700 text-zinc-500 dark:text-zinc-400 transition-all"
+										title="Polar Area">
+										<i data-lucide="sun" class="w-4 h-4"></i>
+									</button>
+									<button onclick="window.setChartType('typeChart', 'bar')"
+										class="p-1.5 rounded-md hover:bg-white dark:hover:bg-zinc-700 text-zinc-500 dark:text-zinc-400 transition-all"
+										title="Bar">
+										<i data-lucide="bar-chart-2" class="w-4 h-4"></i>
+									</button>
+								</div>
+								<i id="chevron-typeChartContainer" data-lucide="chevron-up"
+									class="w-5 h-5 text-zinc-400 transition-transform rotate-180"></i>
+							</div>
+						</div>
+
+						<div id="typeChartContainer"
+							class="w-full h-[40vh] relative transition-all duration-300 hidden">
+							<canvas id="typeChart"></canvas>
+						</div>
+					</div>
+
+					<!-- Status Breakdown -->
+					<div
+						class="bg-white dark:bg-[#18181b] p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 flex flex-col items-center">
+						<div class="w-full flex items-center justify-between mb-4 cursor-pointer"
+							onclick="window.toggleChart('statusChartContainer')">
+							<h3 class="text-lg font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-2">
+								<i data-lucide="activity" class="w-5 h-5 text-emerald-500"></i> Status
+							</h3>
+							<div class="flex items-center gap-3">
+								<div class="flex bg-zinc-100 dark:bg-zinc-800 rounded-lg p-1"
+									onclick="event.stopPropagation()">
+									<button onclick="window.setChartType('statusChart', 'doughnut')"
+										class="p-1.5 rounded-md hover:bg-white dark:hover:bg-zinc-700 text-zinc-500 dark:text-zinc-400 transition-all"
+										title="Doughnut">
+										<i data-lucide="circle-dot" class="w-4 h-4"></i>
+									</button>
+									<button onclick="window.setChartType('statusChart', 'pie')"
+										class="p-1.5 rounded-md hover:bg-white dark:hover:bg-zinc-700 text-zinc-500 dark:text-zinc-400 transition-all"
+										title="Pie">
+										<i data-lucide="pie-chart" class="w-4 h-4"></i>
+									</button>
+									<button onclick="window.setChartType('statusChart', 'polarArea')"
+										class="p-1.5 rounded-md hover:bg-white dark:hover:bg-zinc-700 text-zinc-500 dark:text-zinc-400 transition-all"
+										title="Polar Area">
+										<i data-lucide="sun" class="w-4 h-4"></i>
+									</button>
+									<button onclick="window.setChartType('statusChart', 'bar')"
+										class="p-1.5 rounded-md hover:bg-white dark:hover:bg-zinc-700 text-zinc-500 dark:text-zinc-400 transition-all"
+										title="Bar">
+										<i data-lucide="bar-chart-2" class="w-4 h-4"></i>
+									</button>
+								</div>
+								<i id="chevron-statusChartContainer" data-lucide="chevron-up"
+									class="w-5 h-5 text-zinc-400 transition-transform rotate-180"></i>
+							</div>
+						</div>
+						<div id="statusChartContainer" class="w-full transition-all duration-300 hidden">
+							<div class="h-[40vh] relative mb-4">
+								<canvas id="statusChart"></canvas>
+							</div>
+							<div id="statusLegend" class="flex flex-wrap justify-center gap-3"></div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Rating Distribution Row -->
+				<div
+					class="bg-white dark:bg-[#18181b] p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 flex flex-col items-center mt-8">
+					<div class="w-full flex items-center justify-between mb-6 cursor-pointer"
+						onclick="window.toggleChart('ratingChartContainer')">
+						<h3 class="text-lg font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-2">
+							<i data-lucide="star" class="w-5 h-5 text-yellow-500"></i> Rating Distribution
+						</h3>
+						<div class="flex items-center gap-3">
+							<div class="flex bg-zinc-100 dark:bg-zinc-800 rounded-lg p-1"
+								onclick="event.stopPropagation()">
+								<button onclick="window.setChartType('ratingChart', 'doughnut')"
+									class="p-1.5 rounded-md hover:bg-white dark:hover:bg-zinc-700 text-zinc-500 dark:text-zinc-400 transition-all"
+									title="Doughnut">
+									<i data-lucide="circle-dot" class="w-4 h-4"></i>
+								</button>
+								<button onclick="window.setChartType('ratingChart', 'pie')"
+									class="p-1.5 rounded-md hover:bg-white dark:hover:bg-zinc-700 text-zinc-500 dark:text-zinc-400 transition-all"
+									title="Pie">
+									<i data-lucide="pie-chart" class="w-4 h-4"></i>
+								</button>
+								<button onclick="window.setChartType('ratingChart', 'polarArea')"
+									class="p-1.5 rounded-md hover:bg-white dark:hover:bg-zinc-700 text-zinc-500 dark:text-zinc-400 transition-all"
+									title="Polar Area">
+									<i data-lucide="sun" class="w-4 h-4"></i>
+								</button>
+								<button onclick="window.setChartType('ratingChart', 'bar')"
+									class="p-1.5 rounded-md hover:bg-white dark:hover:bg-zinc-700 text-zinc-500 dark:text-zinc-400 transition-all"
+									title="Bar">
+									<i data-lucide="bar-chart-2" class="w-4 h-4"></i>
+								</button>
+							</div>
+							<i id="chevron-ratingChartContainer" data-lucide="chevron-up"
+								class="w-5 h-5 text-zinc-400 transition-transform rotate-180"></i>
+						</div>
+					</div>
+					<div id="ratingChartContainer" class="w-full transition-all duration-300 hidden">
+						<div class="h-[40vh] relative mb-4">
+							<canvas id="ratingChart"></canvas>
+						</div>
+						<div id="ratingLegend" class="flex flex-wrap justify-center gap-3"></div>
+					</div>
+				</div>
+
+				<!-- Growth Chart Row -->
+				<div
+					class="bg-white dark:bg-[#18181b] p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 flex flex-col items-center mt-8">
+					<div class="w-full flex items-center justify-between mb-6 cursor-pointer"
+						onclick="window.toggleChart('growthChartContainer')">
+						<h3 class="text-lg font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-2">
+							<i data-lucide="trending-up" class="w-5 h-5 text-amber-500"></i> Library Growth
+						</h3>
+						<div class="flex items-center gap-3">
+							<div class="flex bg-zinc-100 dark:bg-zinc-800 rounded-lg p-1"
+								onclick="event.stopPropagation()">
+								<button onclick="window.setChartType('growthChart', 'line')"
+									class="p-1.5 rounded-md hover:bg-white dark:hover:bg-zinc-700 text-zinc-500 dark:text-zinc-400 transition-all"
+									title="Line">
+									<i data-lucide="activity" class="w-4 h-4"></i>
+								</button>
+								<button onclick="window.setChartType('growthChart', 'bar')"
+									class="p-1.5 rounded-md hover:bg-white dark:hover:bg-zinc-700 text-zinc-500 dark:text-zinc-400 transition-all"
+									title="Bar">
+									<i data-lucide="bar-chart-2" class="w-4 h-4"></i>
+								</button>
+							</div>
+							<i id="chevron-growthChartContainer" data-lucide="chevron-up"
+								class="w-5 h-5 text-zinc-400 transition-transform rotate-180"></i>
+						</div>
+					</div>
+					<div id="growthChartContainer" class="w-full h-[40vh] relative transition-all duration-300 hidden">
+						<canvas id="growthChart"></canvas>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>

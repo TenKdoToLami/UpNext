@@ -28,6 +28,7 @@ import {
 export function openModal(id = null) {
 	if (window.closeExportModal) window.closeExportModal();
 	if (window.closeInfoModal) window.closeInfoModal();
+	if (window.closeStatsModal) window.closeStatsModal();
 
 	try {
 		const modal = document.getElementById('modal');
