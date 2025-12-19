@@ -10,7 +10,8 @@ UpNext is a beautiful, local web application designed to help you track your med
 -   **Privacy & Review**: Mark items as "Hidden" and add personal reviews with a 4-point rating system.
 -   **Modern UI**: Responsive design with dark mode, grid/list views, and vibrant aesthetics.
 -   **Portable**: Runs locally with a portable SQLite database (`data/library.db`)—your data stays yours.
--   **Export**: Export your library to JSON or HTML cards/lists.
+-   **Export**: Export your library to JSON, CSV, XML, or beautiful HTML cards/lists.
+-   **Library Statistics**: Visualize your media habits with dynamic charts (Distribution, Status, Ratings, and Growth) powered by Chart.js.
 
 ## 🚀 Getting Started
 
@@ -56,6 +57,7 @@ python3 manage.py clean
 ### Project Structure
 -   **`manage.py`**: The main entry point for running and building the project.
 -   **`app/`**: Core application code (Flask blueprints, services, models, UI assets).
+    -   `static/js/stats.js`: Logic for data visualization and dashboard rendering.
 -   **`data/`**: User data storage (library.db, images).
 -   **`scripts/`**: Helper scripts for build/run/clean automation.
 

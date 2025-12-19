@@ -16,26 +16,28 @@
     -   **Cross-Platform**: Builds native executables for Linux and Windows.
 -   **Tooling**:
     -   `pytest`, `black`, `isort` for quality assurance.
+    -   `Chart.js` & `chartjs-plugin-datalabels` for data visualization.
 
 ## System Architecture
 
 ```mermaid
 graph TD
-    User[User] -->|Interact| Frontend[Frontend (HTML/JS)]
-    Frontend -->|HTTP Requests| Flask[Flask App]
+    User[User] -->|Interact| Frontend["Frontend (HTML/JS)"]
+    Frontend -->|HTTP Requests| Flask["Flask App"]
     
     subgraph Backend Structure
-        Flask -->|Register| Blueprints[Routes (app/routes/)]
-        Blueprints -->|Invoke| Services[Services (app/services/)]
-        Services -->|Configure| Config[Config (app/config.py)]
-        Services -->|Persist| DataManager[DB Manager (app/database.py)]
+        Flask -->|Register| Blueprints["Routes (app/routes/)"]
+        Blueprints -->|Invoke| Services["Services (app/services/)"]
+        Services -->|Configure| Config["Config (app/config.py)"]
+        Services -->|Persist| DataManager["DB Manager (app/database.py)"]
         DataManager -->|Read/Write| SQLite[(SQLite Database)]
     end
     
     subgraph Frontend Components
-        Frontend -->|Render| Templates[Jinja2 Templates]
-        Frontend -->|Style| CSS[Static CSS]
-        Frontend -->|Logic| JS[Static JS]
+        Frontend -->|Render| Templates["Jinja2 Templates"]
+        Frontend -->|Style| CSS["Static CSS"]
+        Frontend -->|Logic| JS["Static JS"]
+        Frontend -->|Visualize| ChartJS["Chart.js Engine"]
     end
 ```
 
@@ -51,7 +53,9 @@ The project follows a clean, modular structure:
     -   `database.py`: Database connection and session management.
     -   `utils/`: Helper functions (logging, data loading).
     -   `static/`: Assets (CSS, JS, images, icons).
+        -   `js/stats.js`: Calculation and rendering logic for the dashboard.
     -   `templates/`: HTML Jinja2 templates.
+        -   `components/stats_modal.html`: Modal structure for statistics.
 -   **`scripts/`**: Helper scripts used by `manage.py`.
     -   `run.py`: Server startup logic.
     -   `build.py`: PyInstaller build process.
