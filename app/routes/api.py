@@ -58,7 +58,7 @@ def save_item():
             # --- UPDATE ---
             existing_item = data_manager.get_item(item_id)
             if not existing_item:
-                 pass 
+                 return jsonify({'status': 'error', 'message': 'Item not found'}), 404 
 
             # Update timestamp
             form_data['updatedAt'] = datetime.now().isoformat()

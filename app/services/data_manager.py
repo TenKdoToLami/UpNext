@@ -55,7 +55,7 @@ class DataManager:
                 title=data['title'],
                 type=data['type'],
                 status=data.get('status', 'Planning'),
-                rating=data.get('rating', 0),
+                rating=data.get('rating') if data.get('rating') is not None else 0,
                 progress=data.get('progress', ''),
                 description=data.get('description', ''),
                 review=data.get('review', ''),
@@ -93,7 +93,7 @@ class DataManager:
             item.title = data.get('title', item.title)
             item.type = data.get('type', item.type)
             item.status = data.get('status', item.status)
-            item.rating = data.get('rating', item.rating)
+            item.rating = data.get('rating') if data.get('rating') is not None else (item.rating if 'rating' not in data else 0)
             item.progress = data.get('progress', item.progress)
             item.description = data.get('description', item.description)
             item.review = data.get('review', item.review)
@@ -105,7 +105,6 @@ class DataManager:
             item.is_hidden = data.get('isHidden', item.is_hidden)
             item.authors = data.get('authors', item.authors)
             item.alternate_titles = data.get('alternateTitles', item.alternate_titles)
-            item.external_links = data.get('externalLinks', item.external_links)
             item.external_links = data.get('externalLinks', item.external_links)
             item.children = data.get('children', item.children)
             

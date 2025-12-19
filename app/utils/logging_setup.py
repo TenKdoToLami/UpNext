@@ -1,5 +1,7 @@
 import logging
 import sys
+import os
+from app.config import DATA_DIR
 
 def setup_logging(app_name: str = "app") -> None:
     """
@@ -13,6 +15,7 @@ def setup_logging(app_name: str = "app") -> None:
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S',
         handlers=[
-            logging.StreamHandler(sys.stdout)
+            logging.StreamHandler(sys.stdout),
+            logging.FileHandler(os.path.join(DATA_DIR, 'app.log'))
         ]
     )
