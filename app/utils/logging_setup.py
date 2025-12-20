@@ -7,15 +7,16 @@ def setup_logging(app_name: str = "app") -> None:
     """
     Configures basic logging for the application.
     
+    Sets the log level to WARNING for frozen (production) builds and DEBUG 
+    for source (development) runs.
+
     Args:
         app_name (str): The name of the logger.
     """
     # Determine running mode
     if getattr(sys, "frozen", False):
-        # Production / Built Exe -> Less verbose
         log_level = logging.WARNING
     else:
-        # Dev / Source -> Very verbose
         log_level = logging.DEBUG
 
     logging.basicConfig(

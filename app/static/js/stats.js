@@ -325,7 +325,7 @@ const getScales = (chartType) => {
 /**
  * Renders a high-fidelity HTML legend for charts.
  */
-function renderCustomHTMLLegend(containerId, labels, colors, icons, values, isRating = false) {
+function renderCustomHTMLLegend(containerId, labels, colors, icons, values, isRating = false, chartName = null) {
 	const container = document.getElementById(containerId);
 	if (!container) return;
 
@@ -345,8 +345,18 @@ function renderCustomHTMLLegend(containerId, labels, colors, icons, values, isRa
 			iconHtml = `<i data-lucide="${icon}" class="w-3.5 h-3.5"></i>`;
 		}
 
+		// Add handler if chartName is provided
+		const clickHandler = chartName ? `onclick="window.toggleStatsLegend('${chartName}', ${i}, this)"` : '';
+		let cursorClass = chartName ? 'cursor-pointer hover:opacity-80' : 'cursor-default';
+
+
+		// Check persistent state for visual style
+		if (chartName && hiddenLegendLabels[chartName] && hiddenLegendLabels[chartName].has(label)) {
+			cursorClass += ' opacity-40 line-through grayscale';
+		}
+
 		return `
-            <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-100/50 dark:bg-zinc-800/30 border border-zinc-200/50 dark:border-zinc-700/30 transition-all hover:scale-105 select-none" style="color: ${color}">
+            <div ${clickHandler} class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-100/50 dark:bg-zinc-800/30 border border-zinc-200/50 dark:border-zinc-700/30 transition-all hover:scale-105 select-none ${cursorClass}" style="color: ${color}">
                 ${iconHtml}
                 <span class="text-[10px] font-black uppercase tracking-wider">${label}</span>
                 <span class="text-[10px] font-bold opacity-60 ml-0.5">${value}</span>
@@ -355,6 +365,64 @@ function renderCustomHTMLLegend(containerId, labels, colors, icons, values, isRa
 	}).join('');
 
 	if (window.lucide) window.lucide.createIcons();
+}
+
+/**
+ * Track hidden items per chart type to persist across re-renders.
+ * @type {{status: Set<string>, rating: Set<string>}}
+ */
+const hiddenLegendLabels = {
+	status: new Set(),
+	rating: new Set()
+};
+
+/**
+ * Global handler for toggling chart data visibility via legend.
+ */
+window.toggleStatsLegend = (chartName, index, element) => {
+	let instance = null;
+	if (chartName === 'status') instance = statusChartInstance;
+	else if (chartName === 'rating') instance = ratingChartInstance;
+
+	if (instance) {
+		// Toggle visibility
+		instance.toggleDataVisibility(index);
+		instance.update();
+
+		// Toggle visual state of the legend item
+		element.classList.toggle('opacity-40');
+		element.classList.toggle('line-through');
+		element.classList.toggle('grayscale');
+
+		// Update persistent state
+		const label = instance.data.labels[index];
+		if (label) {
+			const set = hiddenLegendLabels[chartName];
+			if (set) {
+				if (set.has(label)) set.delete(label);
+				else set.add(label);
+			}
+		}
+	}
+};
+
+/**
+ * Applies the persistent hidden state to a chart instance.
+ * @param {Object} chartInstance - The Chart.js instance.
+ * @param {string} chartName - The name of the chart ('status' or 'rating').
+ */
+function applyHiddenState(chartInstance, chartName) {
+	if (chartInstance && chartInstance.data && chartInstance.data.labels) {
+		const hiddenSet = hiddenLegendLabels[chartName];
+		if (!hiddenSet) return;
+
+		chartInstance.data.labels.forEach((label, index) => {
+			if (hiddenSet.has(label)) {
+				chartInstance.toggleDataVisibility(index);
+			}
+		});
+		chartInstance.update();
+	}
 }
 
 /**
@@ -440,7 +508,11 @@ function renderCharts(stats) {
 		}
 	});
 
-	renderCustomHTMLLegend('statusLegend', rawStatusLabels, statusColors, statusIcons, statusData);
+	// Apply persistent hidden state
+	applyHiddenState(statusChartInstance, 'status');
+
+	// Pass 'status' as the chartName argument
+	renderCustomHTMLLegend('statusLegend', rawStatusLabels, statusColors, statusIcons, statusData, false, 'status');
 }
 
 function getTypeColorHex(type) {
@@ -600,5 +672,9 @@ function renderRatingChart(stats) {
 		}
 	});
 
-	renderCustomHTMLLegend('ratingLegend', rawLabels, ratingColors, [], data, true);
+	// Apply persistent hidden state
+	applyHiddenState(ratingChartInstance, 'rating');
+
+	// Pass 'rating' as the chartName argument
+	renderCustomHTMLLegend('ratingLegend', rawLabels, ratingColors, [], data, true, 'rating');
 }
