@@ -19,6 +19,9 @@ def setup_logging(app_name: str = "app") -> None:
     else:
         log_level = logging.DEBUG
 
+    # Ensure data directory exists
+    os.makedirs(DATA_DIR, exist_ok=True)
+
     logging.basicConfig(
         level=log_level,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
