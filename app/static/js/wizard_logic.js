@@ -357,7 +357,8 @@ export function renderTypeSelection() {
 	const container = document.getElementById('typeSelectionContainer');
 	if (!container) return;
 
-	container.className = 'grid grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-3xl justify-center items-center';
+	// Responsive grid that spans width: 2 cols on mobile, 3 on small tablets, 5 (all) on desktop
+	container.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 w-full justify-center items-center';
 	container.innerHTML = ['Anime', 'Manga', 'Book', 'Movie', 'Series']
 		.map(type => createTypeCardHtml(type))
 		.join('');
@@ -377,12 +378,12 @@ function createTypeCardHtml(type) {
 
 	return `
         <div onclick="window.selectType('${type}')" id="type-card-${type}" style="--theme-col: var(--col-${type.toLowerCase()})"
-            class="selection-card aspect-square p-6 rounded-3xl flex flex-col items-center justify-center gap-4 group transition-all duration-300 cursor-pointer border-2 hover:scale-105 active:scale-95 shadow-xl relative overflow-hidden ${rawClasses}">
+            class="selection-card aspect-square p-4 rounded-3xl flex flex-col items-center justify-center gap-3 group transition-all duration-300 cursor-pointer border-2 hover:scale-105 active:scale-95 shadow-xl relative overflow-hidden ${rawClasses} w-full">
             <div class="absolute inset-0 bg-gradient-to-br from-${color}-500/10 to-transparent opacity-100 transition-opacity"></div>
-            <div class="p-4 rounded-full bg-white dark:bg-zinc-900/50 group-hover:bg-zinc-100 dark:group-hover:bg-zinc-900/80 transition-colors shadow-lg z-10 ring-1 ring-black/5 dark:ring-white/10">
-                <i data-lucide="${icon}" class="w-10 h-10 transition-colors text-${color}-500 dark:text-${color}-400"></i>
+            <div class="p-3 md:p-4 rounded-full bg-white dark:bg-zinc-900/50 group-hover:bg-zinc-100 dark:group-hover:bg-zinc-900/80 transition-colors shadow-lg z-10 ring-1 ring-black/5 dark:ring-white/10">
+                <i data-lucide="${icon}" class="w-8 h-8 md:w-10 md:h-10 transition-colors text-${color}-500 dark:text-${color}-400"></i>
             </div>
-            <span class="font-bold uppercase tracking-widest text-sm z-10 text-${color}-600 dark:text-${color}-100">${type}</span>
+            <span class="font-bold uppercase tracking-widest text-xs md:text-sm z-10 text-${color}-600 dark:text-${color}-100 text-center">${type}</span>
         </div>
     `;
 }
@@ -394,7 +395,8 @@ export function renderStatusSelection() {
 	const container = document.getElementById('statusSelectionContainer');
 	if (!container) return;
 
-	container.className = 'grid grid-cols-2 gap-4 w-full h-full p-4 pb-12';
+	// Spans width: 2 cols mobile, 3 tablet, 6 (all) desktop
+	container.className = 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 w-full h-full p-4 pb-12 items-start content-start';
 	container.innerHTML = STATUS_TYPES.map(status => createStatusCardHtml(status)).join('');
 
 	safeCreateIcons();

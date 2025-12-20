@@ -307,7 +307,7 @@ function generateCardHtml(item) {
 		let titleBlock = '';
 		if (state.showDetails) {
 			titleBlock = `
-                 <div class="p-4 bg-white dark:bg-zinc-900 border-t border-zinc-100 dark:border-white/5 flex-1 flex flex-col gap-2 relative z-20 pointer-events-auto">
+                 <div class="p-4 bg-white dark:bg-zinc-900 border-t border-zinc-100 dark:border-white/5 flex flex-col gap-2 relative z-20 pointer-events-auto">
                      <h3 class="font-heading font-bold text-lg leading-tight line-clamp-2 text-[var(--theme-col)] transition-colors">${item.title}</h3>
                         <div class="flex flex-col gap-1.5 text-[11px] font-medium text-zinc-500 dark:text-zinc-400 mt-1">
                              ${authors.length ? `<div class="flex items-center gap-1.5 truncate text-zinc-600 dark:text-zinc-300"><i data-lucide="pen-tool" class="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500 pointer-events-none"></i> ${authHtml}</div>` : ''}

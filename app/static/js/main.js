@@ -276,6 +276,7 @@ window.toggleHidden = () => {
     renderGrid();
 };
 
+
 /** Toggles expanded details view. */
 window.toggleDetails = () => {
     state.showDetails = !state.showDetails;
@@ -292,6 +293,56 @@ window.toggleDetails = () => {
         indicator.classList.add('hidden');
     }
     renderGrid();
+};
+
+/** Toggles responsive search bar. */
+window.toggleSearch = () => {
+    const container = document.getElementById('searchBarContainer');
+    const input = document.getElementById('searchInput');
+    const isHidden = container.classList.contains('hidden');
+
+    if (isHidden) {
+        container.classList.remove('hidden');
+        input.focus();
+    } else {
+        container.classList.add('hidden');
+    }
+};
+
+/** Toggles responsive sort menu. */
+window.toggleSortMenu = () => {
+    const container = document.getElementById('sortMenuContainer');
+    const btn = document.getElementById('sortMobileToggle');
+    const indicator = document.getElementById('sortActiveIndicator');
+
+    container.classList.toggle('hidden');
+    container.classList.toggle('flex');
+
+    const isOpen = !container.classList.contains('hidden');
+
+    if (isOpen) {
+        btn.classList.add('bg-black/5', 'dark:bg-white/5', 'text-zinc-900', 'dark:text-white');
+        btn.classList.remove('text-zinc-600', 'dark:text-zinc-400');
+        if (indicator) indicator.classList.remove('hidden');
+
+        // Close when clicking outside
+        const closeMenu = (e) => {
+            if (!container.contains(e.target) && !btn.contains(e.target)) {
+                container.classList.add('hidden');
+                container.classList.remove('flex');
+                btn.classList.remove('bg-black/5', 'dark:bg-white/5', 'text-zinc-900', 'dark:text-white');
+                btn.classList.add('text-zinc-600', 'dark:text-zinc-400');
+                if (indicator) indicator.classList.add('hidden');
+                document.removeEventListener('click', closeMenu);
+            }
+        };
+        // Timeout to prevent immediate closing since the click that opened it bubbles up
+        setTimeout(() => document.addEventListener('click', closeMenu), 0);
+    } else {
+        btn.classList.remove('bg-black/5', 'dark:bg-white/5', 'text-zinc-900', 'dark:text-white');
+        btn.classList.add('text-zinc-600', 'dark:text-zinc-400');
+        if (indicator) indicator.classList.add('hidden');
+    }
 };
 
 /** Toggles hidden-only filter mode. */

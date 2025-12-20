@@ -182,6 +182,7 @@ export function initEditMode(id) {
 	// Show all steps (CSS handles layout via .scroll-mode)
 	document.querySelectorAll('.wizard-step').forEach(el => {
 		el.classList.remove('hidden');
+		el.style.display = ''; // Clear inline display from wizard mode
 	});
 
 	// Titles
@@ -307,8 +308,14 @@ export function initWizard(isEdit) {
 	// Reset Full Screen & Sidebar
 	document.getElementById('modalContent').classList.remove('full-screen-modal');
 	document.getElementById('entryForm').classList.remove('scroll-mode');
-	document.getElementById('editSidebar').classList.add('hidden');
-	document.getElementById('editSidebar').classList.remove('flex');
+
+	const sidebar = document.getElementById('editSidebar');
+	sidebar.classList.add('hidden');
+	sidebar.classList.remove('flex');
+	// Clear sidebar content to prevent stale links
+	const nav = document.getElementById('editSidebarNav');
+	if (nav) nav.innerHTML = '';
+
 	if (scrollSpyObserver) scrollSpyObserver.disconnect();
 
 	renderTypeSelection();
