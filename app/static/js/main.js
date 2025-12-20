@@ -6,14 +6,14 @@
 
 import { state } from './state.js';
 import { loadItems, deleteItem, saveItem } from './api_service.js';
-import { renderFilters, renderGrid } from './render_utils.js';
-import { safeCreateIcons, toggleExpand } from './dom_utils.js';
+import { renderFilters, renderGrid, updateGridTruncation } from './render_utils.js';
+import { safeCreateIcons, toggleExpand, debounce } from './dom_utils.js';
 import { RATING_LABELS, TEXT_COLORS } from './constants.js';
 import {
     openModal, closeModal, nextStep, prevStep, jumpToStep, selectType, selectStatus,
     populateAutocomplete, addSpecificLink, addLink, removeLink, updateLink, pasteLink,
     removeAuthor, addChild, removeChildIdx, updateChild, updateChildRating,
-    removeAltTitle, checkEnterKey, renderDetailView
+    removeAltTitle, checkEnterKey, renderDetailView, updateDetailTruncation
 } from './main_helpers.js';
 import { updateWizardUI } from './wizard_logic.js';
 import {
@@ -584,6 +584,36 @@ function initApp() {
     // Tag inputs
     addListener('authorInput', 'keydown', (e) => checkEnterKey(e, 'author'));
     addListener('altTitleInput', 'keydown', (e) => checkEnterKey(e, 'altTitle'));
+
+    // Global resize listener for dynamic truncation
+    window.addEventListener('resize', debounce(() => {
+        // Update Grid/List View
+        updateGridTruncation();
+
+        // Update Detail View if open
+        const detailModal = document.getElementById('detailModal');
+        if (detailModal && !detailModal.classList.contains('hidden')) {
+            // Find current item ID from DOM since it's not in global state
+            const descEl = detailModal.querySelector('[id^="detail-desc-"]');
+            if (descEl) {
+                const id = descEl.id.replace('detail-desc-', '');
+                updateDetailTruncation(id);
+            } else {
+                // Try finding review or notes if desc is missing
+                const noteEl = detailModal.querySelector('[id^="detail-notes-"]');
+                if (noteEl) {
+                    const id = noteEl.id.replace('detail-notes-', '');
+                    updateDetailTruncation(id);
+                } else {
+                    const revEl = detailModal.querySelector('[id^="detail-review-"]');
+                    if (revEl) {
+                        const id = revEl.id.replace('detail-review-', '');
+                        updateDetailTruncation(id);
+                    }
+                }
+            }
+        }
+    }, 200));
 
     // Rating slider
     const ratingInput = document.getElementById('rating');

@@ -101,3 +101,44 @@ export function toggleExpand(id, type) {
 		btnEl.innerText = 'Read More';
 	}
 }
+
+// ============================================================================
+// PERFORMANCE & LAYOUT
+// ============================================================================
+
+/**
+ * Debounces a function execution.
+ * @param {Function} func - Function to debounce
+ * @param {number} wait - Wait time in ms
+ * @returns {Function} Debounced function
+ */
+export function debounce(func, wait) {
+	let timeout;
+	return function executedFunction(...args) {
+		const later = () => {
+			clearTimeout(timeout);
+			func(...args);
+		};
+		clearTimeout(timeout);
+		timeout = setTimeout(later, wait);
+	};
+}
+
+/**
+ * Checks if an element has overflowed its container and toggles a visibility class on a target element.
+ * @param {string} contentId - ID of the content element to check for overflow
+ * @param {string} targetId - ID of the target element (e.g., button) to toggle
+ * @param {string} toggleClass - Class to toggle (default: 'hidden')
+ */
+export function checkOverflow(contentId, targetId, toggleClass = 'hidden') {
+	const content = document.getElementById(contentId);
+	const target = document.getElementById(targetId);
+	if (!content || !target) return;
+
+	// Use a small buffer (e.g., 4px) to account for sub-pixel rendering differences
+	if (content.scrollHeight > content.clientHeight + 4) {
+		target.classList.remove(toggleClass);
+	} else {
+		target.classList.add(toggleClass);
+	}
+}

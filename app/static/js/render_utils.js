@@ -10,7 +10,7 @@ import {
 	STATUS_COLOR_MAP, TYPE_COLOR_MAP,
 	RATING_LABELS, TEXT_COLORS, STAR_FILLS
 } from './constants.js';
-import { safeCreateIcons, toggleExpand } from './dom_utils.js';
+import { safeCreateIcons, toggleExpand, checkOverflow } from './dom_utils.js';
 
 // --- Logic ---
 
@@ -256,6 +256,23 @@ export function renderGrid() {
 	container.innerHTML = filtered.map(item => generateCardHtml(item)).join('');
 
 	safeCreateIcons();
+
+	// Check for overflow after render
+	setTimeout(updateGridTruncation, 50);
+}
+
+/**
+ * Checks all truncate-able elements in the grid/list for overflow.
+ * Should be called on resize and after render.
+ */
+export function updateGridTruncation() {
+	if (state.viewMode !== 'list' || !state.showDetails) return;
+
+	state.items.forEach(item => {
+		checkOverflow(`desc-${item.id}`, `btn-desc-${item.id}`);
+		checkOverflow(`list-notes-${item.id}`, `btn-list-notes-${item.id}`);
+		checkOverflow(`review-${item.id}`, `btn-review-${item.id}`);
+	});
 }
 
 // Separate function for HTML generation to keep renderGrid clean
@@ -404,14 +421,14 @@ function generateCardHtml(item) {
                                        <div class="text-zinc-600 dark:text-zinc-400 text-sm mt-3 leading-relaxed group/desc relative" onclick="event.stopPropagation()">
                                             <div class="text-[10px] font-bold text-zinc-800 dark:text-[var(--theme-col)] uppercase tracking-wider mb-1 opacity-70">Synopsis</div>
                                            <div id="desc-${item.id}" class="line-clamp-3 whitespace-pre-wrap">${item.description}</div>
-                                            ${item.description.length > 250 ? `<button type="button" id="btn-desc-${item.id}" onclick="event.stopPropagation(); toggleExpand('${item.id}', 'desc')" class="text-xs text-[var(--theme-col)] font-bold mt-1 hover:underline relative z-50">Read More</button>` : ''}
+                                            <button type="button" id="btn-desc-${item.id}" onclick="event.stopPropagation(); toggleExpand('${item.id}', 'desc')" class="text-xs text-[var(--theme-col)] font-bold mt-1 hover:underline relative z-50 hidden">Read More</button>
                                        </div>` : ''}
 
                                        ${item.notes ? `
                                        <div class="text-zinc-600 dark:text-zinc-400 text-sm mt-3 leading-relaxed group/notes relative" onclick="event.stopPropagation()">
                                            <div class="text-[10px] font-bold text-zinc-800 dark:text-[var(--theme-col)] uppercase tracking-wider mb-1 opacity-70">Notes</div>
                                             <div id="list-notes-${item.id}" class="line-clamp-3 whitespace-pre-wrap">${item.notes || ''}</div>
-                                            ${(item.notes || '').length > 150 ? `<button type="button" id="btn-list-notes-${item.id}" onclick="event.stopPropagation(); toggleExpand('${item.id}', 'list-notes')" class="text-xs text-[var(--theme-col)] font-bold mt-1 hover:underline relative z-50">Read More</button>` : ''}
+                                            <button type="button" id="btn-list-notes-${item.id}" onclick="event.stopPropagation(); toggleExpand('${item.id}', 'list-notes')" class="text-xs text-[var(--theme-col)] font-bold mt-1 hover:underline relative z-50 hidden">Read More</button>
                                         </div>` : ''}
 
                                    </div>
@@ -430,7 +447,7 @@ function generateCardHtml(item) {
                                         ${item.review ? `
                                         <div class="text-zinc-700 dark:text-zinc-300 italic text-xs leading-relaxed relative" onclick="event.stopPropagation()">
                                            <div id="review-${item.id}" class="line-clamp-3 whitespace-pre-wrap"><i data-lucide="quote" class="inline w-3 h-3 text-zinc-400 dark:text-zinc-600 mr-1 align-top"></i>${item.review}</div>
-                                            ${item.review.length > 250 ? `<button type="button" id="btn-review-${item.id}" onclick="event.stopPropagation(); toggleExpand('${item.id}', 'review')" class="text-xs text-[var(--theme-col)] font-bold ml-1 hover:underline relative z-50">Read More</button>` : ''}
+                                            <button type="button" id="btn-review-${item.id}" onclick="event.stopPropagation(); toggleExpand('${item.id}', 'review')" class="text-xs text-[var(--theme-col)] font-bold ml-1 hover:underline relative z-50 hidden">Read More</button>
                                         </div>` : ''}
                                     </div>` : ''}
 

@@ -10,7 +10,7 @@ import {
 	STATUS_ICON_MAP, STATUS_COLOR_MAP, ICON_MAP,
 	RATING_LABELS, RATING_COLORS, TEXT_COLORS, STAR_FILLS
 } from './constants.js';
-import { safeCreateIcons, safeVal, safeText, safeHtml, safeCheck } from './dom_utils.js';
+import { safeCreateIcons, safeVal, safeText, safeHtml, safeCheck, checkOverflow } from './dom_utils.js';
 import {
 	renderTypeSelection, renderStatusSelection, updateWizardUI, updateFormUI,
 	showStep, validateStep, updateDynamicLinks, updateDots,
@@ -867,21 +867,20 @@ export function renderDetailView(item, content) {
 
 	safeCreateIcons();
 
-	// Check for overflow and hide 'Read More' buttons if not needed
-	setTimeout(() => {
-		['detail-review', 'detail-desc', 'detail-notes'].forEach(key => {
-			const contentEl = document.getElementById(`${key}-${item.id}`);
-			const btnEl = document.getElementById(`btn-${key}-${item.id}`);
-			if (contentEl && btnEl) {
-				// If scrollHeight is not significantly larger than clientHeight, hide button
-				if (contentEl.scrollHeight <= contentEl.clientHeight + 4) {
-					btnEl.classList.add('hidden');
-				} else {
-					btnEl.classList.remove('hidden');
-				}
-			}
-		});
-	}, 50);
+	safeCreateIcons();
+
+	// Check for overflow after render
+	setTimeout(() => updateDetailTruncation(item.id), 50);
+}
+
+/**
+ * Updates truncation visibility for a specific item in detail view.
+ * @param {string} id - Item ID
+ */
+export function updateDetailTruncation(id) {
+	['detail-review', 'detail-desc', 'detail-notes'].forEach(key => {
+		checkOverflow(`${key}-${id}`, `btn-${key}-${id}`);
+	});
 }
 
 // =============================================================================
