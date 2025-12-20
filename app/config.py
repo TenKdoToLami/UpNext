@@ -10,9 +10,13 @@ PORT = 5000
 if getattr(sys, 'frozen', False):
     # Running as compiled .exe
     BASE_DIR = os.path.dirname(sys.executable)
+    # Disable SQL echo in production/built app
+    SQLALCHEMY_ECHO = False
 else:
     # Running from source (app/config.py -> app/ -> root)
     BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    # Enable SQL echo in dev/source options
+    SQLALCHEMY_ECHO = True
 
 # Directories
 DATA_DIR = os.path.join(BASE_DIR, "data")
