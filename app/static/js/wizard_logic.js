@@ -357,10 +357,22 @@ export function renderTypeSelection() {
 	const container = document.getElementById('typeSelectionContainer');
 	if (!container) return;
 
-	// Responsive grid that spans width: 2 cols on mobile, 3 on small tablets, 5 (all) on desktop
-	container.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 w-full justify-center items-center';
-	container.innerHTML = ['Anime', 'Manga', 'Book', 'Movie', 'Series']
-		.map(type => createTypeCardHtml(type))
+	// Enforce 2 columns, fill height
+	container.className = 'grid grid-cols-2 gap-4 w-full h-full justify-center items-center';
+	// Ensure rows stretch evenly to fill vertical space
+	container.style.gridAutoRows = '1fr';
+
+	const types = ['Anime', 'Manga', 'Book', 'Movie', 'Series'];
+	container.innerHTML = types
+		.map((type, i) => {
+			// For the last item, span 2 cols to center it, but restrict width to match others (50% - half gap)
+			// gap-4 is 1rem (16px), so half gap is 0.5rem
+			const isLast = i === types.length - 1;
+			const extra = isLast
+				? 'col-span-2 justify-self-center w-[calc(50%-0.5rem)]'
+				: 'w-full';
+			return createTypeCardHtml(type, extra);
+		})
 		.join('');
 
 	safeCreateIcons();
@@ -369,16 +381,17 @@ export function renderTypeSelection() {
 /**
  * Creates HTML for a media type selection card.
  * @param {string} type - Media type
+ * @param {string} [extraClasses=''] - Additional CSS classes
  * @returns {string} HTML string
  */
-function createTypeCardHtml(type) {
+function createTypeCardHtml(type, extraClasses = '') {
 	const rawClasses = TYPE_COLOR_MAP[type] || '';
 	const color = rawClasses.match(/text-([a-z]+)-400/)?.[1] || 'zinc';
 	const icon = ICON_MAP[type] || 'circle';
 
 	return `
         <div onclick="window.selectType('${type}')" id="type-card-${type}" style="--theme-col: var(--col-${type.toLowerCase()})"
-            class="selection-card aspect-square p-4 rounded-3xl flex flex-col items-center justify-center gap-3 group transition-all duration-300 cursor-pointer border-2 hover:scale-105 active:scale-95 shadow-xl relative overflow-hidden ${rawClasses} w-full">
+            class="selection-card p-4 rounded-3xl flex flex-col items-center justify-center gap-3 group transition-all duration-300 cursor-pointer border-2 hover:scale-[1.02] active:scale-95 shadow-xl relative overflow-hidden ${rawClasses} h-full ${extraClasses}">
             <div class="absolute inset-0 bg-gradient-to-br from-${color}-500/10 to-transparent opacity-100 transition-opacity"></div>
             <div class="p-3 md:p-4 rounded-full bg-white dark:bg-zinc-900/50 group-hover:bg-zinc-100 dark:group-hover:bg-zinc-900/80 transition-colors shadow-lg z-10 ring-1 ring-black/5 dark:ring-white/10">
                 <i data-lucide="${icon}" class="w-8 h-8 md:w-10 md:h-10 transition-colors text-${color}-500 dark:text-${color}-400"></i>
@@ -395,8 +408,11 @@ export function renderStatusSelection() {
 	const container = document.getElementById('statusSelectionContainer');
 	if (!container) return;
 
-	// Spans width: 2 cols mobile, 3 tablet, 6 (all) desktop
-	container.className = 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 w-full h-full p-4 pb-12 items-start content-start';
+	// Enforce 2 columns, fill height
+	container.className = 'grid grid-cols-2 gap-3 w-full h-full items-center content-center';
+	// Ensure rows stretch evenly
+	container.style.gridAutoRows = '1fr';
+
 	container.innerHTML = STATUS_TYPES.map(status => createStatusCardHtml(status)).join('');
 
 	safeCreateIcons();
