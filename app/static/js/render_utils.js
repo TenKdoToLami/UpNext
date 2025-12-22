@@ -286,8 +286,10 @@ export function renderGrid() {
 		const matchesMainTitle = item.title.toLowerCase().includes(textQuery);
 		const matchesAlternateTitle = (item.alternateTitles || []).some(alt => alt.toLowerCase().includes(textQuery));
 		const matchesUniverse = (item.universe && item.universe.toLowerCase().includes(textQuery));
+		// Match against any abbreviation in the list
+		const matchesAbbreviation = (item.abbreviations || []).some(abbr => abbr.toLowerCase().includes(textQuery));
 
-		return matchesMainTitle || matchesAlternateTitle || matchesUniverse;
+		return matchesMainTitle || matchesAlternateTitle || matchesUniverse || matchesAbbreviation;
 	});
 
 	filtered = sortItems(filtered);

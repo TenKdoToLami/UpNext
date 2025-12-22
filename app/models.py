@@ -40,6 +40,7 @@ class MediaItem(db.Model):
     
     # Complex metadata stored as JSON
     authors: Mapped[List[str]] = mapped_column(JSON, default=list)
+    abbreviations: Mapped[List[str]] = mapped_column(JSON, default=list)
     alternate_titles: Mapped[List[str]] = mapped_column(JSON, default=list)
     external_links: Mapped[List[dict]] = mapped_column(JSON, default=list)
     children: Mapped[List[dict]] = mapped_column(JSON, default=list)
@@ -77,6 +78,7 @@ class MediaItem(db.Model):
             "coverUrl": c_url,
             "isHidden": self.is_hidden,
             "authors": self.authors,
+            "abbreviations": self.abbreviations,
             "alternateTitles": self.alternate_titles,
             "externalLinks": self.external_links,
             "children": self.children,

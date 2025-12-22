@@ -13,7 +13,8 @@ import {
     openModal, closeModal, nextStep, prevStep, jumpToStep, selectType, selectStatus,
     populateAutocomplete, addSpecificLink, addLink, removeLink, updateLink, pasteLink,
     removeAuthor, addChild, removeChildIdx, updateChild, updateChildRating,
-    removeAltTitle, checkEnterKey, renderDetailView, updateDetailTruncation, updateRatingVisuals
+    removeAltTitle, checkEnterKey, renderDetailView, updateDetailTruncation, updateRatingVisuals,
+    renderAbbrTags, removeAbbreviation, toggleAbbrField, generateAbbreviation
 } from './main_helpers.js';
 import { updateWizardUI } from './wizard_logic.js';
 import {
@@ -110,6 +111,8 @@ window.removeChildIdx = removeChildIdx;
 window.updateChild = updateChild;
 window.updateChildRating = updateChildRating;
 window.removeAltTitle = removeAltTitle;
+window.removeAbbreviation = removeAbbreviation;
+window.toggleAbbrField = toggleAbbrField;
 
 // =============================================================================
 // FILTER HANDLERS
@@ -474,7 +477,8 @@ window.saveEntry = async () => {
                 : parseInt(document.getElementById('rating').value),
             children: state.currentChildren,
             externalLinks: state.currentLinks,
-            isHidden: document.getElementById('isHidden').checked
+            isHidden: document.getElementById('isHidden').checked,
+            abbreviations: state.currentAbbreviations
         };
 
         // Add pending inputs
@@ -614,6 +618,26 @@ function initApp() {
             }
         }
     }, 200));
+
+    // Title auto-fill for abbreviations
+    // Logic: Listener updates abbreviations only if field is enabled and list is empty/single-item
+    addListener('title', 'input', (e) => {
+        const val = e.target.value;
+        const disableAbbr = document.getElementById('disableAbbr');
+        if (disableAbbr && !disableAbbr.checked) {
+            const abbr = generateAbbreviation(val);
+            // Only auto-update if list is empty or has exactly 1 item (assuming it was auto-generated)
+            if (state.currentAbbreviations.length <= 1) {
+                if (abbr) {
+                    state.currentAbbreviations = [abbr];
+                    renderAbbrTags();
+                } else if (val === '') {
+                    state.currentAbbreviations = [];
+                    renderAbbrTags();
+                }
+            }
+        }
+    });
 
     // Rating slider
     const ratingInput = document.getElementById('rating');

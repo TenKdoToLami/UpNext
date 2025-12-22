@@ -113,6 +113,14 @@ function resetFormState() {
 	safeHtml('linksContainer', '');
 	safeHtml('childrenContainer', '');
 	safeCheck('isHidden', false);
+	safeCheck('disableAbbr', true);
+	// Initialize UI state based on checked default
+	toggleAbbrField(true);
+	safeHtml('abbrTagsContainer', '<input id="abbrInput" class="bg-transparent text-sm outline-none flex-1 min-w-[80px] text-zinc-700 dark:text-zinc-200 p-1 placeholder-zinc-400" placeholder="Auto-filled from title...">');
+	setTimeout(() => {
+		const abbrInput = document.getElementById('abbrInput');
+		if (abbrInput) abbrInput.addEventListener('keydown', (e) => checkEnterKey(e, 'abbr'));
+	}, 0);
 
 	const img = document.getElementById('previewImg');
 	const ph = document.getElementById('previewPlaceholder');
@@ -157,6 +165,8 @@ function populateFormFromItem(id) {
 	state.currentAlternateTitles = item.alternateTitles || [];
 	state.currentChildren = item.children || [];
 	state.currentLinks = item.externalLinks || [];
+	state.currentAbbreviations = item.abbreviations || [];
+	renderAbbrTags();
 }
 
 // =============================================================================
@@ -467,10 +477,18 @@ export function resetWizardFields() {
 	safeHtml('linksContainer', '');
 
 	// Reset alt-title input
-	safeHtml('altTitleTagsContainer', '<input id="altTitleInput" class="bg-transparent text-sm outline-none flex-1 min-w-[80px] text-zinc-700 dark:text-zinc-200 p-1 placeholder-zinc-400" placeholder="Type & Enter...">');
 	setTimeout(() => {
 		const altInput = document.getElementById('altTitleInput');
 		if (altInput) altInput.addEventListener('keydown', (e) => checkEnterKey(e, 'altTitle'));
+	}, 0);
+
+	safeCheck('disableAbbr', true);
+	// Initialize UI state based on checked default
+	toggleAbbrField(true);
+	safeHtml('abbrTagsContainer', '<input id="abbrInput" class="bg-transparent text-sm outline-none flex-1 min-w-[80px] text-zinc-700 dark:text-zinc-200 p-1 placeholder-zinc-400" placeholder="Auto-filled from title...">');
+	setTimeout(() => {
+		const abbrInput = document.getElementById('abbrInput');
+		if (abbrInput) abbrInput.addEventListener('keydown', (e) => checkEnterKey(e, 'abbr'));
 	}, 0);
 }
 
@@ -641,14 +659,30 @@ export function checkEnterKey(e, type) {
 	const val = e.target.value.trim();
 	if (!val) return;
 
-	if (type === 'author' && !state.currentAuthors.includes(val)) {
-		state.currentAuthors.push(val);
-		e.target.value = '';
-		updateModalTags();
-	} else if (type === 'altTitle' && !state.currentAlternateTitles.includes(val)) {
-		state.currentAlternateTitles.push(val);
-		e.target.value = '';
-		renderAltTitles();
+	// Handle different tag types
+	switch (type) {
+		case 'author':
+			if (!state.currentAuthors.includes(val)) {
+				state.currentAuthors.push(val);
+				e.target.value = '';
+				updateModalTags();
+			}
+			break;
+		case 'altTitle':
+			if (!state.currentAlternateTitles.includes(val)) {
+				state.currentAlternateTitles.push(val);
+				e.target.value = '';
+				renderAltTitles();
+			}
+			break;
+		case 'abbr':
+			const abbrVal = val.toUpperCase();
+			if (!state.currentAbbreviations.includes(abbrVal)) {
+				state.currentAbbreviations.push(abbrVal);
+				e.target.value = '';
+				renderAbbrTags();
+			}
+			break;
 	}
 }
 
@@ -939,3 +973,84 @@ document.addEventListener('keydown', (e) => {
 		}
 	}
 });
+
+// =============================================================================
+// ABBREVIATIONS
+// =============================================================================
+
+/**
+ * Renders abbreviation tags.
+ */
+export function renderAbbrTags() {
+	const container = document.getElementById('abbrTagsContainer');
+	const input = document.getElementById('abbrInput');
+	if (!container) return;
+
+	Array.from(container.children).forEach(child => {
+		if (child.tagName === 'SPAN') child.remove();
+	});
+
+	state.currentAbbreviations.forEach(abbr => {
+		const tag = document.createElement('span');
+		tag.className = 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 text-xs px-2 py-1 rounded flex items-center gap-1 font-medium';
+		tag.innerHTML = `${abbr} <button type="button" onclick="window.removeAbbreviation('${abbr}')" class="hover:text-red-400 flex items-center"><i data-lucide="x" class="w-3 h-3"></i></button>`;
+		container.insertBefore(tag, input);
+	});
+
+	// safeCreateIcons(); // Not needed if using innerHTML with i tag, but good practice if using replace
+	if (window.lucide) window.lucide.createIcons();
+}
+
+/**
+ * Removes an abbreviation.
+ * @param {string} val - Abbreviation to remove
+ */
+export function removeAbbreviation(val) {
+	state.currentAbbreviations = state.currentAbbreviations.filter(a => a !== val);
+	renderAbbrTags();
+}
+
+/**
+ * Toggles the abbreviation field enabled state.
+ * @param {boolean} checked - Whether disabled is checked
+ */
+export function toggleAbbrField(checked) {
+	const input = document.getElementById('abbrInput');
+	if (checked) {
+		state.currentAbbreviations = [];
+		renderAbbrTags();
+		if (input) {
+			input.disabled = true;
+			input.placeholder = 'Disabled';
+			input.classList.add('opacity-50', 'cursor-not-allowed');
+		}
+	} else {
+		if (input) {
+			input.disabled = false;
+			input.placeholder = 'Auto-filled from title...';
+			input.classList.remove('opacity-50', 'cursor-not-allowed');
+		}
+		// Trigger auto-fill from current title
+		const titleVal = document.getElementById('title').value;
+		const abbr = generateAbbreviation(titleVal);
+		if (abbr) {
+			state.currentAbbreviations = [abbr];
+			renderAbbrTags();
+		}
+	}
+}
+
+/**
+ * Generates an uppercase abbreviation from a title string.
+ * logic: Takes first letter of each word.
+ * @param {string} title 
+ * @returns {string}
+ */
+export function generateAbbreviation(title) {
+	if (!title) return '';
+	// Remove common punctuation to avoid weird abbreviations
+	const cleanTitle = title.replace(/['":,.-]/g, '');
+	const words = cleanTitle.trim().split(/\s+/);
+	if (words.length === 0) return '';
+	return words.map(w => w[0]).join('').toUpperCase();
+}

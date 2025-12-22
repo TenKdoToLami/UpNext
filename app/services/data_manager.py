@@ -87,6 +87,7 @@ class DataManager:
                 cover_url=data.get("coverUrl", ""),
                 is_hidden=data.get("isHidden", False),
                 authors=data.get("authors", []),
+                abbreviations=data.get("abbreviations", []),
                 alternate_titles=data.get("alternateTitles", []),
                 external_links=data.get("externalLinks", []),
                 children=data.get("children", []),
@@ -142,6 +143,7 @@ class DataManager:
             item.cover_url = data.get("coverUrl", item.cover_url)
             item.is_hidden = data.get("isHidden", item.is_hidden)
             item.authors = data.get("authors", item.authors)
+            item.abbreviations = data.get("abbreviations", item.abbreviations)
             item.alternate_titles = data.get("alternateTitles", item.alternate_titles)
             item.external_links = data.get("externalLinks", item.external_links)
             item.children = data.get("children", item.children)

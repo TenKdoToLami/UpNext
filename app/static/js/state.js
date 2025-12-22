@@ -17,6 +17,7 @@ export const state = {
 
 	// Form state (for add/edit modal)
 	currentAuthors: [],
+	currentAbbreviations: [],
 	currentAlternateTitles: [],
 	currentChildren: [],
 	currentLinks: [],
@@ -70,6 +71,7 @@ export function resetFilters() {
  */
 export function resetFormState() {
 	state.currentAuthors = [];
+	state.currentAbbreviations = [];
 	state.currentAlternateTitles = [];
 	state.currentChildren = [];
 	state.currentLinks = [];
