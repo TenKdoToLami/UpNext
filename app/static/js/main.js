@@ -13,7 +13,7 @@ import {
     openModal, closeModal, nextStep, prevStep, jumpToStep, selectType, selectStatus,
     populateAutocomplete, addSpecificLink, addLink, removeLink, updateLink, pasteLink,
     removeAuthor, addChild, removeChildIdx, updateChild, updateChildRating,
-    removeAltTitle, checkEnterKey, renderDetailView, updateDetailTruncation
+    removeAltTitle, checkEnterKey, renderDetailView, updateDetailTruncation, updateRatingVisuals
 } from './main_helpers.js';
 import { updateWizardUI } from './wizard_logic.js';
 import {
@@ -619,12 +619,7 @@ function initApp() {
     const ratingInput = document.getElementById('rating');
     if (ratingInput) {
         ratingInput.addEventListener('input', function () {
-            const v = this.value;
-            const rLabel = document.getElementById('ratingLabel');
-            if (rLabel) {
-                rLabel.innerText = RATING_LABELS[v];
-                rLabel.className = `text-4xl font-black uppercase tracking-tighter drop-shadow-2xl transition-all transform hover:scale-105 ${TEXT_COLORS[v]}`;
-            }
+            updateRatingVisuals(this.value);
         });
     }
 }

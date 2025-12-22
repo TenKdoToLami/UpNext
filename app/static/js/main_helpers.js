@@ -73,6 +73,33 @@ export function closeModal() {
 }
 
 /**
+ * Updates the visual state of the rating slider and label.
+ * @param {number|string} val - Rating value (1-4)
+ */
+export function updateRatingVisuals(val) {
+	const rVal = parseInt(val, 10);
+	const rLabel = document.getElementById('ratingLabel');
+	const ratingInput = document.getElementById('rating');
+
+	const ACCENT_CLASS_MAP = {
+		1: 'accent-red-500',
+		2: 'accent-amber-500',
+		3: 'accent-blue-500',
+		4: 'accent-emerald-500'
+	};
+
+	if (ratingInput) {
+		ratingInput.classList.remove('accent-red-500', 'accent-amber-500', 'accent-blue-500', 'accent-emerald-500');
+		ratingInput.classList.add(ACCENT_CLASS_MAP[rVal] || 'accent-amber-500');
+	}
+
+	if (rLabel) {
+		rLabel.innerText = RATING_LABELS[rVal] || RATING_LABELS[2];
+		rLabel.className = `text-4xl font-black uppercase tracking-tighter drop-shadow-2xl transition-all transform hover:scale-105 ${TEXT_COLORS[rVal] || TEXT_COLORS[2]}`;
+	}
+}
+
+/**
  * Resets all form-related state to defaults.
  */
 function resetFormState() {
@@ -114,12 +141,8 @@ function populateFormFromItem(id) {
 	safeVal('progress', item.progress || '');
 	const rVal = item.rating || 2;
 	safeVal('rating', rVal);
-	// Manually trigger label update since setting value doesn't fire event
-	const rLabel = document.getElementById('ratingLabel');
-	if (rLabel) {
-		rLabel.innerText = RATING_LABELS[rVal];
-		rLabel.className = `text-4xl font-black uppercase tracking-tighter drop-shadow-2xl transition-all transform hover:scale-105 ${TEXT_COLORS[rVal]}`;
-	}
+	// Manually trigger label update
+	updateRatingVisuals(rVal);
 
 	if (item.coverUrl) {
 		safeText('currentCoverName', item.coverUrl);
@@ -223,7 +246,7 @@ function renderSidebarNav() {
 		{ id: 'step-7', label: 'Progress', icon: 'bookmark' },
 		{ id: 'step-8', label: 'Review & Rating', icon: 'star' },
 		{ id: 'step-9', label: 'Notes', icon: 'sticky-note' },
-		{ id: 'step-10', label: 'Seasons/Volumes', icon: 'layers' }, // Conditionally hidden
+		{ id: 'step-10', label: 'Seasons/Volumes', icon: 'layers' },
 		{ id: 'step-11', label: 'Privacy', icon: 'shield' } // Conditionally hidden
 	];
 
@@ -421,12 +444,8 @@ export function resetWizardFields() {
 	safeVal('review', '');
 	safeVal('rating', 2);
 
-	// Reset rating label
-	const rLabel = document.getElementById('ratingLabel');
-	if (rLabel) {
-		rLabel.innerText = 'Ok';
-		rLabel.className = `text-4xl font-black uppercase tracking-tighter drop-shadow-2xl transition-all transform hover:scale-105 ${TEXT_COLORS[2]}`;
-	}
+	// Reset visuals
+	updateRatingVisuals(2);
 
 	state.currentAuthors = [];
 	state.currentAlternateTitles = [];
