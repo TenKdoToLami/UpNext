@@ -294,9 +294,9 @@ function generateCardHtml(item) {
 
 	let progressHtml = '';
 	if (item.progress) {
-		progressHtml = `<div class="absolute top-3 right-3 z-20 bg-white/90 dark:bg-black/80 backdrop-blur-md px-2 py-1 rounded-md border border-amber-500/30 shadow-lg flex items-center gap-1.5 pointer-events-none">
+		progressHtml = `<div class="absolute top-3 right-3 z-20 bg-transparent backdrop-blur-md px-2 py-1 rounded-md border border-amber-500/30 shadow-lg flex items-center gap-1.5 pointer-events-none">
                     <div class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></div>
-                    <span class="text-[10px] font-bold text-amber-600 dark:text-amber-100 truncate max-w-[80px]">${item.progress}</span>
+                    <span class="text-[10px] font-bold text-amber-600 dark:text-amber-300 drop-shadow-md dark:[text-shadow:0_1px_3px_rgba(0,0,0,0.9)] truncate max-w-[80px]">${item.progress}</span>
                 </div>`;
 	}
 
@@ -306,7 +306,6 @@ function generateCardHtml(item) {
 	}
 
 	const statusIcon = STATUS_ICON_MAP[item.status] || 'circle';
-	// Status Badge: Override bg and border from map
 	const statusBadge = `<span class="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider ${STATUS_COLOR_MAP[item.status]} !bg-transparent !border-none backdrop-blur-md whitespace-nowrap px-2.5 py-1 rounded-md"><i data-lucide="${statusIcon}" class="w-3 h-3"></i> ${item.status}</span>`;
 
 	// Icon colors
@@ -350,7 +349,7 @@ function generateCardHtml(item) {
 		}
 
 		return `
-                     <div onclick="openDetail('${item.id}')" class="group relative h-auto rounded-xl overflow-hidden cursor-pointer media-card ${mediaClass} bg-white dark:bg-zinc-900 flex flex-col shadow-lg border border-zinc-200 dark:border-transparent">
+                     <div onclick="openDetail('${item.id}')" class="group relative h-auto rounded-xl overflow-hidden cursor-pointer media-card ${mediaClass} bg-white dark:bg-zinc-900 flex flex-col shadow-lg">
                          <div class="relative w-full aspect-[2/3] overflow-hidden bg-zinc-100 dark:bg-zinc-950 pointer-events-none">
                              ${coverHtml}
                              ${progressHtml}
@@ -392,9 +391,9 @@ function generateCardHtml(item) {
 			const hasRating = ['Completed', 'Anticipating', 'Dropped', 'On Hold'].includes(item.status) && item.rating;
 
 			return `
-                 <div onclick="openDetail('${item.id}')" class="group bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden media-card ${mediaClass} hover:border-[var(--theme-col)] transition-all shadow-lg p-6 cursor-pointer">
+                 <div onclick="openDetail('${item.id}')" class="group bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden media-card list-card-mode ${mediaClass} hover:border-[var(--theme-col)] transition-all shadow-lg p-6 cursor-pointer">
                           <div class="flex flex-col md:flex-row gap-8">
-
+ 
                                <div class="w-full md:w-52 shrink-0 flex flex-col">
                                    <div class="w-full aspect-[2/3] bg-zinc-100 dark:bg-zinc-950 rounded-lg border border-zinc-200 dark:border-white/5 relative flex items-center justify-center overflow-hidden">
                                        ${detailCover}
@@ -467,7 +466,7 @@ function generateCardHtml(item) {
 			const themeColorClass = TYPE_COLOR_MAP[item.type].split(' ')[0]; // Gets 'text-pink-400' etc.
 
 			return `
-                <div onclick="openDetail('${item.id}')" class="group flex items-center justify-between gap-4 p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800/80 rounded-xl hover:border-[var(--theme-col)] hover:bg-zinc-50 dark:hover:bg-zinc-800/80 transition-all cursor-pointer shadow-sm mb-3 media-card ${mediaClass}">
+                <div onclick="openDetail('${item.id}')" class="group flex items-center justify-between gap-4 p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800/80 rounded-xl hover:border-[var(--theme-col)] hover:bg-zinc-50 dark:hover:bg-zinc-800/80 cursor-pointer shadow-sm mb-3 media-card list-card-mode ${mediaClass}">
                     
                     <!-- Left: Cover & Info -->
                     <div class="flex items-center gap-5 flex-1 min-w-0">
@@ -501,7 +500,7 @@ function generateCardHtml(item) {
                     </div>
 
                     <!-- Right: Meta Data -->
-                    <div class="flex flex-col items-end gap-1 shrink-0 relative z-10 pl-2 ml-auto">
+                    <div class="flex flex-col items-center gap-1 shrink-0 relative z-10 pl-2 ml-auto">
                         
                         <!-- Status Badge -->
                         <div class="hidden sm:block">
@@ -510,14 +509,14 @@ function generateCardHtml(item) {
 
                         <!-- Rating -->
                         ${['Completed', 'Anticipating', 'Dropped', 'On Hold'].includes(item.status) && item.rating ? `
-    <div class="w-auto flex justify-end">
+    <div class="w-auto flex justify-center">
         <span class="text-[10px] md:text-xs font-black uppercase tracking-wider px-2 py-1 rounded backdrop-blur-md shadow-lg ${TEXT_COLORS[item.rating]} min-w-[70px] text-center whitespace-nowrap">${RATING_LABELS[item.rating]}</span>
     </div>` : `
     <div class="hidden md:block w-20"></div>`}
 
                         <!-- Progress -->
                         ${item.progress ? `
-                            <div class="flex items-center gap-1 justify-end">
+                            <div class="flex items-center gap-1 justify-center">
                                 <span class="text-xs font-mono font-bold text-amber-600 dark:text-amber-500 whitespace-nowrap bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">${item.progress}</span>
                             </div>` : ''}
                         

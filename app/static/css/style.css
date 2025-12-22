@@ -137,28 +137,37 @@ html.dark .glass-panel {
 	position: absolute;
 	inset: 0;
 	border-radius: 12px;
-	padding: 2px;
-	/* Light mode gradient border */
-	background: linear-gradient(45deg, transparent, rgba(0, 0, 0, 0.05), transparent);
+	padding: 3px;
+	background: linear-gradient(135deg, var(--theme-col), transparent 70%);
 	-webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
 	mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
 	-webkit-mask-composite: xor;
 	mask-composite: exclude;
-	opacity: 0.5;
+	opacity: 1;
 	pointer-events: none;
+	z-index: 20;
+	transition: padding 0.3s ease, background 0.3s ease;
 }
 
 html.dark .media-card::before {
-	/* Dark mode gradient border */
-	background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+	background: linear-gradient(135deg, var(--theme-col), transparent 70%);
+}
+
+.media-card:hover::before {
+	padding: 5px;
+	background: linear-gradient(135deg, var(--theme-col), transparent 30%);
 }
 
 .media-card:hover {
 	transform: translateY(-6px) scale(1.02);
-	/* Use theme color for border/shadow on hover */
-	border-color: var(--theme-col, #6366f1);
 	box-shadow: 0 15px 40px -10px var(--theme-col, #6366f1);
-	z-index: 10;
+	z-index: 30;
+}
+
+/* List Card Mode Overrides */
+.media-card.list-card-mode:hover {
+	transform: translateY(-2px) scale(1.0);
+	box-shadow: 0 4px 12px -2px var(--theme-col, #6366f1);
 }
 
 .media-badge {
