@@ -63,16 +63,33 @@
 			<div id="sortMenuContainer"
 				class="hidden xl:flex items-center gap-2 absolute xl:relative top-full right-4 xl:top-auto xl:right-auto mt-2 xl:mt-0 bg-white/95 dark:bg-[#0c0c0e]/95 xl:bg-transparent border border-zinc-200 dark:border-zinc-800 xl:border-none p-4 xl:p-0 rounded-2xl shadow-2xl xl:shadow-none flex-col xl:flex-row min-w-[200px] xl:min-w-0 z-50 backdrop-blur-xl xl:backdrop-blur-none origin-top-right transition-all">
 
+				<!-- Mobile Filters -->
+				<div
+					class="xl:hidden text-[10px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-600 mb-1 w-full mt-1">
+					Type</div>
+				<div class="grid grid-cols-3 gap-2 w-full xl:hidden mb-2" id="typeFiltersMobile"></div>
+
+				<div
+					class="xl:hidden text-[10px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-600 mb-1 w-full">
+					Status</div>
+				<div class="grid grid-cols-3 gap-2 w-full xl:hidden mb-2" id="statusFiltersMobile"></div>
+
+				<div class="w-full h-px bg-zinc-200 dark:bg-zinc-800 my-2 xl:hidden"></div>
+
 				<div
 					class="xl:hidden text-[10px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-600 mb-2 w-full">
 					Ordering</div>
 
 				<div
-					class="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-1 rounded-xl w-full xl:w-auto">
+					class="flex items-center gap-2 xl:gap-1 w-full xl:w-auto xl:bg-zinc-100 xl:dark:bg-zinc-900 xl:border xl:border-zinc-200 xl:dark:border-zinc-800 xl:p-1 xl:rounded-xl">
 					<!-- Sort Config (Injected via JS) -->
-					<div id="sortFieldFilters" class="flex gap-1 flex-wrap xl:flex-nowrap justify-center"></div>
+					<div id="sortFieldFilters"
+						class="flex gap-1 flex-wrap xl:flex-nowrap justify-center bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-1 rounded-xl flex-1 xl:flex-none xl:bg-transparent xl:dark:bg-transparent xl:border-none xl:p-0">
+					</div>
 					<div class="w-px h-4 bg-zinc-300 dark:bg-zinc-800 mx-1 hidden xl:block"></div>
-					<div id="sortDirectionFilters" class="flex gap-1 ml-auto xl:ml-0"></div>
+					<div id="sortDirectionFilters"
+						class="flex gap-1 xl:ml-0 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-1 rounded-xl xl:bg-transparent xl:dark:bg-transparent xl:border-none xl:p-0">
+					</div>
 				</div>
 
 				<div class="w-full h-px bg-zinc-200 dark:bg-zinc-800 my-2 xl:hidden"></div>

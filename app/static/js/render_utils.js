@@ -75,9 +75,8 @@ export function sortItems(arr) {
 export function renderFilters() {
 	const counts = getCounts();
 
-	// Type Filters
-	const typeContainer = document.getElementById('typeFilters');
-	typeContainer.innerHTML = ['All', ...MEDIA_TYPES].map(t => {
+	// Type Filters - Desktop
+	const typeHtml = ['All', ...MEDIA_TYPES].map(t => {
 		const isActive = state.filterTypes.includes(t);
 		const count = counts.typeCounts[t] || 0;
 		let colorClass = `bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:border-zinc-400 dark:hover:border-zinc-500`;
@@ -108,9 +107,35 @@ export function renderFilters() {
                 </button>`;
 	}).join('');
 
-	// Status Filters
-	const statusContainer = document.getElementById('statusFilters');
-	statusContainer.innerHTML = ['All', ...STATUS_TYPES].map(s => {
+	const typeContainer = document.getElementById('typeFilters');
+	if (typeContainer) typeContainer.innerHTML = typeHtml;
+
+	// Type Filters - Mobile (Compact)
+	const typeHtmlMobile = ['All', ...MEDIA_TYPES].map(t => {
+		const isActive = state.filterTypes.includes(t);
+		const themeColors = {
+			'Anime': 'bg-violet-600 border-violet-500 text-white',
+			'Manga': 'bg-pink-600 border-pink-500 text-white',
+			'Book': 'bg-blue-600 border-blue-500 text-white',
+			'Movie': 'bg-red-600 border-red-500 text-white',
+			'Series': 'bg-amber-600 border-amber-500 text-white'
+		};
+		let colorClass = `bg-zinc-100 dark:bg-zinc-800 border-transparent text-zinc-500 dark:text-zinc-400`;
+		if (t === 'All') {
+			if (isActive) colorClass = `bg-zinc-800 dark:bg-zinc-200 text-white dark:text-black border-transparent font-bold`;
+		} else {
+			if (isActive) colorClass = `${themeColors[t]} font-bold shadow-md`;
+		}
+
+		return `<button onclick="setFilterType('${t}'); event.stopPropagation();" class="flex items-center justify-center px-1 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-wide border transition-all w-full ${colorClass}">
+                    ${t}
+                </button>`;
+	}).join('');
+	const typeContainerMobile = document.getElementById('typeFiltersMobile');
+	if (typeContainerMobile) typeContainerMobile.innerHTML = typeHtmlMobile;
+
+	// Status Filters - Desktop
+	const statusHtml = ['All', ...STATUS_TYPES].map(s => {
 		const isActive = state.filterStatuses.includes(s);
 		const count = counts.statusCounts[s] || 0;
 		let scaleClass = isActive ? 'scale-110 shadow-lg' : 'hover:scale-105';
@@ -125,7 +150,6 @@ export function renderFilters() {
 			if (s === 'Planning') btnClass = `bg-zinc-500 text-white border-transparent font-bold`;
 		} else if (!isActive && s !== 'All') {
 			btnClass = `${STATUS_COLOR_MAP[s]} font-medium border bg-opacity-10`;
-			// For light mode "unselected" colored text, we might want slightly darker shades, but keeping it simple for now
 		}
 
 		const icon = s === 'All' ? 'layers' : STATUS_ICON_MAP[s];
@@ -135,6 +159,31 @@ export function renderFilters() {
                     ${s} <span class="px-1.5 py-0.5 rounded-full text-[9px] bg-black/20">${count}</span>
                 </button>`
 	}).join('');
+
+	const statusContainer = document.getElementById('statusFilters');
+	if (statusContainer) statusContainer.innerHTML = statusHtml;
+
+	// Status Filters - Mobile (Compact)
+	const statusHtmlMobile = ['All', ...STATUS_TYPES].map(s => {
+		const isActive = state.filterStatuses.includes(s);
+		let btnClass = `bg-zinc-100 dark:bg-zinc-800 border-transparent text-zinc-500 dark:text-zinc-400`;
+
+		if (isActive) {
+			if (s === 'All') {
+				btnClass = `bg-zinc-800 dark:bg-zinc-200 text-white dark:text-black font-bold border-transparent`;
+			} else {
+				const baseColor = STATUS_COLOR_MAP[s].split(' ')[0].replace('text-', '');
+				btnClass = `bg-${baseColor} text-white border-transparent font-bold shadow-md`;
+				if (s === 'Planning') btnClass = `bg-zinc-500 text-white border-transparent font-bold`;
+			}
+		}
+
+		return `<button onclick="setFilterStatus('${s}'); event.stopPropagation();" class="flex items-center justify-center px-1 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-wide border transition-all w-full ${btnClass}">
+                    ${s}
+                </button>`
+	}).join('');
+	const statusContainerMobile = document.getElementById('statusFiltersMobile');
+	if (statusContainerMobile) statusContainerMobile.innerHTML = statusHtmlMobile;
 
 	// Sort Fields
 	const sortFieldContainer = document.getElementById('sortFieldFilters');
