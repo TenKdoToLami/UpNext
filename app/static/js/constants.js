@@ -111,14 +111,14 @@ export const TYPE_COLOR_MAP = {
 export const STEP_TITLES = {
 	1: 'Media Type',
 	2: 'Status',
-	3: 'Basic Information',
-	4: 'Current Progress',
-	5: 'Cover Image',
+	3: 'Cover Image',
+	4: 'Basic Information',
+	5: 'Synopsis / Description',
 	6: 'External Links',
-	7: 'Synopsis / Description',
-	8: 'Personal Notes',
-	9: 'Review & Verdict',
-	10: 'Seasons / Child Items',
+	7: 'Current Progress',
+	8: 'Review & Verdict',
+	9: 'Personal Notes',
+	10: 'Seasons / Volumes',
 	11: 'Privacy Setting'
 };
 

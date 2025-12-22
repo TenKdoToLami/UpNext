@@ -24,30 +24,55 @@ import { safeCreateIcons } from './dom_utils.js';
  * Determines which steps should be skipped based on current form values.
  * @returns {number[]} Array of step numbers to skip
  */
+/**
+ * Determines which steps should be skipped based on current form values.
+ * @returns {number[]} Array of step numbers to skip
+ */
 export function getSkippedSteps() {
 	const type = document.getElementById('type')?.value || '';
 	const status = document.getElementById('status')?.value || '';
 
 	const skipped = [];
 
-	// Skip progress and rating for items not yet consumed
+	// Skip progress (7) and rating (8) for items not yet consumed
+	// REVISED: Progress (7) skipped for Planning & Completed.
+	// REVISED: Rating (8) skipped ONLY for Planning.
+	// (Enable rating for Reading/Watching and Anticipating as per user request to rate released parts)
+
 	if (status === 'Planning' || status === 'Reading/Watching') {
-		skipped.push(4, 9);
+		// New Step 7 (Progress): Skip if Planning or Completed.
+		// (Reading/Watching shows progress)
+		if (status === 'Planning') {
+			skipped.push(7);
+			skipped.push(8);
+		}
+	} else {
+		// For other statuses (Completed, Dropped, On Hold, Anticipating)
+
+		// Anticipating: Show Progress (7) AND Rating (8) now.
+		// Original logic skipped 8. We remove that.
+
+		// Completed: Skip Progress (7)
+		if (status === 'Completed') {
+			skipped.push(7);
+		}
 	}
-	// Skip progress for completed items
-	if (status === 'Completed') {
-		skipped.push(4);
-	}
-	// Skip seasons/volumes for non-series types
-	if (['Manga', 'Movie'].includes(type) && status !== 'Planning') {
+
+	// Double check logic above.
+	// Simplified based on updateFormUI translation:
+	// Progress (7): Hide if Planning or Completed
+	// Rating (8): Hide if Planning or Reading/Watching
+
+	// Skip seasons/volumes (10) for Manga and Movie ALWAYS
+	if (['Manga', 'Movie'].includes(type)) {
 		skipped.push(10);
 	}
-	// Skip privacy step if not in hidden mode
+	// Skip privacy step (11) if not in hidden mode
 	if (!state.isHidden) {
 		skipped.push(11);
 	}
 
-	return skipped;
+	return [...new Set(skipped)]; // Remove duplicates
 }
 
 /**
@@ -131,7 +156,8 @@ export function animateStepChange(from, to, direction) {
 
 		// Focus first input on new step
 		const input = toEl.querySelector('input, textarea');
-		if (input && to !== 1 && to !== 2) input.focus();
+		// Skip autofocus for cards/image steps (1, 2, 3)
+		if (input && to > 3) input.focus();
 	}, 380);
 }
 
@@ -245,19 +271,19 @@ function createDotHtml(step, currentStep) {
  */
 export function validateStep(step) {
 	switch (step) {
-		case 1:
+		case 1: // Media Type
 			if (!document.getElementById('type').value) {
 				alert('Please select a media type.');
 				return false;
 			}
 			break;
-		case 2:
+		case 2: // Status
 			if (!document.getElementById('status').value) {
 				alert('Please select a status.');
 				return false;
 			}
 			break;
-		case 3:
+		case 4: // Basic Info
 			if (!document.getElementById('title').value.trim()) {
 				alert('Title is required.');
 				return false;
@@ -273,6 +299,7 @@ export function validateStep(step) {
 
 /**
  * Updates form sections visibility based on form values.
+ * Ensures field visibility matches the step skipping logic.
  */
 export function updateFormUI() {
 	const type = document.getElementById('type').value;
@@ -285,16 +312,18 @@ export function updateFormUI() {
 		el.style.display = show ? 'block' : 'none';
 	};
 
-	// Progress: hide for Planning and Completed
-	toggle('step-4', !(status === 'Planning' || status === 'Completed'));
+	// Step 7 (Progress): Hide for Planning/Completed
+	toggle('step-7', !(status === 'Planning' || status === 'Completed'));
 
-	// Rating/Review: hide for items not yet consumed
-	toggle('step-9', !(status === 'Planning' || status === 'Reading/Watching'));
+	// Step 8 (Review): Hide for Planning and Reading/Watching
+	// Visible for: Completed, On Hold, Dropped, Anticipating
+	toggle('step-8', !(status === 'Planning' || status === 'Reading/Watching'));
 
-	// Seasons/Volumes: hide for Manga/Movie unless Planning
-	toggle('step-10', !(['Manga', 'Movie'].includes(type) && status !== 'Planning'));
+	// Step 10 (Seasons/Volumes): Hide for Manga and Movie
+	// Visible for: Anime, Book, Series
+	toggle('step-10', !(['Manga', 'Movie'].includes(type)));
 
-	// Privacy: only show in hidden mode
+	// Step 11 (Privacy): Only show in hidden mode
 	toggle('step-11', state.isHidden);
 
 	if (window.updateSidebarVisibility) window.updateSidebarVisibility();
@@ -309,7 +338,7 @@ export function updateWizardUI() {
 	// Show/hide series fields
 	const seriesWrapper = document.getElementById('seriesWrapper');
 	if (seriesWrapper) {
-		seriesWrapper.style.display = ['Book', 'Movie', 'Series'].includes(type) ? 'block' : 'none';
+		seriesWrapper.style.display = ['Book', 'Movie'].includes(type) ? 'block' : 'none';
 	}
 
 	// Update child items label

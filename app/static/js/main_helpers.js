@@ -216,13 +216,13 @@ function renderSidebarNav() {
 	const sections = [
 		{ id: 'step-1', label: 'Media Type', icon: 'monitor' },
 		{ id: 'step-2', label: 'Status', icon: 'activity' },
-		{ id: 'step-3', label: 'Basic Info', icon: 'file-text' },
-		{ id: 'step-4', label: 'Progress', icon: 'bookmark' }, // Conditionally hidden by CSS/JS
-		{ id: 'step-5', label: 'Cover Image', icon: 'image' },
+		{ id: 'step-3', label: 'Cover Image', icon: 'image' },
+		{ id: 'step-4', label: 'Basic Info', icon: 'file-text' },
+		{ id: 'step-5', label: 'Description', icon: 'align-left' },
 		{ id: 'step-6', label: 'External Links', icon: 'link' },
-		{ id: 'step-7', label: 'Description', icon: 'align-left' },
-		{ id: 'step-8', label: 'Notes', icon: 'sticky-note' },
-		{ id: 'step-9', label: 'Review & Rating', icon: 'star' },
+		{ id: 'step-7', label: 'Progress', icon: 'bookmark' },
+		{ id: 'step-8', label: 'Review & Rating', icon: 'star' },
+		{ id: 'step-9', label: 'Notes', icon: 'sticky-note' },
 		{ id: 'step-10', label: 'Seasons/Volumes', icon: 'layers' }, // Conditionally hidden
 		{ id: 'step-11', label: 'Privacy', icon: 'shield' } // Conditionally hidden
 	];
@@ -362,13 +362,13 @@ function restoreStepClasses() {
 
 	restore('step-1', centerClasses);
 	restore('step-2', centerClasses);
-	restore('step-3', topClasses);
-	restore('step-4', centerClasses);
-	restore('step-5', centerClasses);
+	restore('step-3', centerClasses); // Cover
+	restore('step-4', topClasses);    // Basic Info
+	restore('step-5', centerClasses); // Description (TextArea fits well in center)
 	restore('step-6', topClasses);
-	restore('step-7', topClasses);
-	restore('step-8', topClasses);
-	restore('step-9', topClasses);
+	restore('step-7', centerClasses); // Progress (Small inputs)
+	restore('step-8', centerClasses); // Review (Stars + Text)
+	restore('step-9', centerClasses); // Notes
 	restore('step-10', topClasses);
 	restore('step-11', centerClasses);
 }
