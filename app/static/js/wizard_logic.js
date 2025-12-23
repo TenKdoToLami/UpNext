@@ -257,7 +257,7 @@ function createDotHtml(step, currentStep) {
 		onclick = `onclick="window.jumpToStep(${step})"`;
 	}
 
-	return `<div ${onclick} class="w-2.5 h-2.5 rounded-full transition-all duration-300 ${stateClass} ${cursor}"></div>`;
+	return `<button type="button" ${onclick} class="focus:outline-none w-2.5 h-2.5 rounded-full transition-all duration-300 ${stateClass} ${cursor}"></button>`;
 }
 
 // =============================================================================
@@ -419,14 +419,14 @@ function createTypeCardHtml(type, extraClasses = '') {
 	const icon = ICON_MAP[type] || 'circle';
 
 	return `
-        <div onclick="window.selectType('${type}')" id="type-card-${type}" style="--theme-col: var(--col-${type.toLowerCase()})"
-            class="selection-card p-4 rounded-3xl flex flex-col items-center justify-center gap-3 group transition-all duration-300 cursor-pointer border-2 hover:scale-[1.02] active:scale-95 shadow-xl relative overflow-hidden ${rawClasses} h-full ${extraClasses}">
+        <button type="button" onclick="window.selectType('${type}')" id="type-card-${type}" style="--theme-col: var(--col-${type.toLowerCase()})"
+            class="selection-card w-full h-full p-4 rounded-3xl flex flex-col items-center justify-center gap-3 group transition-all duration-300 cursor-pointer border-2 hover:scale-[1.02] active:scale-95 shadow-xl relative overflow-hidden ${rawClasses} ${extraClasses} outline-none focus:ring-4 focus:ring-indigo-500/50">
             <div class="absolute inset-0 bg-gradient-to-br from-${color}-500/10 to-transparent opacity-100 transition-opacity"></div>
             <div class="p-3 md:p-4 rounded-full bg-white dark:bg-zinc-900/50 group-hover:bg-zinc-100 dark:group-hover:bg-zinc-900/80 transition-colors shadow-lg z-10 ring-1 ring-black/5 dark:ring-white/10">
                 <i data-lucide="${icon}" class="w-8 h-8 md:w-10 md:h-10 transition-colors text-${color}-500 dark:text-${color}-400"></i>
             </div>
             <span class="font-bold uppercase tracking-widest text-xs md:text-sm z-10 text-${color}-600 dark:text-${color}-100 text-center">${type}</span>
-        </div>
+        </button>
     `;
 }
 
@@ -460,13 +460,13 @@ function createStatusCardHtml(status) {
 
 	const statusVarName = status.toLowerCase().replace(/[^a-z]/g, '');
 	return `
-        <div onclick="window.selectStatus('${status}')" id="status-card-${safeId}" style="--theme-col: var(--col-${statusVarName})"
-            class="selection-card w-full h-full p-4 rounded-2xl flex flex-row items-center justify-start gap-4 group transition-all duration-300 cursor-pointer border-2 hover:scale-[1.02] shadow-xl relative overflow-hidden ${rawClass || 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900'}">
+        <button type="button" onclick="window.selectStatus('${status}')" id="status-card-${safeId}" style="--theme-col: var(--col-${statusVarName})"
+            class="selection-card w-full h-full p-4 rounded-2xl flex flex-row items-center justify-start gap-4 group transition-all duration-300 cursor-pointer border-2 hover:scale-[1.02] shadow-xl relative overflow-hidden ${rawClass || 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900'} outline-none focus:ring-4 focus:ring-indigo-500/50">
             <div class="absolute inset-0 bg-gradient-to-r from-transparent to-${color}-500/10 opacity-100 transition-opacity"></div>
             <div class="p-3 rounded-full bg-white dark:bg-zinc-900/50 group-hover:bg-zinc-50 dark:group-hover:bg-zinc-900/80 transition-colors shadow-lg z-10 ring-1 ring-black/5 dark:ring-white/10 shrink-0">
                 <i data-lucide="${icon}" class="w-6 h-6 transition-colors text-${color}-500 dark:text-${color}-400"></i>
             </div>
             <span class="font-bold uppercase tracking-wider text-[10px] sm:text-xs z-10 text-left text-${color}-600 dark:text-${color}-100 break-words leading-tight w-full pr-2">${status}</span>
-        </div>
+        </button>
     `;
 }

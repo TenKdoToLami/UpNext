@@ -330,7 +330,7 @@ export function updateGridTruncation() {
 function generateCardHtml(item) {
 	const mediaClass = `media-${item.type}`;
 	const authors = item.authors || (item.author ? [item.author] : []);
-	const authHtml = authors.length ? authors.map(a => `<span onclick="smartFilter(event, 'author', '${a.replace(/'/g, "\\'")}')" class="hover:text-zinc-900 dark:hover:text-white underline decoration-zinc-300 dark:decoration-white/20 underline-offset-2 hover:decoration-zinc-900 dark:hover:decoration-white transition-all cursor-pointer relative z-50">${a}</span>`).join(', ') : '<span class="italic text-zinc-400 dark:text-white/40">Unknown</span>';
+	const authHtml = authors.length ? authors.map(a => `<button type="button" onclick="smartFilter(event, 'author', '${a.replace(/'/g, "\\'")}')" class="bg-transparent border-none p-0 hover:text-zinc-900 dark:hover:text-white underline decoration-zinc-300 dark:decoration-white/20 underline-offset-2 hover:decoration-zinc-900 dark:hover:decoration-white transition-all cursor-pointer relative z-50">${a}</button>`).join(', ') : '<span class="italic text-zinc-400 dark:text-white/40">Unknown</span>';
 
 	// Verdict HTML (Card View)
 	let verdictHtml = '';
@@ -377,9 +377,10 @@ function generateCardHtml(item) {
                  <div class="p-4 bg-white dark:bg-zinc-900 border-t border-zinc-100 dark:border-white/5 flex flex-col gap-2 relative z-20 pointer-events-auto">
                      <h3 class="font-heading font-bold text-lg leading-tight line-clamp-2 text-[var(--theme-col)] transition-colors">${item.title}</h3>
                         <div class="flex flex-col gap-1.5 text-[11px] font-medium text-zinc-500 dark:text-zinc-400 mt-1">
+                        <div class="flex flex-col gap-1.5 text-[11px] font-medium text-zinc-500 dark:text-zinc-400 mt-1">
                              ${authors.length ? `<div class="flex items-center gap-1.5 truncate text-zinc-600 dark:text-zinc-300"><i data-lucide="pen-tool" class="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500 pointer-events-none"></i> ${authHtml}</div>` : ''}
-                             ${item.universe ? `<div onclick="smartFilter(event, 'universe', '${item.universe}')" class="flex items-center gap-1.5 truncate text-indigo-500 dark:text-indigo-300 cursor-pointer hover:text-indigo-700 dark:hover:text-indigo-200 transition-colors z-30"><i data-lucide="globe" class="w-3.5 h-3.5 opacity-50 pointer-events-none"></i> ${item.universe}</div>` : ''}
-                             ${item.series ? `<div onclick="smartFilter(event, 'series', '${item.series}')" class="flex items-center gap-1.5 truncate text-emerald-600 dark:text-emerald-300 cursor-pointer hover:text-emerald-700 dark:hover:text-emerald-200 transition-colors z-30"><i data-lucide="library" class="w-3.5 h-3.5 opacity-50 pointer-events-none"></i> ${item.series} ${item.seriesNumber ? '#' + item.seriesNumber : ''}</div>` : ''}
+                             ${item.universe ? `<button type="button" onclick="smartFilter(event, 'universe', '${item.universe}')" class="bg-transparent border-none p-0 flex items-center gap-1.5 truncate text-indigo-500 dark:text-indigo-300 cursor-pointer hover:text-indigo-700 dark:hover:text-indigo-200 transition-colors z-30 max-w-full"><i data-lucide="globe" class="w-3.5 h-3.5 opacity-50 pointer-events-none"></i> <span class="truncate">${item.universe}</span></button>` : ''}
+                             ${item.series ? `<button type="button" onclick="smartFilter(event, 'series', '${item.series}')" class="bg-transparent border-none p-0 flex items-center gap-1.5 truncate text-emerald-600 dark:text-emerald-300 cursor-pointer hover:text-emerald-700 dark:hover:text-emerald-200 transition-colors z-30 max-w-full"><i data-lucide="library" class="w-3.5 h-3.5 opacity-50 pointer-events-none"></i> <span class="truncate">${item.series} ${item.seriesNumber ? '#' + item.seriesNumber : ''}</span></button>` : ''}
                         </div>
                      </div>
                       <div class="flex flex-wrap items-end justify-between mt-auto pt-3 gap-y-2">
@@ -400,7 +401,7 @@ function generateCardHtml(item) {
 		}
 
 		return `
-                     <div onclick="openDetail('${item.id}')" class="group relative h-auto rounded-xl overflow-hidden cursor-pointer media-card ${mediaClass} bg-white dark:bg-zinc-900 flex flex-col shadow-lg">
+                     <div onclick="openDetail('${item.id}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openDetail('${item.id}');}" class="group relative h-auto rounded-xl overflow-hidden cursor-pointer media-card ${mediaClass} bg-white dark:bg-zinc-900 flex flex-col shadow-lg outline-none focus:ring-4 focus:ring-indigo-500/50">
                          <div class="relative w-full aspect-[2/3] overflow-hidden bg-zinc-100 dark:bg-zinc-950 pointer-events-none">
                              ${coverHtml}
                              ${progressHtml}
@@ -442,7 +443,7 @@ function generateCardHtml(item) {
 			const hasRating = ['Completed', 'Anticipating', 'Dropped', 'On Hold'].includes(item.status) && item.rating;
 
 			return `
-                 <div onclick="openDetail('${item.id}')" class="group bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden media-card list-card-mode ${mediaClass} hover:border-[var(--theme-col)] transition-all shadow-lg p-6 cursor-pointer">
+                 <div onclick="openDetail('${item.id}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openDetail('${item.id}');}" class="group bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden media-card list-card-mode ${mediaClass} hover:border-[var(--theme-col)] transition-all shadow-lg p-6 cursor-pointer outline-none focus:ring-4 focus:ring-indigo-500/50">
                           <div class="flex flex-col md:flex-row gap-8">
  
                                <div class="w-full md:w-52 shrink-0 flex flex-col">
@@ -464,8 +465,8 @@ function generateCardHtml(item) {
                                        </div>
                                        <div class="flex flex-wrap gap-4 text-sm font-medium text-zinc-500 dark:text-zinc-400 mt-1">
                                            ${authors.length ? `<span onclick="event.stopPropagation()" class="flex items-center gap-1.5 cursor-auto"><i data-lucide="pen-tool" class="w-4 h-4 text-zinc-400 dark:text-zinc-600"></i> ${authHtml}</span>` : ''}
-                                           ${item.series ? `<span onclick="smartFilter(event, 'series', '${item.series}')" class="text-emerald-500 dark:text-emerald-400/90 flex items-center gap-1.5 cursor-pointer hover:underline"><i data-lucide="library" class="w-4 h-4"></i> ${seriesText}</span>` : ''}
-                                           ${item.universe ? `<span onclick="smartFilter(event, 'universe', '${item.universe}')" class="text-indigo-500 dark:text-indigo-400/90 flex items-center gap-1.5 cursor-pointer hover:underline"><i data-lucide="globe" class="w-4 h-4"></i> ${item.universe}</span>` : ''}
+                                           ${item.series ? `<button type="button" onclick="smartFilter(event, 'series', '${item.series}')" class="bg-transparent border-none p-0 text-emerald-500 dark:text-emerald-400/90 flex items-center gap-1.5 cursor-pointer hover:underline"><i data-lucide="library" class="w-4 h-4"></i> ${seriesText}</button>` : ''}
+                                           ${item.universe ? `<button type="button" onclick="smartFilter(event, 'universe', '${item.universe}')" class="bg-transparent border-none p-0 text-indigo-500 dark:text-indigo-400/90 flex items-center gap-1.5 cursor-pointer hover:underline"><i data-lucide="globe" class="w-4 h-4"></i> ${item.universe}</button>` : ''}
                                        </div>
                                        ${item.description ? `
                                        <div class="text-zinc-600 dark:text-zinc-400 text-sm mt-3 leading-relaxed group/desc relative" onclick="event.stopPropagation()">
@@ -517,7 +518,7 @@ function generateCardHtml(item) {
 			const themeColorClass = TYPE_COLOR_MAP[item.type].split(' ')[0]; // Gets 'text-pink-400' etc.
 
 			return `
-                <div onclick="openDetail('${item.id}')" class="group flex items-center justify-between gap-4 p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800/80 rounded-xl hover:border-[var(--theme-col)] hover:bg-zinc-50 dark:hover:bg-zinc-800/80 cursor-pointer shadow-sm mb-3 media-card list-card-mode ${mediaClass}">
+                <div onclick="openDetail('${item.id}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openDetail('${item.id}');}" class="group flex items-center justify-between gap-4 p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800/80 rounded-xl hover:border-[var(--theme-col)] hover:bg-zinc-50 dark:hover:bg-zinc-800/80 cursor-pointer shadow-sm mb-3 media-card list-card-mode ${mediaClass} outline-none focus:ring-4 focus:ring-indigo-500/50">
                     
                     <!-- Left: Cover & Info -->
                     <div class="flex items-center gap-5 flex-1 min-w-0">
@@ -545,7 +546,7 @@ function generateCardHtml(item) {
                             </div>
                             
                             <div class="flex flex-wrap items-center gap-2 text-xs font-medium text-zinc-500">
-                                ${authors.length ? `<span class="flex items-center gap-1 hover:text-zinc-800 dark:hover:text-zinc-300 transition-colors cursor-pointer" onclick="smartFilter(event, 'author', '${item.author}')"><i data-lucide="pen-tool" class="w-3 h-3 opacity-50"></i> ${authHtml}</span>` : '<span class="italic text-zinc-700">No Author/Studio</span>'}
+                                ${authors.length ? `<span class="flex items-center gap-1 hover:text-zinc-800 dark:hover:text-zinc-300 transition-colors cursor-pointer" onclick="event.stopPropagation()"><i data-lucide="pen-tool" class="w-3 h-3 opacity-50"></i> ${authHtml}</span>` : '<span class="italic text-zinc-700">No Author/Studio</span>'}
                             </div>
                         </div>
                     </div>
@@ -574,5 +575,19 @@ function generateCardHtml(item) {
                     </div>
                 </div>`;
 		}
+	}
+}
+
+export function showGridLoading() {
+	const container = document.getElementById('gridContainer');
+	if (container) {
+		container.classList.add('opacity-50', 'pointer-events-none', 'animate-pulse');
+	}
+}
+
+export function hideGridLoading() {
+	const container = document.getElementById('gridContainer');
+	if (container) {
+		container.classList.remove('opacity-50', 'pointer-events-none', 'animate-pulse');
 	}
 }

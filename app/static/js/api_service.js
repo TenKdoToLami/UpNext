@@ -5,8 +5,9 @@
  */
 
 import { state } from './state.js';
-import { renderFilters, renderGrid } from './render_utils.js';
+import { renderFilters, renderGrid, showGridLoading, hideGridLoading } from './render_utils.js';
 import { safeCreateIcons } from './dom_utils.js';
+import { showToast } from './toast.js';
 
 /**
  * Fetches all library items from the API and updates the local state and UI.
@@ -15,6 +16,7 @@ import { safeCreateIcons } from './dom_utils.js';
  */
 export async function loadItems() {
 	try {
+		showGridLoading();
 		const response = await fetch('/api/items');
 		if (!response.ok) throw new Error('Failed to fetch items');
 
@@ -24,8 +26,10 @@ export async function loadItems() {
 		renderFilters();
 		renderGrid();
 		safeCreateIcons();
+		hideGridLoading();
 	} catch (error) {
 		console.error('Error loading library items:', error);
+		hideGridLoading();
 	}
 }
 
@@ -46,7 +50,7 @@ export async function deleteItem(id) {
 		return true;
 	} catch (error) {
 		console.error('Error deleting item:', error);
-		alert('Failed to delete item. Please try again.');
+		showToast('Failed to delete item. Please try again.', 'error');
 		return false;
 	}
 }

@@ -496,9 +496,10 @@ window.saveEntry = async () => {
         await saveItem(formData);
         closeModal();
         loadItems();
+        showToast('Entry saved successfully!', 'success');
     } catch (e) {
         console.error("Error saving entry:", e);
-        alert("Failed to save entry. Please try again.");
+        showToast("Failed to save entry. Please try again.", 'error');
     } finally {
         isWizardSaving = false;
         if (submitBtn) {
@@ -554,6 +555,7 @@ window.deleteFromDetail = async (id) => {
     if (deleted) {
         window.closeDetail();
         loadItems();
+        showToast('Entry deleted.', 'info');
     }
 };
 
