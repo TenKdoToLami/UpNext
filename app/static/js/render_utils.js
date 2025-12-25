@@ -357,7 +357,12 @@ function generateCardHtml(item) {
 	}
 
 	const statusIcon = STATUS_ICON_MAP[item.status] || 'circle';
-	const statusBadge = `<span class="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider ${STATUS_COLOR_MAP[item.status]} !bg-transparent !border-none backdrop-blur-md whitespace-nowrap px-2.5 py-1 rounded-md"><i data-lucide="${statusIcon}" class="w-3 h-3"></i> ${item.status}</span>`;
+	let displayStatus = item.status;
+	if (item.status === 'Reading/Watching') {
+		if (['Anime', 'Movie', 'Series'].includes(item.type)) displayStatus = 'Watching';
+		else displayStatus = 'Reading';
+	}
+	const statusBadge = `<span class="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider ${STATUS_COLOR_MAP[item.status]} !bg-transparent !border-none backdrop-blur-md whitespace-nowrap px-2.5 py-1 rounded-md"><i data-lucide="${statusIcon}" class="w-3 h-3"></i> ${displayStatus}</span>`;
 
 	// Icon colors
 	let iconColorClass = "text-zinc-600 dark:text-white bg-white/80 dark:bg-black/60 border-white/20 dark:border-white/10";
@@ -371,47 +376,61 @@ function generateCardHtml(item) {
 
 
 	if (state.viewMode === 'grid') {
-		let titleBlock = '';
+		const badgeOverlay = `
+            <div class="absolute bottom-0 left-0 right-0 p-3 flex flex-col justify-end z-20 pointer-events-none">
+                <div class="flex flex-wrap items-end justify-between mb-1.5 gap-y-1">
+                    <div class="flex flex-wrap gap-2 items-center">${statusBadge} ${item.isHidden ? `<i data-lucide="eye-off" class="w-4 h-4 text-[var(--col-hidden)] drop-shadow-md" title="Hidden"></i>` : ''}</div>
+                    ${verdictHtml}
+                </div>
+                ${!state.showDetails ? `<h3 class="font-heading font-bold text-lg leading-tight line-clamp-2 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] text-white dark:text-[var(--theme-col)] transition-colors">${item.title}</h3>` : ''}
+            </div>
+            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-100 pointer-events-none"></div>
+        `;
+
+		let detailBlock = '';
 		if (state.showDetails) {
-			titleBlock = `
-                 <div class="p-4 bg-white dark:bg-zinc-900 border-t border-zinc-100 dark:border-white/5 flex flex-col gap-2 relative z-20 pointer-events-auto">
-                     <h3 class="font-heading font-bold text-lg leading-tight line-clamp-2 text-[var(--theme-col)] transition-colors">${item.title}</h3>
-                        <div class="flex flex-col gap-1.5 text-[11px] font-medium text-zinc-500 dark:text-zinc-400 mt-1">
-                        <div class="flex flex-col gap-1.5 text-[11px] font-medium text-zinc-500 dark:text-zinc-400 mt-1">
-                             ${authors.length ? `<div class="flex items-center gap-1.5 truncate text-zinc-600 dark:text-zinc-300"><i data-lucide="pen-tool" class="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500 pointer-events-none"></i> ${authHtml}</div>` : ''}
-                             ${item.universe ? `<button type="button" onclick="smartFilter(event, 'universe', '${item.universe}')" class="bg-transparent border-none p-0 flex items-center gap-1.5 truncate text-indigo-500 dark:text-indigo-300 cursor-pointer hover:text-indigo-700 dark:hover:text-indigo-200 transition-colors z-30 max-w-full"><i data-lucide="globe" class="w-3.5 h-3.5 opacity-50 pointer-events-none"></i> <span class="truncate">${item.universe}</span></button>` : ''}
-                             ${item.series ? `<button type="button" onclick="smartFilter(event, 'series', '${item.series}')" class="bg-transparent border-none p-0 flex items-center gap-1.5 truncate text-emerald-600 dark:text-emerald-300 cursor-pointer hover:text-emerald-700 dark:hover:text-emerald-200 transition-colors z-30 max-w-full"><i data-lucide="library" class="w-3.5 h-3.5 opacity-50 pointer-events-none"></i> <span class="truncate">${item.series} ${item.seriesNumber ? '#' + item.seriesNumber : ''}</span></button>` : ''}
-                        </div>
+			detailBlock = `
+                 <div class="p-4 pt-6 bg-white dark:bg-zinc-900 border-t border-zinc-100 dark:border-white/5 flex flex-col gap-2 relative z-20 pointer-events-auto h-[15rem]">
+                     <h3 class="font-heading font-bold text-2xl leading-[1.2] line-clamp-2 text-[var(--theme-col)] transition-colors mb-2">${item.title}</h3>
+                     <div class="flex flex-col gap-1 text-xs font-medium text-zinc-500 dark:text-zinc-400 mt-1">
+                          ${authors.length ? `<div class="text-zinc-600 dark:text-zinc-300 line-clamp-2 h-auto block"><i data-lucide="pen-tool" class="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500 inline-block mr-1.5 align-text-bottom pointer-events-none"></i>${authors.length ? authors.map(a => `<button type="button" onclick="smartFilter(event, 'author', '${a.replace(/'/g, "\\'")}')" class="bg-transparent border-none p-0 hover:text-zinc-900 dark:hover:text-white underline decoration-zinc-300 dark:decoration-white/20 underline-offset-2 hover:decoration-zinc-900 dark:hover:decoration-white transition-all cursor-pointer relative z-50 inline">${a}</button>`).join(', ') : ''}</div>` : ''}
+                          ${item.universe ? `<button type="button" onclick="smartFilter(event, 'universe', '${item.universe}')" class="bg-transparent border-none p-0 flex items-center gap-1.5 truncate text-indigo-500 dark:text-indigo-300 cursor-pointer hover:text-indigo-700 dark:hover:text-indigo-200 transition-colors z-30 max-w-full"><i data-lucide="globe" class="w-3.5 h-3.5 opacity-50 pointer-events-none"></i> <span class="truncate">${item.universe}</span></button>` : ''}
+                          ${item.series ? `<button type="button" onclick="smartFilter(event, 'series', '${item.series}')" class="bg-transparent border-none p-0 flex items-center gap-1.5 truncate text-emerald-600 dark:text-emerald-300 cursor-pointer hover:text-emerald-700 dark:hover:text-emerald-200 transition-colors z-30 max-w-full"><i data-lucide="library" class="w-3.5 h-3.5 opacity-50 pointer-events-none"></i> <span class="truncate">${item.series} ${item.seriesNumber ? '#' + item.seriesNumber : ''}</span></button>` : ''}
                      </div>
-                      <div class="flex flex-wrap items-end justify-between mt-auto pt-3 gap-y-2">
-                         <div class="flex flex-wrap gap-2 items-center">${statusBadge} ${hiddenBadge}</div>
-                         ${verdictHtml}
-                     </div>
+                     ${(() => {
+					if (!item.description) return '';
+					// Dynamic Title lines estimation
+					const titleLines = item.title.length > 25 ? 2 : 1;
+					const titleCost = titleLines * 2; // 2xl is ~2 slots
+
+					let authorCost = 0;
+					if (authors.length) {
+						const authTextLength = authors.join(', ').length;
+						authorCost = authTextLength > 30 ? 2 : 1;
+					}
+					const universeCost = item.universe ? 1 : 0;
+					const seriesCost = item.series ? 1 : 0;
+					const totalCapacity = 11;
+					const usedSlots = titleCost + authorCost + universeCost + seriesCost;
+					const descLines = totalCapacity - usedSlots;
+					if (descLines <= 0) return '';
+					return `<div style="-webkit-line-clamp: ${descLines}; display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden;" class="text-xs leading-5 text-zinc-500 dark:text-zinc-400 mt-auto border-t border-zinc-100 dark:border-white/5 pt-2">${item.description}</div>`;
+				})()}
                  </div>`;
-		} else {
-			titleBlock = `
-                 <div class="absolute bottom-0 left-0 right-0 p-3 flex flex-col justify-end z-20 pointer-events-none">
-                     <div class="flex flex-wrap items-end justify-between mb-1.5 gap-y-1">
-                         <div class="flex flex-wrap gap-2 items-center">${statusBadge} ${item.isHidden ? `<i data-lucide="eye-off" class="w-4 h-4 text-[var(--col-hidden)] drop-shadow-md" title="Hidden"></i>` : ''}</div>
-                         ${verdictHtml}
-                     </div>
-                     <h3 class="font-heading font-bold text-lg leading-tight line-clamp-2 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] text-white dark:text-[var(--theme-col)] transition-colors">${item.title}</h3>
-                 </div>
-                 <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-100 pointer-events-none"></div>`;
 		}
 
 		return `
-                     <div onclick="openDetail('${item.id}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openDetail('${item.id}');}" class="group relative h-auto rounded-xl overflow-hidden cursor-pointer media-card ${mediaClass} bg-white dark:bg-zinc-900 flex flex-col shadow-lg outline-none focus:ring-4 focus:ring-indigo-500/50">
-                         <div class="relative w-full aspect-[2/3] overflow-hidden bg-zinc-100 dark:bg-zinc-950 pointer-events-none">
-                             ${coverHtml}
-                             ${progressHtml}
-                             <div class="absolute top-2.5 left-2.5 z-30 p-2 rounded-lg border shadow-xl ${iconColorClass} pointer-events-none">
-                                 <i data-lucide="${ICON_MAP[item.type] || 'book'}" class="w-5 h-5"></i>
-                             </div>
-                             ${!state.showDetails ? titleBlock : ''}
-                         </div>
-                         ${state.showDetails ? titleBlock : ''}
-                     </div>`;
+             <div onclick="openDetail('${item.id}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openDetail('${item.id}');}" class="group relative h-auto rounded-xl overflow-hidden cursor-pointer media-card ${mediaClass} bg-white dark:bg-zinc-900 flex flex-col shadow-lg outline-none focus:ring-4 focus:ring-indigo-500/50">
+                 <div class="relative w-full aspect-[2/3] overflow-hidden bg-zinc-100 dark:bg-zinc-950 pointer-events-none">
+                     ${coverHtml}
+                     ${progressHtml}
+                     <div class="absolute top-2.5 left-2.5 z-30 p-2 rounded-lg border shadow-xl ${iconColorClass} pointer-events-none">
+                         <i data-lucide="${ICON_MAP[item.type] || 'book'}" class="w-5 h-5"></i>
+                     </div>
+                     ${badgeOverlay}
+                 </div>
+                 ${detailBlock}
+             </div>`;
 	} else {
 		// LIST VIEW (Expanded or compact)
 		if (state.showDetails) {
