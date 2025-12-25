@@ -7,102 +7,64 @@ logging.basicConfig(level=logging.INFO, format='%(message)s')
 logger = logging.getLogger("Cleaner")
 
 def clean_project():
-    """Cleans temporary files and directories from the project."""
-    # Root dir is one level up from this script
+    """
+    Purges temporary files, caches, and build artifacts from the repository.
+    """
     root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     
-    # Specific directories to remove (relative to root)
-    dirs_to_remove = [
-        'build',
-        'dist',
-        os.path.join('data', 'browser_profile')
-    ]
-
-    # Specific files to remove (relative to root)
-    specific_files_to_remove = [
-        'UpNext',
-        'UpNext.exe',
-        'UpNext.desktop'
-    ]
+    dirs_to_remove = ['build', 'dist', os.path.join('data', 'browser_profile')]
+    files_to_remove = ['UpNext', 'UpNext.exe', 'UpNext.desktop']
     
-    # Extensions to remove recursively
-    files_to_remove_ext = [
-        '.pyc'
-    ]
-    
-    # Directories to remove recursively (by name)
-    dirs_to_remove_name = [
-        '__pycache__'
-    ]
+    logger.info("Starting comprehensive project cleanup...")
 
-    logger.info("🧹 Starting Project Cleanup...")
-
-    # 1. Remove specific top-level directories
+    # 1. Target known build artifacts
     for reldir in dirs_to_remove:
         path = os.path.join(root_dir, reldir)
         if os.path.exists(path):
             try:
                 shutil.rmtree(path)
-                logger.info(f"✔ Removed directory: {reldir}")
+                logger.info(f"Removed directory: {reldir}")
             except Exception as e:
-                logger.error(f"❌ Failed to remove {reldir}: {e}")
+                logger.error(f"Failed to remove {reldir}: {e}")
 
-    # 2. Remove specific top-level files
-    for relfile in specific_files_to_remove:
+    for relfile in files_to_remove:
         path = os.path.join(root_dir, relfile)
         if os.path.exists(path):
             try:
                 os.remove(path)
-                logger.info(f"✔ Removed file: {relfile}")
+                logger.info(f"Removed artifact: {relfile}")
             except Exception as e:
-                logger.error(f"❌ Failed to remove {relfile}: {e}")
+                logger.error(f"Failed to remove {relfile}: {e}")
 
-    # 3. Walk through the project and remove recursive targets
-    cleaned_files_count = 0
-    cleaned_dirs_count = 0
-    
+    # 2. Recursive cleanup of bytecode and cache
+    cleaned_count = 0
     for current_root, dirs, files in os.walk(root_dir):
-        # Skip .git directory and venv if present
-        if '.git' in dirs:
-            dirs.remove('.git')
-        if 'venv' in dirs:
-            dirs.remove('venv')
-        if '.venv' in dirs:
-            dirs.remove('.venv')
-        if '.agent' in dirs:
-            dirs.remove('.agent')
+        # Optimized skip list
+        for skip in ['.git', 'venv', '.venv', '.agent', 'data']:
+            if skip in dirs:
+                dirs.remove(skip)
 
-        # Remove __pycache__ directories
+        # Cleanup Python Caches
         for d in list(dirs):
-            if d in dirs_to_remove_name:
+            if d == '__pycache__':
                 path = os.path.join(current_root, d)
                 try:
                     shutil.rmtree(path)
-                    logger.info(f"✔ Removed cache dir: {os.path.relpath(path, root_dir)}")
-                    dirs.remove(d) # Don't traverse into deleted dir
-                    cleaned_dirs_count += 1
+                    cleaned_count += 1
                 except Exception as e:
-                    logger.error(f"❌ Failed to remove {path}: {e}")
+                    logger.warning(f"Could not clean cache @ {path}: {e}")
 
-        # Remove file patterns
+        # Cleanup Bytecode
         for f in files:
-            _, ext = os.path.splitext(f)
-            if ext in files_to_remove_ext:
-                # Special case: Don't delete build.py even though it looks like a spec file content-wise, 
-                # but here we are matching extensions. build.py is .py so it's safe.
-                # If there are actual .spec files generated, we remove them.
+            if f.endswith('.pyc'):
                 path = os.path.join(current_root, f)
                 try:
                     os.remove(path)
-                    logger.info(f"✔ Removed file: {os.path.relpath(path, root_dir)}")
-                    cleaned_files_count += 1
+                    cleaned_count += 1
                 except Exception as e:
-                    logger.error(f"❌ Failed to remove {path}: {e}")
+                    logger.warning(f"Could not remove bytecode @ {path}: {e}")
 
-    logger.info("-" * 30)
-    logger.info(f"✨ Cleanup Complete!")
-    logger.info(f"   - Directories removed: {cleaned_dirs_count + len([d for d in dirs_to_remove if os.path.exists(os.path.join(root_dir, d))])}") # Approx count logic
-    logger.info(f"   - Files removed: {cleaned_files_count}")
+    logger.info(f"Cleanup complete. Removed {cleaned_count} temporary project assets.")
 
 if __name__ == "__main__":
     clean_project()

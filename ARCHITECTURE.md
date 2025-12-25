@@ -75,7 +75,15 @@ A single wrapper script that handles the entire development lifecycle:
 ### Data Persistence
 Data is stored locally in `data/library.db` using SQLite. This ensures reliability and relational integrity while remaining highly portable. 
 
-**Note on Images**: Cover images are stored directly in the SQLite database as binary blobs (`LargeBinary`). This allows the entire library (metadata + images) to be backed up by copying a single `.db` file. We previously used JSON, but have migrated to SQLite for better performance and data integrity.
+#### Normalized Database Schema
+The application uses a 5-table normalized architecture to optimize performance and scalability:
+1.  **`MediaItem`**: The core registry (ID, Title, Type). Kept lightweight for fast listing and searching.
+2.  **`MediaCover`**: Stores large binary image data (BLOBs) separately to prevent database page bloat.
+3.  **`MediaUserData`**: Stores user-specific tracking (Status, Rating, Progress, Completed Date, Reread Count).
+4.  **`MediaMetadata`**: Stores technical statistics (Episode/Volume/Page counts, Duration).
+5.  **`MediaRelease`**: Tracks specific release events (Volumes, Episodes) for the calendar system.
+
+**Note on Images**: By separating binary data into `MediaCover`, the main library remains lightning-fast even with hundreds of high-res covers.
 
 ### Build System
 The build process is fully automated via `scripts/build.py`:

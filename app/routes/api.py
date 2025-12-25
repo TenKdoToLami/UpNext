@@ -31,56 +31,58 @@ def get_items():
 
 @bp.route("/items", methods=["POST"])
 def save_item():
-    """Create a new item or update an existing one."""
+    """
+    Creates a new media item or updates an existing one.
+    
+    Expects a multipart/form-data request with:
+    - data: JSON string containing item attributes.
+    - image: (Optional) Binary image file for the cover.
+    """
     try:
         data_str = request.form.get("data")
         if not data_str:
-            raise ValueError("No data provided")
+            raise ValueError("No data provided in 'data' field.")
 
         form_data: Dict[str, Any] = json.loads(data_str)
+        item_id = form_data.get("id")
 
-        # Basic Validation
-        _validate_item(form_data)
+        # Validate against system constants (types, statuses)
+        _validate_item(form_data, is_update=bool(item_id))
 
-        # Handle Image Upload (Binary storage)
+        # Handle Image Upload
         image_file = request.files.get("image")
         if image_file and image_file.filename:
             form_data["cover_image"] = image_file.read()
             form_data["cover_mime"] = image_file.mimetype
-            # Clear legacy coverUrl if we have a real image
-            form_data["cover_url"] = ""
-
-        item_id = form_data.get("id")
+            form_data["cover_url"] = ""  # Real image overrides external URL
 
         if item_id:
-            # --- UPDATE ---
-            existing_item = data_manager.get_item(item_id)
-            if not existing_item:
+            # Update existing record
+            if not data_manager.get_item(item_id):
                 return jsonify({"status": "error", "message": "Item not found"}), 404
 
-            form_data["updatedAt"] = datetime.now().isoformat()
+            form_data["updatedAt"] = datetime.utcnow().isoformat()
             success = data_manager.update_item(item_id, form_data)
         else:
-            # --- CREATE NEW ---
+            # Create new record
             item_id = uuid.uuid4().hex
             form_data["id"] = item_id
-            form_data["createdAt"] = datetime.now().isoformat()
-            form_data["updatedAt"] = datetime.now().isoformat()
+            form_data["createdAt"] = datetime.utcnow().isoformat()
+            form_data["updatedAt"] = datetime.utcnow().isoformat()
             form_data["isHidden"] = form_data.get("isHidden", False)
 
             success = data_manager.add_item(form_data)
 
         if not success:
-            raise IOError("Failed to save item to database")
+            raise IOError("DataManager failed to persist changes.")
 
-        final_item = data_manager.get_item(item_id)
-        return jsonify({"status": "success", "item": final_item})
+        return jsonify({"status": "success", "item": data_manager.get_item(item_id)})
 
     except ValueError as ve:
-        logger.warning(f"Validation error: {ve}")
+        logger.warning(f"Validation failure: {ve}")
         return jsonify({"status": "error", "message": str(ve)}), 400
     except Exception as e:
-        logger.error(f"Error saving item: {e}")
+        logger.error(f"Unexpected error in save_item: {e}", exc_info=True)
         return jsonify({"status": "error", "message": "Internal server error"}), 500
 
 
@@ -100,9 +102,16 @@ def delete_item(item_id):
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
-def _validate_item(data: Dict[str, Any]) -> None:
+def _validate_item(data: Dict[str, Any], is_update: bool = False) -> None:
     """Validates item data against allowed constants."""
-    if data.get("type") not in MEDIA_TYPES:
-        raise ValueError(f"Invalid media type: {data.get('type')}")
-    if data.get("status") not in STATUS_TYPES:
+    # Type validation: Required on create, optional on update (but must be valid if passed)
+    if not is_update:
+        if "type" not in data or data.get("type") not in MEDIA_TYPES:
+             raise ValueError(f"Invalid media type: {data.get('type')}")
+    else:
+        if "type" in data and data.get("type") not in MEDIA_TYPES:
+             raise ValueError(f"Invalid media type: {data.get('type')}")
+
+    # Status validation: Optional but must be valid if passed
+    if "status" in data and data.get("status") not in STATUS_TYPES:
         raise ValueError(f"Invalid status: {data.get('status')}")

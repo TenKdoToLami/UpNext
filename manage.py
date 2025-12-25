@@ -4,52 +4,48 @@ import os
 import subprocess
 
 def main():
-    # Check for virtual environment and re-execute if not currently using it
+    """
+    Main entry point for project management.
+    
+    Automatically detects and switches to the virtual environment if present,
+    then dispatches commands to specialized script modules.
+    """
+    # 1. Environment Detection and Self-Correction
     root_dir = os.path.dirname(os.path.abspath(__file__))
     venv_dir = os.path.join(root_dir, '.venv')
     
     if os.path.exists(venv_dir):
-        # Simple check: is the executable inside the venv dir?
-        # Resolve symlinks to be sure, although venv usually puts the binary inside.
-        # sys.prefix is a better check for "is this environment active"
+        # If we're not already running inside the venv, re-execute the script using the venv's python
         if sys.prefix != venv_dir:
-            # Not running on the venv python. Attempt to find it.
-            if sys.platform == "win32":
-                python_exe = os.path.join(venv_dir, "Scripts", "python.exe")
-            else:
-                python_exe = os.path.join(venv_dir, "bin", "python")
+            python_exe = os.path.join(venv_dir, "Scripts", "python.exe") if sys.platform == "win32" else os.path.join(venv_dir, "bin", "python")
             
             if os.path.exists(python_exe):
-                # Re-execute the script with the venv python
                 cmd = [python_exe] + sys.argv
                 try:
                     subprocess.run(cmd, check=True)
                     sys.exit(0)
-                except subprocess.CalledProcessError as e:
-                    sys.exit(e.returncode)
                 except Exception as e:
-                    print(f"Error re-executing in venv: {e}")
+                    print(f"FAILED to re-execute in environment: {e}")
                     sys.exit(1)
 
-    # Lazy imports to avoid ModuleNotFoundError before venv switch
-    from scripts import run
-    from scripts import build
-    from scripts import clean
+    # 2. Command Dispatching
+    # Lazy imports to prevent dependency errors before the venv switch occurs above
+    from scripts import run, build, clean
     
-    parser = argparse.ArgumentParser(description="UpNext Project Management Script")
-    subparsers = parser.add_subparsers(dest="command", help="Available commands")
+    parser = argparse.ArgumentParser(
+        description="UpNext Management CLI",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="Examples:\n  python manage.py run\n  python manage.py build\n  python manage.py clean"
+    )
+    subparsers = parser.add_subparsers(dest="command", help="Operational commands")
 
-    # Run command
-    subparsers.add_parser("run", help="Run the application")
-
-    # Build command
-    subparsers.add_parser("build", help="Build the executable")
-
-    # Clean command
-    subparsers.add_parser("clean", help="Clean temporary files")
+    subparsers.add_parser("run", help="Start the development server and launch UI")
+    subparsers.add_parser("build", help="Compile the application into a standalone executable")
+    subparsers.add_parser("clean", help="Remove temporary build artifacts and cache files")
 
     args = parser.parse_args()
 
+    # Execute the requested operation
     if args.command == "run":
         run.main()
     elif args.command == "build":

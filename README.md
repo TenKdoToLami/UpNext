@@ -9,7 +9,8 @@ UpNext is a beautiful, local web application designed to help you track your med
 -   **Rich Metadata**: Store authors, studios, alternative titles, series ordering, and universes (e.g., MCU).
 -   **Privacy & Review**: Mark items as "Hidden" and add personal reviews with a 4-point rating system.
 -   **Modern UI**: Responsive design with dark mode, grid/list views, and vibrant aesthetics.
--   **Portable**: Runs locally with a portable SQLite database (`data/library.db`)—your data stays yours.
+-   **Advanced Tracking**: New fields for `release_date`, `completed_at`, and `reread_count` for better personal statistics.
+-   **Normalized Database**: High-performance 5-table SQLite architecture (`data/library.db`)—all your data stays yours.
 -   **Export**: Export your library to JSON, CSV, XML, or beautiful HTML cards/lists.
 -   **Library Statistics**: Visualize your media habits with dynamic charts (Distribution, Status, Ratings, and Growth) powered by Chart.js.
 

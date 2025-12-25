@@ -98,27 +98,42 @@ def filter_item_fields(item, fields):
 
 
 def collect_cover_images(items, include_covers):
-    """Collect item IDs for items that have cover images."""
+    """
+    Collect item IDs for items that have cover images.
+    
+    Args:
+        items (list): List of item dictionaries.
+        include_covers (bool): Whether to include covers in the export.
+        
+    Returns:
+        set: A set of item IDs that have associated cover content.
+    """
     if not include_covers:
         return set()
     return {item.get('id') for item in items if item.get('coverUrl')}
 
 
 def add_images_to_zip(zf, item_ids):
-    """Add cover images to a ZIP file from the database."""
+    """
+    Retrieves cover binary data from the database and adds it to the ZIP archive.
+    
+    Args:
+        zf (zipfile.ZipFile): The target ZIP archive.
+        item_ids (set): Set of item IDs to fetch covers for.
+    """
     from app.models import MediaItem
     from app.database import db
     import mimetypes
 
     for item_id in item_ids:
         item = db.session.get(MediaItem, item_id)
-        if item and item.cover_image:
+        if item and item.cover and item.cover.cover_image:
             ext = ".jpg"
-            if item.cover_mime:
-                 ext = mimetypes.guess_extension(item.cover_mime) or ".jpg"
+            if item.cover.cover_mime:
+                 ext = mimetypes.guess_extension(item.cover.cover_mime) or ".jpg"
             
             filename = f"{item_id}{ext}"
-            zf.writestr(f"images/{filename}", item.cover_image)
+            zf.writestr(f"images/{filename}", item.cover.cover_image)
 
 
 
@@ -158,7 +173,16 @@ def export_json(items, fields, images):
 
 
 def _process_items_for_export(items, images):
-    """Refreshes item cover URLs for zip export."""
+    """
+    Adjusts item metadata for portable export (e.g., rewriting cover URLs to relative ZIP paths).
+    
+    Args:
+        items (list): List of item dictionaries (from to_dict).
+        images (set): Set of item IDs being exported with binary covers.
+        
+    Returns:
+        list: Processed item dictionaries.
+    """
     from app.models import MediaItem
     from app.database import db
     import mimetypes
@@ -169,8 +193,8 @@ def _process_items_for_export(items, images):
         if new_item.get('id') in images:
              media_item = db.session.get(MediaItem, new_item['id'])
              ext = ".jpg"
-             if media_item and media_item.cover_mime:
-                 ext = mimetypes.guess_extension(media_item.cover_mime) or ".jpg"
+             if media_item and media_item.cover and media_item.cover.cover_mime:
+                 ext = mimetypes.guess_extension(media_item.cover.cover_mime) or ".jpg"
              new_item['coverUrl'] = f"images/{new_item['id']}{ext}"
         processed.append(new_item)
     return processed

@@ -29,43 +29,60 @@ logger = logging.getLogger("run")
 
 
 def start_server() -> None:
-    """Starts the Flask server in a thread."""
+    """
+    Initializes and starts the Flask application.
+    
+    This function is intended to run as a background daemon thread.
+    """
     app = create_app()
-    logger.info(f"Starting server at http://{HOST}:{PORT}")
-    # use_reloader=False is required when running in a thread
+    logger.info(f"Server starting at http://{HOST}:{PORT}")
+    # Reloader is disabled to avoid starting nested threads
     app.run(host=HOST, port=PORT, debug=False, use_reloader=False)
 
 
 def launch_browser(target_url: str) -> bool:
     """
-    Launches the browser in app mode if possible.
-    Returns True if the browser process blocked (app mode), False otherwise.
+    Attempts to launch the user's browser in a focused 'App Mode'.
+    
+    Favors Chromium-based browsers for their support of the --app flag.
+    Falls back to a standard browser tab if no suitable executable is found.
+    
+    Args:
+        target_url: The application URL to open.
+        
+    Returns:
+        bool: True if the launch process is blocking (waiting for exit), False otherwise.
     """
     browser_exe, is_chromium = get_browser_path()
 
     if not browser_exe:
-        logger.warning("⚠️ No recognized browser path found. Opening default.")
+        logger.warning("No recognized browser found in PATH. Falling back to default.")
         webbrowser.open(target_url)
         return False
 
-    logger.info(f"✅ Found Browser: {browser_exe}")
+    logger.debug(f"Targeting browser executable: {browser_exe}")
 
     if is_chromium:
         return _launch_chromium_app(browser_exe, target_url)
-    else:
-        logger.info("🌐 Opening in default browser window.")
-        webbrowser.get(browser_exe).open(target_url)
-        return False
+    
+    # Non-chromium fallback
+    logger.info("Opening application in standard browser tab.")
+    webbrowser.get(browser_exe).open(target_url)
+    return False
 
 
 def _launch_chromium_app(browser_exe: str, target_url: str) -> bool:
     """
-    Helper to launch Chromium in app mode.
-    Returns True if we successfully waited for the process (it blocked).
+    Launches a Chromium instance with app-specific flags and a dedicated profile.
+    
+    Args:
+        browser_exe: Path to chromium/chrome/edge executable.
+        target_url: The library URL.
     """
     profile_dir = os.path.join(DATA_DIR, "browser_profile")
     os.makedirs(profile_dir, exist_ok=True)
 
+    # CLI flags to make the browser feel like a native desktop app
     cmd = [
         browser_exe,
         f'--app={target_url}',
@@ -76,15 +93,14 @@ def _launch_chromium_app(browser_exe: str, target_url: str) -> bool:
     ]
 
     try:
-        logger.info("🚀 Launching App Window...")
-        proc = subprocess.Popen(cmd)
-        proc.wait()
-        logger.info("👋 App Window Closed. Exiting...")
-        return True
+    	logger.info("Launching UpNext Desktop Window...")
+    	subprocess.Popen(cmd)
+    	return False  # Non-blocking launch
     except Exception as e:
-        logger.error(f"❌ Error launching app mode: {e}")
-        webbrowser.open(target_url)
-        return False
+    	logger.error(f"Failed to launch in app-mode: {e}")
+    	webbrowser.open(target_url)
+    	return False
+
 
 
 def main() -> None:
