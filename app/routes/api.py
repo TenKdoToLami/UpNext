@@ -4,16 +4,19 @@ API Routes for UpNext.
 Handles CRUD operations for media items.
 """
 
-import json
+from flask import Blueprint, jsonify, request, current_app
 import logging
+import json
 import uuid
+import os
 from datetime import datetime
 from typing import Any, Dict
-
-from flask import Blueprint, jsonify, request
+from sqlalchemy import create_engine
 
 from app.services.data_manager import DataManager
 from app.utils.constants import MEDIA_TYPES, STATUS_TYPES
+from app.config import get_sqlite_db_path
+from app.database import db
 
 bp = Blueprint("api", __name__, url_prefix="/api")
 data_manager = DataManager()
@@ -27,6 +30,69 @@ def get_items():
     # Sort by updatedAt descending for the frontend
     items.sort(key=lambda x: x.get("updatedAt", ""), reverse=True)
     return jsonify(items)
+
+
+# =============================================================================
+# DATABASE SELECTION ENDPOINTS
+# =============================================================================
+
+@bp.route("/database/status", methods=["GET"])
+def get_db_status():
+    """Returns the current database status and available options."""
+    return jsonify({
+        "active": current_app.config.get("ACTIVE_DB"),
+        "available": current_app.config.get("AVAILABLE_DBS", []),
+        "needsSelection": current_app.config.get("NEEDS_DB_SELECTION", False)
+    })
+
+
+@bp.route("/database/select", methods=["POST"])
+def select_database():
+    """Switches the active database connection."""
+    data = request.get_json()
+    db_name = data.get("db_name")
+    
+    if not db_name or db_name not in current_app.config.get("AVAILABLE_DBS", []):
+        return jsonify({"status": "error", "message": "Invalid database selection"}), 400
+    
+    try:
+        new_path = get_sqlite_db_path(db_name)
+        new_uri = f"sqlite:///{new_path}"
+        
+        # Update SQLAlchemy configuration
+        current_app.config["SQLALCHEMY_DATABASE_URI"] = new_uri
+        
+        # Dispose of current engine and session
+        db.engine.dispose()
+        db.session.remove()
+        
+        # Reconfigure database engine
+        new_engine = create_engine(new_uri)
+        if hasattr(db, 'engines'):
+            db.engines.clear()
+            db.engines[None] = new_engine
+        
+        current_app.config["ACTIVE_DB"] = db_name
+
+        # Persist selection
+        try:
+            from app.config import DB_CONFIG_FILE
+            with open(DB_CONFIG_FILE, 'w') as f:
+                json.dump({'last_db': db_name}, f)
+        except Exception as e:
+            logger.warning(f"Failed to persist DB selection: {e}")
+        
+        logger.info(f"Database switched to: {db_name}")
+        return jsonify({"status": "success", "message": f"Switched to {db_name}"})
+        
+    except Exception as e:
+        logger.error(f"Failed to switch database: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+# =============================================================================
+# MEDIA ITEM ENDPOINTS
+# =============================================================================
 
 
 @bp.route("/items", methods=["POST"])

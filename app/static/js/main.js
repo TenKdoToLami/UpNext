@@ -5,7 +5,7 @@
  */
 
 import { state } from './state.js';
-import { loadItems, deleteItem, saveItem } from './api_service.js';
+import { loadItems, deleteItem, saveItem, getDbStatus, selectDatabase } from './api_service.js';
 import { renderFilters, renderGrid, updateGridTruncation } from './render_utils.js';
 import { safeCreateIcons, toggleExpand, debounce } from './dom_utils.js';
 import { RATING_LABELS, TEXT_COLORS } from './constants.js';
@@ -563,10 +563,79 @@ window.deleteFromDetail = async (id) => {
 // INITIALIZATION
 // =============================================================================
 
+
+/**
+ * Checks if multiple databases are available and prompts for selection if needed.
+ */
+async function checkDatabaseSelection() {
+    const status = await getDbStatus();
+    if (status.needsSelection) {
+        const modal = document.getElementById('dbSelectModal');
+        const container = document.getElementById('dbLinksContainer');
+        container.innerHTML = '';
+
+        const closeDbModal = () => {
+            modal.classList.add('opacity-0');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        };
+
+        // Populate database options
+        status.available.forEach(dbName => {
+            const isActive = dbName === status.active;
+            const btn = document.createElement('button');
+
+            // Base classes
+            let classes = 'w-full px-6 py-4 rounded-2xl border text-left transition-all group flex justify-between items-center relative overflow-hidden ';
+
+            if (isActive) {
+                classes += 'bg-indigo-50 dark:bg-indigo-500/10 border-indigo-500 shadow-md shadow-indigo-500/10';
+            } else {
+                classes += 'bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-indigo-500 dark:hover:border-indigo-500';
+            }
+            btn.className = classes;
+
+            btn.innerHTML = `
+                <div class="flex flex-col relative z-10">
+                    <span class="text-zinc-900 dark:text-white font-bold text-lg flex items-center gap-2">
+                        ${dbName}
+                        ${isActive ? '<span class="px-2 py-0.5 rounded-full bg-indigo-500 text-white text-[10px] font-bold uppercase tracking-wider">Last Used</span>' : ''}
+                    </span>
+                    <span class="text-xs text-zinc-500 uppercase tracking-wider mt-1 font-medium">${isActive ? 'Click to resume' : 'Click to switch'}</span>
+                </div>
+                ${isActive
+                    ? '<div class="absolute inset-0 bg-indigo-500/5 dark:bg-indigo-500/10"></div><i data-lucide="check-circle-2" class="w-6 h-6 text-indigo-500 relative z-10"></i>'
+                    : '<i data-lucide="chevron-right" class="w-5 h-5 text-zinc-300 group-hover:text-indigo-500 transition-colors relative z-10"></i>'
+                }
+            `;
+
+            btn.onclick = async () => {
+                // Force backend sync
+                const result = await selectDatabase(dbName);
+                if (result.status === 'success') {
+                    closeDbModal();
+                    loadItems();
+                    showToast(`Switched to ${dbName}`, 'success');
+                } else {
+                    showToast(result.message || 'Failed to switch database', 'error');
+                }
+            };
+            container.appendChild(btn);
+        });
+
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            modal.classList.remove('opacity-0');
+            modal.children[0].classList.remove('scale-95');
+            safeCreateIcons();
+        }, 10);
+    }
+}
+
 /**
  * Initializes the application when DOM is ready.
  */
 function initApp() {
+    checkDatabaseSelection();
     loadItems();
     populateAutocomplete();
     window.setViewMode('grid');
@@ -621,8 +690,7 @@ function initApp() {
         }
     }, 200));
 
-    // Title auto-fill for abbreviations
-    // Logic: Listener updates abbreviations only if field is enabled and list is empty/single-item
+    // Auto-fill abbr if enabled and list is empty/single
     addListener('title', 'input', (e) => {
         const val = e.target.value;
         const disableAbbr = document.getElementById('disableAbbr');

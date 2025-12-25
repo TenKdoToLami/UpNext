@@ -23,8 +23,37 @@ else:
 
 # Directories
 DATA_DIR = os.path.join(BASE_DIR, "data")
-# Database
-SQLITE_DB_PATH = os.path.join(DATA_DIR, 'library.db')
+# Database Configuration
+DB_CONFIG_FILE = os.path.join(DATA_DIR, "db_config.json")
+DEFAULT_DB_NAME = 'library.db'
+
+def get_sqlite_db_path(db_filename=None):
+    """Returns the absolute path to the specified or default database file."""
+    if db_filename:
+        return os.path.join(DATA_DIR, db_filename)
+    
+    # Check for persisted selection
+    if os.path.exists(DB_CONFIG_FILE):
+        try:
+            import json
+            with open(DB_CONFIG_FILE, 'r') as f:
+                config = json.load(f)
+                last_db = config.get('last_db')
+                if last_db and os.path.exists(os.path.join(DATA_DIR, last_db)):
+                    return os.path.join(DATA_DIR, last_db)
+        except Exception:
+            pass # Fallback to default on error
+
+    return os.path.join(DATA_DIR, DEFAULT_DB_NAME)
+
+def list_available_databases():
+    """Lists all .db files in the data directory."""
+    if not os.path.exists(DATA_DIR):
+        return []
+    return [f for f in os.listdir(DATA_DIR) if f.endswith('.db')]
+
+# Initial Database Setup
+SQLITE_DB_PATH = get_sqlite_db_path()
 SQLALCHEMY_DATABASE_URI = f"sqlite:///{SQLITE_DB_PATH}"
 SQLALCHEMY_TRACK_MODIFICATIONS = False
 

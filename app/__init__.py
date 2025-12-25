@@ -35,12 +35,21 @@ def create_app():
     from app.database import db
     db.init_app(app)
 
+    # Multi-Database Detection
+    from app.config import list_available_databases
+    dbs = list_available_databases()
+    app.config['AVAILABLE_DBS'] = sorted(dbs)
+    app.config['ACTIVE_DB'] = os.path.basename(app.config['SQLALCHEMY_DATABASE_URI'].replace('sqlite:///', ''))
+    
+    app.config['NEEDS_DB_SELECTION'] = len(dbs) > 1
+
     # Ensure data directory exists for the SQLite database
     if not os.path.exists(DATA_DIR):
         os.makedirs(DATA_DIR)
 
     # Automatically create missing tables within application context
     with app.app_context():
+        # Only create all if we have an active DB or if it's the first run
         db.create_all()
 
     logger.info("Application initialized successfully.")

@@ -10,6 +10,40 @@ import { safeCreateIcons } from './dom_utils.js';
 import { showToast } from './toast.js';
 
 /**
+ * Checks the status of available databases and selection requirements.
+ * @returns {Promise<Object>} Status object with needsSelection and available list.
+ */
+export async function getDbStatus() {
+	try {
+		const response = await fetch('/api/database/status');
+		if (!response.ok) throw new Error('Failed to fetch DB status');
+		return await response.json();
+	} catch (e) {
+		console.error('Failed to fetch DB status:', e);
+		return { needsSelection: false, available: [] };
+	}
+}
+
+/**
+ * Sends a request to switch the active database.
+ * @param {string} dbName - The filename of the database to select.
+ * @returns {Promise<Object>} Success/error status with message.
+ */
+export async function selectDatabase(dbName) {
+	try {
+		const response = await fetch('/api/database/select', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ db_name: dbName })
+		});
+		return await response.json();
+	} catch (e) {
+		console.error('Failed to select DB:', e);
+		return { status: 'error', message: e.message };
+	}
+}
+
+/**
  * Fetches all library items from the API and updates the local state and UI.
  * This is the primary data loading function called on app initialization and refreshes.
  * @returns {Promise<void>}
