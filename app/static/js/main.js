@@ -28,7 +28,7 @@ import {
 // GLOBAL WINDOW BINDINGS
 // =============================================================================
 
-// State & Utilities
+// Attach key functions to window object for usage in inline HTML event handlers
 window.state = state;
 window.toggleExpand = toggleExpand;
 window.loadItems = loadItems;
@@ -47,52 +47,74 @@ window.toggleTheme = () => {
     }
     updateThemeIcon();
     // Re-render stats if modal is open to update chart colors
-    if (!document.getElementById('statsModal').classList.contains('hidden')) {
+    const statsModal = document.getElementById('statsModal');
+    if (statsModal && !statsModal.classList.contains('hidden')) {
         if (window.openStatsModal) window.openStatsModal();
     }
 };
 
+/**
+ * Updates the theme toggle icon based on the current state.
+ */
 function updateThemeIcon() {
     const icon = document.getElementById('themeIcon');
     if (icon) {
-        if (state.theme === 'dark') {
-            icon.setAttribute('data-lucide', 'sun');
-        } else {
-            icon.setAttribute('data-lucide', 'moon');
-        }
+        icon.setAttribute('data-lucide', state.theme === 'dark' ? 'sun' : 'moon');
         safeCreateIcons();
     }
 }
 
 // Initialize Theme is now part of state.js loadUIState and initApp logic
 
-// Export functions
+// Export & Modal management
+/** Opens the export modal. */
 window.openExportModal = openExportModal;
+/** Closes the export modal. */
 window.closeExportModal = closeExportModal;
+/** Triggers the export process. */
 window.triggerExport = triggerExport;
+/** Selects an export category. */
 window.selectExportCategory = selectExportCategory;
+/** Navigates back to export categories. */
 window.backToExportCategories = backToExportCategories;
+/** Updates export options. */
 window.updateExportOptions = updateExportOptions;
+/** Toggles a visual field for export. */
 window.toggleVisualField = toggleVisualField;
+/** Toggles the export type filter. */
 window.toggleExportTypeFilter = toggleExportTypeFilter;
+/** Toggles the export status filter. */
 window.toggleExportStatusFilter = toggleExportStatusFilter;
+/** Toggles the export rating filter. */
 window.toggleExportRatingFilter = toggleExportRatingFilter;
 
-// Modal & Wizard functions
+/** Opens a generic modal. */
 window.openModal = openModal;
+/** Closes a generic modal. */
 window.closeModal = closeModal;
+/** Advances to the next step in a wizard. */
 window.nextStep = nextStep;
+/** Goes back to the previous step in a wizard. */
 window.prevStep = prevStep;
+/** Jumps to a specific step in a wizard. */
 window.jumpToStep = jumpToStep;
+/** Selects an item type in a form. */
 window.selectType = selectType;
+/** Selects an item status in a form. */
 window.selectStatus = selectStatus;
 
-// Form helpers
+// Form & Tag helpers
+/** Adds a specific link to an item. */
 window.addSpecificLink = addSpecificLink;
+/** Adds a generic link to an item. */
 window.addLink = addLink;
+/** Removes a link from an item. */
 window.removeLink = removeLink;
+/** Updates an existing link. */
 window.updateLink = updateLink;
+/** Pastes a link from clipboard. */
 window.pasteLink = pasteLink;
+/** Removes an author from an item. */
 window.removeAuthor = removeAuthor;
 window.addChild = addChild;
 window.removeChildIdx = removeChildIdx;

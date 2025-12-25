@@ -1,3 +1,7 @@
+/* ==========================================================================
+   Base & Core Styles
+   ========================================================================== */
+
 body {
 	font-family: 'Inter', sans-serif;
 }
@@ -14,6 +18,10 @@ h3,
 .font-heading {
 	font-family: 'Outfit', sans-serif;
 }
+
+/* ==========================================================================
+   Scrollbars
+   ========================================================================== */
 
 ::-webkit-scrollbar {
 	width: 8px;
@@ -42,7 +50,6 @@ h3,
 	scrollbar-width: none;
 }
 
-/* Custom Scrollbar for inner elements */
 .custom-scrollbar::-webkit-scrollbar {
 	width: 6px;
 }
@@ -56,9 +63,11 @@ h3,
 	border-radius: 10px;
 }
 
-/* Glass Effect - Refactored to be utility-friendly or used via @apply in a real build, keeping simple here */
+/* ==========================================================================
+   UI Components
+   ========================================================================== */
+
 .glass-panel {
-	/* Reduced specificity to allow tailwind overrides if needed, or just use as a utility */
 	background: rgba(255, 255, 255, 0.7);
 	backdrop-filter: blur(20px);
 	-webkit-backdrop-filter: blur(20px);
@@ -72,37 +81,23 @@ html.dark .glass-panel {
 	box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
 }
 
-/* Distinct Media Colors */
+/* --- Media Type & Status Colors --- */
 :root {
 	--col-anime: #8b5cf6;
-	/* Violet */
 	--col-manga: #ec4899;
-	/* Pink */
 	--col-book: #3b82f6;
-	/* Blue */
 	--col-movie: #ef4444;
-	/* Red */
 	--col-series: #f59e0b;
-	/* Amber */
 	--col-hidden: #f97316;
-	/* Orange for Hidden (was R18) */
 
-	/* Status Colors (Reference for consistency) */
 	--col-planning: #a1a1aa;
-	/* Zinc-400 */
 	--col-reading: #38bdf8;
-	/* Sky-400 */
 	--col-dropped: #f87171;
-	/* Red-400 */
 	--col-onhold: #fb923c;
-	/* Orange-400 */
 	--col-anticipating: #e879f9;
-	/* Fuchsia-400 */
 	--col-completed: #34d399;
-	/* Emerald-400 */
 }
 
-/* Helper classes to set theme color variable */
 .media-Anime {
 	--theme-col: var(--col-anime);
 }
@@ -123,21 +118,24 @@ html.dark .glass-panel {
 	--theme-col: var(--col-series);
 }
 
-/* Card Styling */
+/* ==========================================================================
+   Media Cards
+   ========================================================================== */
+
 .media-card {
-	/* background handled by Tailwind utility (bg-white dark:bg-zinc-900) on the element itself */
 	transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 	position: relative;
 	overflow: hidden;
 	z-index: 1;
 }
 
+/* Decorative Gradient Border */
 .media-card::before {
 	content: '';
 	position: absolute;
 	inset: 0;
 	border-radius: 12px;
-	padding: 3px;
+	padding: 4px;
 	background: linear-gradient(135deg, var(--theme-col), transparent 70%);
 	-webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
 	mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
@@ -145,17 +143,8 @@ html.dark .glass-panel {
 	mask-composite: exclude;
 	opacity: 1;
 	pointer-events: none;
-	z-index: 20;
+	z-index: 30;
 	transition: padding 0.3s ease, background 0.3s ease;
-}
-
-html.dark .media-card::before {
-	background: linear-gradient(135deg, var(--theme-col), transparent 70%);
-}
-
-.media-card:hover::before {
-	padding: 5px;
-	background: linear-gradient(135deg, var(--theme-col), transparent 30%);
 }
 
 .media-card:hover {
@@ -164,7 +153,12 @@ html.dark .media-card::before {
 	z-index: 30;
 }
 
-/* List Card Mode Overrides */
+.media-card:hover::before {
+	padding: 5px;
+	background: linear-gradient(135deg, var(--theme-col), transparent 30%);
+}
+
+/* List Mode Overrides */
 .media-card.list-card-mode:hover {
 	transform: translateY(-2px) scale(1.0);
 	box-shadow: 0 4px 12px -2px var(--theme-col, #6366f1);
@@ -184,7 +178,7 @@ html.dark .media-badge {
 	box-shadow: 0 2px 10px -2px rgba(0, 0, 0, 0.3);
 }
 
-/* Verdict Gradients */
+/* Rating / Verdict Colors */
 .verdict-1 {
 	color: #ef4444;
 	text-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
@@ -205,7 +199,10 @@ html.dark .media-badge {
 	text-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
 }
 
-/* Animations */
+/* ==========================================================================
+   Animations
+   ========================================================================== */
+
 @keyframes fadeUp {
 	from {
 		opacity: 0;
@@ -222,7 +219,7 @@ html.dark .media-badge {
 	animation: fadeUp 0.4s ease-out forwards;
 }
 
-/* Wizard Animations */
+/* Wizard Transition Animations */
 @keyframes slideInRight {
 	from {
 		transform: translateX(100%);
@@ -292,13 +289,14 @@ html.dark .media-badge {
 	animation: slideOutRight 0.4s forwards;
 }
 
-/* Selection Cards */
+/* ==========================================================================
+   Modals & Interaction
+   ========================================================================== */
+
 .selection-card {
 	transition: all 0.2s;
 	cursor: pointer;
 }
-
-
 
 .selection-card.selected {
 	background: var(--theme-col, #6366f1);
@@ -307,25 +305,19 @@ html.dark .media-badge {
 	box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
 }
 
-/* Edit Modal Layout */
+/* --- Edit Modal (Full Screen) --- */
 .full-screen-modal {
-	/* Original max-w-2xl is ~42rem. Sidebar is w-64 (16rem). Total ~58rem. 
-       max-w-5xl is 64rem. Let's match roughly 2xl + sidebar */
 	width: 60rem !important;
 	max-width: 95vw !important;
 	height: 90vh !important;
-	/* Keep height expanded as requested previously */
 	max-height: 90vh !important;
 }
 
-/* Ensure sidebar stays fixed width and content takes remaining */
 #editSidebar {
 	width: 16rem;
-	/* w-64 */
 	flex-shrink: 0;
 }
 
-/* Sidebar Navigation */
 .sidebar-link {
 	display: flex;
 	align-items: center;
@@ -335,7 +327,6 @@ html.dark .media-badge {
 	font-size: 0.875rem;
 	font-weight: 600;
 	color: #71717a;
-	/* zinc-500 */
 	transition: all 0.2s;
 	width: 100%;
 	text-align: left;
@@ -343,25 +334,20 @@ html.dark .media-badge {
 
 html.dark .sidebar-link {
 	color: #a1a1aa;
-	/* zinc-400 */
 }
 
 .sidebar-link:hover {
 	background-color: #f4f4f5;
-	/* zinc-100 */
 	color: #18181b;
-	/* zinc-900 */
 }
 
 html.dark .sidebar-link:hover {
 	background-color: #18181b;
-	/* zinc-900 */
 	color: #fff;
 }
 
 .sidebar-link.active {
 	background-color: #18181b;
-	/* zinc-900 */
 	color: #fff;
 }
 
@@ -370,30 +356,29 @@ html.dark .sidebar-link.active {
 	color: #000;
 }
 
-/* Scroll Mode Overrides (Disable Wizard Absolute Positioning) */
+/* ==========================================================================
+   Scroll Mode Overrides (Edit Mode)
+   ========================================================================== */
+
 .scroll-mode .wizard-step {
 	position: relative !important;
 	inset: auto !important;
 	display: flex !important;
-	/* Changed from block to flex to support items-center */
 	flex-direction: column !important;
 	height: auto !important;
 	opacity: 1 !important;
 	transform: none !important;
 	padding: 0 0 3rem 0 !important;
 	border-bottom: 1px solid #e4e4e7;
-	/* zinc-200 */
 	margin-bottom: 2rem;
 }
 
-/* Ensure hidden steps stay hidden in scroll mode */
 .scroll-mode .wizard-step.hidden {
 	display: none !important;
 }
 
 html.dark .scroll-mode .wizard-step {
 	border-bottom-color: #27272a;
-	/* zinc-800 */
 }
 
 .scroll-mode .wizard-step:last-child {

@@ -70,6 +70,37 @@ export function sortItems(arr) {
 	});
 }
 
+// --- Helpers ---
+
+/**
+ * Generates HTML for the authors list with smart filter buttons.
+ * @param {Array<string>} authors - List of authors/studios.
+ * @param {string} [extraClass=''] - Additional CSS classes.
+ * @returns {string} HTML string.
+ */
+function getAuthorsHtml(authors, extraClass = '') {
+	if (!authors || !authors.length) return '<span class="italic text-zinc-400 dark:text-white/40">Unknown</span>';
+	return authors.map(a => `<button type="button" onclick="smartFilter(event, 'author', '${a.replace(/'/g, "\\'")}')" class="bg-transparent border-none p-0 hover:text-zinc-900 dark:hover:text-white underline decoration-zinc-300 dark:decoration-white/20 underline-offset-2 hover:decoration-zinc-900 dark:hover:decoration-white transition-all cursor-pointer relative z-50 inline ${extraClass}">${a}</button>`).join(', ');
+}
+
+/**
+ * Calculates and generates the synopsis block for a card.
+ * @param {Object} item - The media item.
+ * @param {Array<string>} authors - List of authors.
+ * @returns {string} HTML string for the synopsis or empty string.
+ */
+function getSynopsisBlockHtml(item, authors) {
+	if (!item.description) return '';
+	// Calculate available lines for synopsis based on missing fields
+	// Authors: 2 lines, Universe: 1 line, Series: 1 line = 4 lines max
+	let availableLines = 0;
+	if (!authors || !authors.length) availableLines += 2;
+	if (!item.universe) availableLines += 1;
+	if (!item.series) availableLines += 1;
+	if (availableLines <= 0) return '';
+	return `<div style="-webkit-line-clamp: ${availableLines}; display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden;" class="text-xs leading-5 text-zinc-500 dark:text-zinc-400 flex-1 min-h-0 border-t border-zinc-100 dark:border-white/5 pt-2 mt-2">${item.description}</div>`;
+}
+
 // --- Render ---
 
 export function renderFilters() {
@@ -314,25 +345,35 @@ export function renderGrid() {
 
 /**
  * Checks all truncate-able elements in the grid/list for overflow.
- * Should be called on resize and after render.
+ * Should be called on window resize and after any rendering operation.
  */
 export function updateGridTruncation() {
-	if (state.viewMode !== 'list' || !state.showDetails) return;
-
-	state.items.forEach(item => {
-		checkOverflow(`desc-${item.id}`, `btn-desc-${item.id}`);
-		checkOverflow(`list-notes-${item.id}`, `btn-list-notes-${item.id}`);
-		checkOverflow(`review-${item.id}`, `btn-review-${item.id}`);
+	document.querySelectorAll('[id^="desc-"]').forEach(el => {
+		const id = el.id.replace('desc-', '');
+		checkOverflow(`desc-${id}`, `btn-desc-${id}`);
+	});
+	document.querySelectorAll('[id^="list-notes-"]').forEach(el => {
+		const id = el.id.replace('list-notes-', '');
+		checkOverflow(`list-notes-${id}`, `btn-list-notes-${id}`);
+	});
+	document.querySelectorAll('[id^="review-"]').forEach(el => {
+		const id = el.id.replace('review-', '');
+		checkOverflow(`review-${id}`, `btn-review-${id}`);
 	});
 }
 
-// Separate function for HTML generation to keep renderGrid clean
+/**
+ * Generates the complete HTML string for a single media card.
+ * Supports both grid and list view modes.
+ * @param {Object} item - The media item to render.
+ * @returns {string} The generated HTML string.
+ */
 function generateCardHtml(item) {
 	const mediaClass = `media-${item.type}`;
 	const authors = item.authors || (item.author ? [item.author] : []);
-	const authHtml = authors.length ? authors.map(a => `<button type="button" onclick="smartFilter(event, 'author', '${a.replace(/'/g, "\\'")}')" class="bg-transparent border-none p-0 hover:text-zinc-900 dark:hover:text-white underline decoration-zinc-300 dark:decoration-white/20 underline-offset-2 hover:decoration-zinc-900 dark:hover:decoration-white transition-all cursor-pointer relative z-50">${a}</button>`).join(', ') : '<span class="italic text-zinc-400 dark:text-white/40">Unknown</span>';
+	const authorsHtml = getAuthorsHtml(authors);
 
-	// Verdict HTML (Card View)
+	// Verdict Badge
 	let verdictHtml = '';
 	if (['Completed', 'Anticipating', 'Dropped', 'On Hold'].includes(item.status) && item.rating) {
 		verdictHtml = `<span class="text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-md backdrop-blur-md shadow-xl ${TEXT_COLORS[item.rating]}">${RATING_LABELS[item.rating]}</span>`;
@@ -359,12 +400,11 @@ function generateCardHtml(item) {
 	const statusIcon = STATUS_ICON_MAP[item.status] || 'circle';
 	let displayStatus = item.status;
 	if (item.status === 'Reading/Watching') {
-		if (['Anime', 'Movie', 'Series'].includes(item.type)) displayStatus = 'Watching';
-		else displayStatus = 'Reading';
+		displayStatus = ['Anime', 'Movie', 'Series'].includes(item.type) ? 'Watching' : 'Reading';
 	}
 	const statusBadge = `<span class="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider ${STATUS_COLOR_MAP[item.status]} !bg-transparent !border-none backdrop-blur-md whitespace-nowrap px-2.5 py-1 rounded-md"><i data-lucide="${statusIcon}" class="w-3 h-3"></i> ${displayStatus}</span>`;
 
-	// Icon colors
+	// Media Type Icon Styling
 	let iconColorClass = "text-zinc-600 dark:text-white bg-white/80 dark:bg-black/60 border-white/20 dark:border-white/10";
 	if (item.type === 'Anime') iconColorClass = "text-white bg-violet-600 border-violet-400";
 	if (item.type === 'Manga') iconColorClass = "text-white bg-pink-600 border-pink-400";
@@ -372,7 +412,7 @@ function generateCardHtml(item) {
 	if (item.type === 'Movie') iconColorClass = "text-white bg-red-600 border-red-400";
 	if (item.type === 'Series') iconColorClass = "text-white bg-amber-600 border-amber-400";
 
-	const seriesText = item.seriesNumber ? `${item.series} #${item.seriesNumber}` : item.series;
+	const seriesDisplayText = item.seriesNumber ? `${item.series} #${item.seriesNumber}` : item.series;
 
 
 	if (state.viewMode === 'grid') {
@@ -390,32 +430,14 @@ function generateCardHtml(item) {
 		let detailBlock = '';
 		if (state.showDetails) {
 			detailBlock = `
-                 <div class="p-4 pt-6 bg-white dark:bg-zinc-900 border-t border-zinc-100 dark:border-white/5 flex flex-col gap-2 relative z-20 pointer-events-auto h-[15rem]">
-                     <h3 class="font-heading font-bold text-2xl leading-[1.2] line-clamp-2 text-[var(--theme-col)] transition-colors mb-2">${item.title}</h3>
-                     <div class="flex flex-col gap-1 text-xs font-medium text-zinc-500 dark:text-zinc-400 mt-1">
-                          ${authors.length ? `<div class="text-zinc-600 dark:text-zinc-300 line-clamp-2 h-auto block"><i data-lucide="pen-tool" class="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500 inline-block mr-1.5 align-text-bottom pointer-events-none"></i>${authors.length ? authors.map(a => `<button type="button" onclick="smartFilter(event, 'author', '${a.replace(/'/g, "\\'")}')" class="bg-transparent border-none p-0 hover:text-zinc-900 dark:hover:text-white underline decoration-zinc-300 dark:decoration-white/20 underline-offset-2 hover:decoration-zinc-900 dark:hover:decoration-white transition-all cursor-pointer relative z-50 inline">${a}</button>`).join(', ') : ''}</div>` : ''}
-                          ${item.universe ? `<button type="button" onclick="smartFilter(event, 'universe', '${item.universe}')" class="bg-transparent border-none p-0 flex items-center gap-1.5 truncate text-indigo-500 dark:text-indigo-300 cursor-pointer hover:text-indigo-700 dark:hover:text-indigo-200 transition-colors z-30 max-w-full"><i data-lucide="globe" class="w-3.5 h-3.5 opacity-50 pointer-events-none"></i> <span class="truncate">${item.universe}</span></button>` : ''}
-                          ${item.series ? `<button type="button" onclick="smartFilter(event, 'series', '${item.series}')" class="bg-transparent border-none p-0 flex items-center gap-1.5 truncate text-emerald-600 dark:text-emerald-300 cursor-pointer hover:text-emerald-700 dark:hover:text-emerald-200 transition-colors z-30 max-w-full"><i data-lucide="library" class="w-3.5 h-3.5 opacity-50 pointer-events-none"></i> <span class="truncate">${item.series} ${item.seriesNumber ? '#' + item.seriesNumber : ''}</span></button>` : ''}
+                 <div class="p-4 pt-5 bg-white dark:bg-zinc-900 border-t border-zinc-100 dark:border-white/5 flex flex-col relative z-20 pointer-events-auto h-[10rem] overflow-hidden">
+                     <h3 class="font-heading font-bold text-2xl leading-[1.2] line-clamp-2 text-[var(--theme-col)] transition-colors mb-1.5 shrink-0">${item.title}</h3>
+                     <div class="flex flex-col gap-0.5 text-xs font-medium text-zinc-500 dark:text-zinc-400 shrink-0">
+                          ${authors.length ? `<div class="text-zinc-600 dark:text-zinc-300 line-clamp-2 block"><i data-lucide="pen-tool" class="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500 inline-block mr-1.5 align-text-bottom pointer-events-none"></i>${authorsHtml}</div>` : ''}
+                          ${item.universe ? `<button type="button" onclick="smartFilter(event, 'universe', '${item.universe}')" class="bg-transparent border-none p-0 flex items-center gap-1.5 truncate text-indigo-500 dark:text-indigo-300 cursor-pointer hover:text-indigo-700 dark:hover:text-indigo-200 transition-colors z-30 max-w-full"><i data-lucide="globe" class="w-3.5 h-3.5 opacity-50 pointer-events-none shrink-0"></i> <span class="truncate">${item.universe}</span></button>` : ''}
+                          ${item.series ? `<button type="button" onclick="smartFilter(event, 'series', '${item.series}')" class="bg-transparent border-none p-0 flex items-center gap-1.5 truncate text-emerald-600 dark:text-emerald-300 cursor-pointer hover:text-emerald-700 dark:hover:text-emerald-200 transition-colors z-30 max-w-full"><i data-lucide="library" class="w-3.5 h-3.5 opacity-50 pointer-events-none shrink-0"></i> <span class="truncate">${seriesDisplayText}</span></button>` : ''}
                      </div>
-                     ${(() => {
-					if (!item.description) return '';
-					// Dynamic Title lines estimation
-					const titleLines = item.title.length > 25 ? 2 : 1;
-					const titleCost = titleLines * 2; // 2xl is ~2 slots
-
-					let authorCost = 0;
-					if (authors.length) {
-						const authTextLength = authors.join(', ').length;
-						authorCost = authTextLength > 30 ? 2 : 1;
-					}
-					const universeCost = item.universe ? 1 : 0;
-					const seriesCost = item.series ? 1 : 0;
-					const totalCapacity = 11;
-					const usedSlots = titleCost + authorCost + universeCost + seriesCost;
-					const descLines = totalCapacity - usedSlots;
-					if (descLines <= 0) return '';
-					return `<div style="-webkit-line-clamp: ${descLines}; display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden;" class="text-xs leading-5 text-zinc-500 dark:text-zinc-400 mt-auto border-t border-zinc-100 dark:border-white/5 pt-2">${item.description}</div>`;
-				})()}
+                     ${getSynopsisBlockHtml(item, authors)}
                  </div>`;
 		}
 
@@ -482,11 +504,13 @@ function generateCardHtml(item) {
                                           <h3 class="text-3xl font-heading font-black text-zinc-800 dark:text-[var(--theme-col)] transition-colors">${item.title}</h3>
                                            <div class="flex gap-2">${statusBadge} ${hiddenBadge}</div>
                                        </div>
+
                                        <div class="flex flex-wrap gap-4 text-sm font-medium text-zinc-500 dark:text-zinc-400 mt-1">
-                                           ${authors.length ? `<span onclick="event.stopPropagation()" class="flex items-center gap-1.5 cursor-auto"><i data-lucide="pen-tool" class="w-4 h-4 text-zinc-400 dark:text-zinc-600"></i> ${authHtml}</span>` : ''}
-                                           ${item.series ? `<button type="button" onclick="smartFilter(event, 'series', '${item.series}')" class="bg-transparent border-none p-0 text-emerald-500 dark:text-emerald-400/90 flex items-center gap-1.5 cursor-pointer hover:underline"><i data-lucide="library" class="w-4 h-4"></i> ${seriesText}</button>` : ''}
+                                           ${authors.length ? `<span onclick="event.stopPropagation()" class="flex items-center gap-1.5 cursor-auto"><i data-lucide="pen-tool" class="w-4 h-4 text-zinc-400 dark:text-zinc-600"></i> ${authorsHtml}</span>` : ''}
+                                           ${item.series ? `<button type="button" onclick="smartFilter(event, 'series', '${item.series}')" class="bg-transparent border-none p-0 text-emerald-500 dark:text-emerald-400/90 flex items-center gap-1.5 cursor-pointer hover:underline"><i data-lucide="library" class="w-4 h-4"></i> ${seriesDisplayText}</button>` : ''}
                                            ${item.universe ? `<button type="button" onclick="smartFilter(event, 'universe', '${item.universe}')" class="bg-transparent border-none p-0 text-indigo-500 dark:text-indigo-400/90 flex items-center gap-1.5 cursor-pointer hover:underline"><i data-lucide="globe" class="w-4 h-4"></i> ${item.universe}</button>` : ''}
                                        </div>
+
                                        ${item.description ? `
                                        <div class="text-zinc-600 dark:text-zinc-400 text-sm mt-3 leading-relaxed group/desc relative" onclick="event.stopPropagation()">
                                             <div class="text-[10px] font-bold text-zinc-800 dark:text-[var(--theme-col)] uppercase tracking-wider mb-1 opacity-70">Synopsis</div>
@@ -565,7 +589,7 @@ function generateCardHtml(item) {
                             </div>
                             
                             <div class="flex flex-wrap items-center gap-2 text-xs font-medium text-zinc-500">
-                                ${authors.length ? `<span class="flex items-center gap-1 hover:text-zinc-800 dark:hover:text-zinc-300 transition-colors cursor-pointer" onclick="event.stopPropagation()"><i data-lucide="pen-tool" class="w-3 h-3 opacity-50"></i> ${authHtml}</span>` : '<span class="italic text-zinc-700">No Author/Studio</span>'}
+                                ${authors.length ? `<span class="flex items-center gap-1 hover:text-zinc-800 dark:hover:text-zinc-300 transition-colors cursor-pointer" onclick="event.stopPropagation()"><i data-lucide="pen-tool" class="w-3 h-3 opacity-50"></i> ${authorsHtml}</span>` : '<span class="italic text-zinc-700">No Author/Studio</span>'}
                             </div>
                         </div>
                     </div>
@@ -597,16 +621,18 @@ function generateCardHtml(item) {
 	}
 }
 
+/**
+ * Displays a skeleton loading state in the grid container.
+ */
 export function showGridLoading() {
-	const container = document.getElementById('gridContainer');
-	if (container) {
-		container.classList.add('opacity-50', 'pointer-events-none', 'animate-pulse');
-	}
+	const grid = document.getElementById('gridContainer');
+	if (grid) grid.classList.add('opacity-40', 'pointer-events-none', 'animate-pulse');
 }
 
+/**
+ * Hides the skeleton loading state.
+ */
 export function hideGridLoading() {
-	const container = document.getElementById('gridContainer');
-	if (container) {
-		container.classList.remove('opacity-50', 'pointer-events-none', 'animate-pulse');
-	}
+	const grid = document.getElementById('gridContainer');
+	if (grid) grid.classList.remove('opacity-40', 'pointer-events-none', 'animate-pulse');
 }
