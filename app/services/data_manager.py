@@ -85,6 +85,7 @@ class DataManager:
                 release_date=datetime.fromisoformat(data["releaseDate"]).date() if data.get("releaseDate") else None,
                 
                 authors=data.get("authors", []),
+                tags=data.get("tags", []),
                 abbreviations=data.get("abbreviations", []),
                 alternate_titles=data.get("alternateTitles", []),
                 external_links=data.get("externalLinks", []),
@@ -158,6 +159,7 @@ class DataManager:
                  item.release_date = datetime.fromisoformat(data["releaseDate"]).date() if data["releaseDate"] else None
             
             item.authors = data.get("authors", item.authors)
+            item.tags = data.get("tags", item.tags)
             item.abbreviations = data.get("abbreviations", item.abbreviations)
             item.alternate_titles = data.get("alternateTitles", item.alternate_titles)
             item.external_links = data.get("externalLinks", item.external_links)

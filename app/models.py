@@ -31,6 +31,7 @@ class MediaItem(db.Model):
     
     # Semi-structured metadata stored as JSON lists/objects
     authors: Mapped[List[str]] = mapped_column(JSON, default=list)
+    tags: Mapped[List[str]] = mapped_column(JSON, default=list)
     abbreviations: Mapped[List[str]] = mapped_column(JSON, default=list)
     alternate_titles: Mapped[List[str]] = mapped_column(JSON, default=list)
     external_links: Mapped[List[dict]] = mapped_column(JSON, default=list)
@@ -150,6 +151,7 @@ class MediaItem(db.Model):
             "seriesNumber": self.series_number,
             "releaseDate": self.release_date.isoformat() if self.release_date else None,
             "authors": self.authors,
+            "tags": self.tags,
             "abbreviations": self.abbreviations,
             "alternateTitles": self.alternate_titles,
             "externalLinks": self.external_links,
