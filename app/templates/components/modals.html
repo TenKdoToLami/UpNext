@@ -106,109 +106,136 @@
 							class="w-4 h-4 text-zinc-400 group-hover:text-zinc-300 transition-colors"></i>
 					</button>
 
-					<div id="interfaceGuide" class="hidden space-y-3 text-sm animate-enter pt-2">
-						<ul class="grid grid-cols-[80px,1fr] gap-x-3 gap-y-4 items-center">
-							<li class="contents">
-								<div class="flex gap-1.5 items-center justify-center">
-									<div
-										class="bg-zinc-100 dark:bg-zinc-800 p-1.5 rounded-md h-8 w-8 flex items-center justify-center">
-										<i data-lucide="layout-grid" class="w-3.5 h-3.5 text-zinc-500"></i>
+					<div id="interfaceGuide" class="hidden space-y-6 text-sm animate-enter pt-2">
+						<!-- Primary Toggles -->
+						<div class="space-y-4">
+							<div
+								class="text-[10px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500 px-1 border-l-2 border-indigo-500 pl-3">
+								Toolbelt Toggles</div>
+							<ul class="grid grid-cols-[100px,1fr] gap-x-4 gap-y-4 items-center">
+								<li class="contents">
+									<div class="flex gap-2 items-center justify-center">
+										<div
+											class="bg-zinc-100 dark:bg-zinc-800 p-1.5 rounded-lg h-8 w-8 flex items-center justify-center text-zinc-500">
+											<i data-lucide="eye" class="w-4 h-4"></i>
+										</div>
+										<div
+											class="bg-indigo-500 p-1.5 rounded-lg h-8 w-8 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
+											<i data-lucide="eye" class="w-4 h-4"></i>
+										</div>
 									</div>
-									<div
-										class="bg-zinc-100 dark:bg-zinc-800 p-1.5 rounded-md h-8 w-8 flex items-center justify-center border-b-2 border-indigo-500">
-										<i data-lucide="list" class="w-3.5 h-3.5 text-zinc-900 dark:text-white"></i>
+									<div class="text-xs"><strong>Toggle Details:</strong> Compare Inactive vs <span
+											class="text-indigo-500 font-bold uppercase">Active</span>. Expands cards to
+										show full metadata.</div>
+								</li>
+								<li class="contents">
+									<div class="flex gap-2 items-center justify-center">
+										<div
+											class="bg-zinc-100 dark:bg-zinc-800 p-1.5 rounded-lg h-8 w-8 flex items-center justify-center text-zinc-500">
+											<i data-lucide="list-checks" class="w-4 h-4"></i>
+										</div>
+										<div
+											class="bg-emerald-500 p-1.5 rounded-lg h-8 w-8 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
+											<i data-lucide="list-checks" class="w-4 h-4"></i>
+										</div>
 									</div>
-								</div>
-								<div class="text-xs"><strong>View Modes:</strong> Toggle between Grid and List view. The
-									active mode is highlighted with a border.</div>
-							</li>
-							<li class="contents">
-								<div class="flex gap-1.5 items-center justify-center">
-									<div
-										class="bg-zinc-100 dark:bg-zinc-800 p-1.5 rounded-md h-8 w-8 flex items-center justify-center text-zinc-400">
-										<i data-lucide="eye" class="w-4 h-4"></i>
+									<div class="text-xs"><strong>Multi-Select:</strong> Normal vs <span
+											class="text-emerald-500 font-bold uppercase">Compound</span> mode. Allows
+										filtering by multiple parameters.</div>
+								</li>
+								<li class="contents">
+									<div class="flex gap-2 items-center justify-center">
+										<div
+											class="bg-zinc-100 dark:bg-zinc-800 p-1.5 rounded-lg h-8 w-8 flex items-center justify-center text-zinc-500">
+											<i data-lucide="shield-off" class="w-4 h-4"></i>
+										</div>
+										<div
+											class="bg-red-500 p-1.5 rounded-lg h-8 w-8 flex items-center justify-center text-white shadow-lg shadow-red-500/20">
+											<i data-lucide="shield-off" class="w-4 h-4"></i>
+										</div>
 									</div>
-									<div
-										class="bg-zinc-100 dark:bg-zinc-800 p-1.5 rounded-md h-8 w-8 flex items-center justify-center relative text-zinc-900 dark:text-white">
-										<i data-lucide="eye" class="w-4 h-4"></i>
-										<span
-											class="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-indigo-500 rounded-full"></span>
+									<div class="text-xs"><strong>Show Hidden:</strong> Unmasks private entries. Active
+										state uses high-contrast <span
+											class="text-red-500 font-bold uppercase">Red</span>.</div>
+								</li>
+							</ul>
+						</div>
+
+						<!-- Layout & Theme -->
+						<div class="space-y-4">
+							<div
+								class="text-[10px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500 px-1 border-l-2 border-zinc-400 pl-3">
+								Presentation</div>
+							<ul class="grid grid-cols-[100px,1fr] gap-x-4 gap-y-4 items-center">
+								<li class="contents">
+									<div class="flex gap-2 items-center justify-center">
+										<div
+											class="bg-zinc-800 dark:bg-zinc-100 p-1.5 rounded-lg h-8 w-8 flex items-center justify-center text-white dark:text-black shadow-md">
+											<i data-lucide="layout-grid" class="w-4 h-4"></i>
+										</div>
+										<div
+											class="bg-zinc-100 dark:bg-zinc-800 p-1.5 rounded-lg h-8 w-8 flex items-center justify-center text-zinc-400">
+											<i data-lucide="list" class="w-4 h-4"></i>
+										</div>
 									</div>
-								</div>
-								<div class="text-xs"><strong>Toggle Details:</strong> Show/hide info. A <span
-										class="text-indigo-500 font-bold">dot</span> means active.</div>
-							</li>
-							<li class="contents">
-								<div
-									class="bg-zinc-100 dark:bg-zinc-900 p-1.5 rounded-md h-8 w-8 mx-auto flex items-center justify-center">
-									<i data-lucide="pie-chart" class="w-4 h-4 text-zinc-600 dark:text-zinc-400"></i>
-								</div>
-								<div class="text-xs"><strong>Library Stats:</strong> Open the visual dashboard for data
-									insights.</div>
-							</li>
-							<li class="contents">
-								<div class="flex gap-1.5 items-center justify-center">
-									<div
-										class="bg-zinc-100 dark:bg-zinc-800 p-1.5 rounded-md h-8 w-8 flex items-center justify-center text-zinc-400">
-										<i data-lucide="list-checks" class="w-4 h-4"></i>
+									<div class="text-xs"><strong>View Modes:</strong> Toggle between Grid and List
+										views. Selection is shown in <span
+											class="font-bold border-b border-black dark:border-white">High
+											Contrast</span>.</div>
+								</li>
+								<li class="contents">
+									<div class="flex gap-2 items-center justify-center">
+										<div
+											class="bg-zinc-100 dark:bg-zinc-800 p-1.5 rounded-lg h-8 w-8 flex items-center justify-center text-amber-500">
+											<i data-lucide="sun" class="w-4 h-4"></i>
+										</div>
+										<div
+											class="bg-zinc-800 p-1.5 rounded-lg h-8 w-8 flex items-center justify-center text-blue-400">
+											<i data-lucide="moon" class="w-4 h-4"></i>
+										</div>
 									</div>
-									<div
-										class="bg-zinc-100 dark:bg-zinc-800 p-1.5 rounded-md h-8 w-8 flex items-center justify-center relative text-zinc-900 dark:text-white">
-										<i data-lucide="list-checks" class="w-4 h-4"></i>
-										<span
-											class="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+									<div class="text-xs"><strong>Adaptive Theme:</strong> Seamless Light/Dark switching.
+										Icons and accents adapt for better readability.</div>
+								</li>
+							</ul>
+						</div>
+
+						<!-- Navigation -->
+						<div class="space-y-4">
+							<div
+								class="text-[10px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500 px-1 border-l-2 border-emerald-500 pl-3">
+								Interaction</div>
+							<ul class="grid grid-cols-[100px,1fr] gap-x-4 gap-y-4 items-center">
+								<li class="contents">
+									<div class="flex gap-2 items-center justify-center">
+										<div
+											class="bg-zinc-100 dark:bg-zinc-800 p-1.5 rounded-lg h-8 w-8 flex items-center justify-center text-zinc-400">
+											<i data-lucide="search" class="w-4 h-4"></i>
+										</div>
+										<div
+											class="bg-white dark:bg-zinc-950 p-1.5 rounded-lg h-8 w-8 flex items-center justify-center text-indigo-500 border border-indigo-500/20">
+											<i data-lucide="search" class="w-4 h-4"></i>
+										</div>
 									</div>
-								</div>
-								<div class="text-xs"><strong>Multi-Select:</strong> Select multiple filters
-									simultaneously. <span class="text-emerald-500 font-bold">Green dot</span> means
-									active.</div>
-							</li>
-							<li class="contents">
-								<div class="flex gap-1.5 items-center justify-center">
-									<div
-										class="bg-zinc-100 dark:bg-zinc-800 p-1.5 rounded-md h-8 w-8 flex items-center justify-center text-zinc-400">
-										<i data-lucide="shield-off" class="w-4 h-4"></i>
+									<div class="text-xs"><strong>Immersive Search:</strong> Click to expand. Focused
+										mode creates a full-header overlay for a clean workspace.</div>
+								</li>
+								<li class="contents">
+									<div class="flex gap-2 items-center justify-center">
+										<div
+											class="bg-zinc-100 dark:bg-zinc-800 p-1.5 rounded-lg h-8 w-8 flex items-center justify-center text-zinc-400">
+											<i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
+										</div>
+										<div
+											class="bg-zinc-200 dark:bg-zinc-700 p-1.5 rounded-lg h-8 w-8 flex items-center justify-center text-zinc-900 dark:text-white border border-zinc-300 dark:border-zinc-600">
+											<i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
+										</div>
 									</div>
-									<div
-										class="bg-zinc-100 dark:bg-zinc-800 p-1.5 rounded-md h-8 w-8 flex items-center justify-center relative text-zinc-900 dark:text-white">
-										<i data-lucide="shield-off" class="w-4 h-4"></i>
-										<span
-											class="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full"></span>
-									</div>
-								</div>
-								<div class="text-xs"><strong>Show Hidden:</strong> Display hidden entries alongside
-									others. <span class="text-red-500 font-bold">Red dot</span> means active.</div>
-							</li>
-							<li class="contents">
-								<div class="flex gap-1.5 items-center justify-center">
-									<div
-										class="bg-zinc-100 dark:bg-zinc-800 p-1.5 rounded-md h-8 w-8 flex items-center justify-center text-zinc-400">
-										<i data-lucide="shield-alert" class="w-4 h-4"></i>
-									</div>
-									<div
-										class="bg-red-500 p-1.5 rounded-md h-8 w-8 flex items-center justify-center text-white shadow-sm shadow-red-500/20">
-										<i data-lucide="shield-alert" class="w-4 h-4"></i>
-									</div>
-								</div>
-								<div class="text-xs"><strong>Only Hidden:</strong> Filter the view to show <em>only</em>
-									hidden items. The toggled state is highlighted in <span
-										class="text-red-500 font-bold">red</span>.</div>
-							</li>
-							<li class="contents">
-								<div class="flex gap-1.5 items-center justify-center">
-									<div
-										class="bg-zinc-100 dark:bg-zinc-800 p-2 rounded-md h-8 w-8 flex items-center justify-center text-amber-500">
-										<i data-lucide="sun" class="w-4 h-4"></i>
-									</div>
-									<div
-										class="bg-zinc-800 p-2 rounded-md h-8 w-8 flex items-center justify-center text-blue-400">
-										<i data-lucide="moon" class="w-4 h-4"></i>
-									</div>
-								</div>
-								<div class="text-xs"><strong>Theme Toggle:</strong> Switch between Light (Sun) and Dark
-									(Moon) modes.</div>
-							</li>
-						</ul>
+									<div class="text-xs"><strong>System Menu:</strong> Consolidates sorting and mobile
+										controls into a single, unified drawer.</div>
+								</li>
+							</ul>
+						</div>
 					</div>
 				</div>
 
