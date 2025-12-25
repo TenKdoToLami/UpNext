@@ -633,7 +633,8 @@ export function updateModalTags() {
 	state.currentAuthors.forEach(auth => {
 		const tag = document.createElement('span');
 		tag.className = 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 text-xs px-2 py-1 rounded flex items-center gap-1 font-medium';
-		tag.innerHTML = `${auth} <button type="button" onclick="window.removeAuthor('${auth}')" class="hover:text-red-400 flex items-center"><i data-lucide="x" class="w-3 h-3"></i></button>`;
+		const safeAuth = auth.replace(/'/g, "\\'");
+		tag.innerHTML = `${auth} <button type="button" onclick="window.removeAuthor('${safeAuth}')" class="hover:text-red-400 flex items-center"><i data-lucide="x" class="w-3 h-3"></i></button>`;
 		container.insertBefore(tag, input);
 	});
 }
@@ -701,7 +702,8 @@ export function renderAltTitles() {
 	state.currentAlternateTitles.forEach(title => {
 		const tag = document.createElement('span');
 		tag.className = 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 text-xs px-2 py-1 rounded flex items-center gap-1 font-medium';
-		tag.innerHTML = `${title} <button type="button" onclick="window.removeAltTitle('${title}')" class="hover:text-red-400 flex items-center"><i data-lucide="x" class="w-3 h-3"></i></button>`;
+		const safeTitle = title.replace(/'/g, "\\'");
+		tag.innerHTML = `${title} <button type="button" onclick="window.removeAltTitle('${safeTitle}')" class="hover:text-red-400 flex items-center"><i data-lucide="x" class="w-3 h-3"></i></button>`;
 		container.insertBefore(tag, input);
 	});
 
@@ -993,7 +995,8 @@ export function renderAbbrTags() {
 	state.currentAbbreviations.forEach(abbr => {
 		const tag = document.createElement('span');
 		tag.className = 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 text-xs px-2 py-1 rounded flex items-center gap-1 font-medium';
-		tag.innerHTML = `${abbr} <button type="button" onclick="window.removeAbbreviation('${abbr}')" class="hover:text-red-400 flex items-center"><i data-lucide="x" class="w-3 h-3"></i></button>`;
+		const safeAbbr = abbr.replace(/'/g, "\\'");
+		tag.innerHTML = `${abbr} <button type="button" onclick="window.removeAbbreviation('${safeAbbr}')" class="hover:text-red-400 flex items-center"><i data-lucide="x" class="w-3 h-3"></i></button>`;
 		container.insertBefore(tag, input);
 	});
 
