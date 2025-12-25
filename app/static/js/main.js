@@ -33,38 +33,33 @@ window.state = state;
 window.toggleExpand = toggleExpand;
 window.loadItems = loadItems;
 
-/**
- * Toggles the application theme between light and dark.
- */
+// =============================================================================
+// THEME MANAGEMENT
+// =============================================================================
+
+/** Toggles theme between light and dark modes. */
 window.toggleTheme = () => {
-    const html = document.documentElement;
-    if (state.theme === 'dark') {
-        html.classList.remove('dark');
-        setState('theme', 'light');
-    } else {
-        html.classList.add('dark');
-        setState('theme', 'dark');
-    }
+    const isDark = document.documentElement.classList.toggle('dark');
+    setState('theme', isDark ? 'dark' : 'light');
     updateThemeIcon();
-    // Re-render stats if modal is open to update chart colors
+
+    // Refresh Stats if modal is open to update chart colors
     const statsModal = document.getElementById('statsModal');
     if (statsModal && !statsModal.classList.contains('hidden')) {
         if (window.openStatsModal) window.openStatsModal();
     }
 };
 
-/**
- * Updates the theme toggle icon based on the current state.
- */
+/** Updates theme icons across the UI based on current dark mode state. */
 function updateThemeIcon() {
-    const icon = document.getElementById('themeIcon');
-    if (icon) {
-        icon.setAttribute('data-lucide', state.theme === 'dark' ? 'sun' : 'moon');
-        safeCreateIcons();
-    }
+    const isDark = document.documentElement.classList.contains('dark');
+    const icons = ['themeIcon', 'themeIconMobile'];
+    icons.forEach(id => {
+        const icon = document.getElementById(id);
+        if (icon) icon.setAttribute('data-lucide', isDark ? 'moon' : 'sun');
+    });
+    safeCreateIcons();
 }
-
-// Initialize Theme is now part of state.js loadUIState and initApp logic
 
 // Export & Modal management
 /** Opens the export modal. */
@@ -225,23 +220,118 @@ window.setSortOrder = (order) => { setState('sortOrder', order); renderFilters()
  */
 window.setViewMode = (mode) => {
     setState('viewMode', mode);
-    const btnGrid = document.getElementById('view-grid');
-    const btnList = document.getElementById('view-list');
+    syncViewModeUI();
+
+    const container = document.getElementById('gridContainer');
+    if (!container) return;
 
     if (mode === 'grid') {
-        btnGrid.className = 'p-1.5 rounded-lg bg-zinc-200 text-black shadow-sm transition-all';
-        btnList.className = 'p-1.5 rounded-lg text-zinc-500 hover:text-white transition-all';
-        document.getElementById('gridContainer').className = 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6 pb-20 animate-enter';
+        container.className = 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6 pb-20 animate-enter';
     } else {
-        btnList.className = 'p-1.5 rounded-lg bg-zinc-200 text-black shadow-sm transition-all';
-        btnGrid.className = 'p-1.5 rounded-lg text-zinc-500 hover:text-white transition-all';
-        document.getElementById('gridContainer').className = 'flex flex-col gap-4 pb-20 animate-enter max-w-4xl mx-auto';
+        container.className = 'flex flex-col gap-4 pb-20 animate-enter max-w-4xl mx-auto';
     }
     renderGrid();
 };
 
 // =============================================================================
-// TOGGLE HANDLERS
+// UI SYNCHRONIZATION HELPERS
+// =============================================================================
+
+/** Synchronizes the multi-select toggle UI across all instances. */
+function syncMultiSelectUI() {
+    const btns = document.querySelectorAll('.multiSelect-btn');
+
+    btns.forEach(btn => {
+        if (state.isMultiSelect) {
+            btn.classList.add('bg-emerald-500', 'text-white', 'shadow-lg', 'shadow-emerald-500/20');
+            btn.classList.remove('text-zinc-400', 'text-zinc-600', 'text-zinc-500', 'dark:text-zinc-400', 'bg-white/10');
+        } else {
+            btn.classList.remove('bg-emerald-500', 'text-white', 'shadow-lg', 'shadow-emerald-500/20');
+            btn.classList.add('text-zinc-500', 'dark:text-zinc-400');
+        }
+    });
+}
+
+/** Synchronizes the hidden items toggle UI and manages the 'Hidden Only' button visibility. */
+function syncHiddenUI() {
+    const btns = document.querySelectorAll('.hidden-btn');
+    const hiddenOnlyBtns = document.querySelectorAll('.hiddenOnly-btn');
+
+    btns.forEach(btn => {
+        if (state.isHidden) {
+            btn.classList.add('bg-red-500', 'text-white', 'shadow-lg', 'shadow-red-500/20');
+            btn.classList.remove('text-red-400', 'bg-red-500/10', 'text-zinc-400', 'text-zinc-500', 'dark:text-zinc-400');
+        } else {
+            btn.classList.remove('bg-red-500', 'text-white', 'shadow-lg', 'shadow-red-500/20');
+            btn.classList.add('text-zinc-500', 'dark:text-zinc-400');
+        }
+    });
+
+    // Hidden Only button is only relevant if hidden items are being shown
+    hiddenOnlyBtns.forEach(btn => {
+        if (state.isHidden) btn.classList.remove('hidden');
+        else btn.classList.add('hidden');
+    });
+}
+
+/** Synchronizes the expanded details toggle UI. */
+function syncDetailsUI() {
+    const btns = document.querySelectorAll('.details-btn');
+
+    btns.forEach(btn => {
+        if (state.showDetails) {
+            btn.classList.add('bg-indigo-500', 'text-white', 'shadow-lg', 'shadow-indigo-500/20');
+            btn.classList.remove('text-zinc-400', 'text-zinc-600', 'text-zinc-500', 'dark:text-zinc-400', 'bg-white/10');
+        } else {
+            btn.classList.remove('bg-indigo-500', 'text-white', 'shadow-lg', 'shadow-indigo-500/20');
+            btn.classList.add('text-zinc-500', 'dark:text-zinc-400');
+        }
+    });
+}
+
+/** Synchronizes the 'Hidden Only' filter state UI. */
+function syncHiddenOnlyUI() {
+    const btns = document.querySelectorAll('.hiddenOnly-btn');
+    btns.forEach(btn => {
+        if (state.filterHiddenOnly) {
+            btn.classList.add('bg-red-500', 'text-white', 'border-red-400', 'shadow-lg', 'shadow-red-500/20');
+            btn.classList.remove('text-zinc-500', 'text-zinc-700', 'hover:text-red-400', 'border-transparent');
+        } else {
+            btn.classList.remove('bg-red-500', 'text-white', 'border-red-400', 'shadow-lg', 'shadow-red-500/20');
+            btn.classList.add('text-zinc-700', 'dark:text-zinc-300', 'border-transparent');
+        }
+    });
+}
+
+/** Synchronizes the view mode buttons (grid/list) UI across all instances. */
+function syncViewModeUI() {
+    const gridBtns = document.querySelectorAll('.view-grid-btn');
+    const listBtns = document.querySelectorAll('.view-list-btn');
+    const isGrid = state.viewMode === 'grid';
+
+    gridBtns.forEach(btn => {
+        if (isGrid) {
+            btn.classList.add('bg-zinc-800', 'dark:bg-zinc-100', 'text-white', 'dark:text-black', 'shadow-md');
+            btn.classList.remove('text-zinc-400', 'text-zinc-500', 'dark:text-white', 'bg-zinc-200', 'dark:bg-zinc-700');
+        } else {
+            btn.classList.remove('bg-zinc-800', 'dark:bg-zinc-100', 'text-white', 'dark:text-black', 'shadow-md');
+            btn.classList.add('text-zinc-400', 'dark:text-zinc-500');
+        }
+    });
+
+    listBtns.forEach(btn => {
+        if (!isGrid) {
+            btn.classList.add('bg-zinc-800', 'dark:bg-zinc-100', 'text-white', 'dark:text-black', 'shadow-md');
+            btn.classList.remove('text-zinc-400', 'text-zinc-500', 'dark:text-white', 'bg-zinc-200', 'dark:bg-zinc-700');
+        } else {
+            btn.classList.remove('bg-zinc-800', 'dark:bg-zinc-100', 'text-white', 'dark:text-black', 'shadow-md');
+            btn.classList.add('text-zinc-400', 'dark:text-zinc-500');
+        }
+    });
+}
+
+// =============================================================================
+// TOGGLE HANDLERS (EXPOSED TO WINDOW)
 // =============================================================================
 
 /** Toggles multi-select mode for filters. */
@@ -257,26 +347,11 @@ window.toggleMultiSelect = () => {
     }
 };
 
-function syncMultiSelectUI() {
-    const btn = document.getElementById('multiSelectBtn');
-    const indicator = document.getElementById('multiSelectIndicator');
-    if (!btn) return;
-
-    if (state.isMultiSelect) {
-        btn.classList.add('text-white', 'bg-white/10');
-        btn.classList.remove('text-zinc-500');
-        indicator?.classList.remove('hidden');
-    } else {
-        btn.classList.remove('text-white', 'bg-white/10');
-        btn.classList.add('text-zinc-500');
-        indicator?.classList.add('hidden');
-    }
-}
-
-/** Toggles hidden items visibility. */
+/** Toggles primary hidden items visibility. */
 window.toggleHidden = () => {
     setState('isHidden', !state.isHidden);
     syncHiddenUI();
+    // If we stop showing hidden items, we must also stop filtering for ONLY hidden items
     if (!state.isHidden && state.filterHiddenOnly) {
         window.toggleHiddenOnly();
     }
@@ -284,50 +359,22 @@ window.toggleHidden = () => {
     renderGrid();
 };
 
-function syncHiddenUI() {
-    const btn = document.getElementById('hiddenBtn');
-    const indicator = document.getElementById('hiddenIndicator');
-    const hiddenOnlyBtn = document.getElementById('hiddenOnlyBtn');
-    if (!btn) return;
-
-    if (state.isHidden) {
-        btn.classList.add('text-red-400', 'bg-red-500/10');
-        btn.classList.remove('text-zinc-500');
-        indicator?.classList.remove('hidden');
-        hiddenOnlyBtn?.classList.remove('hidden');
-    } else {
-        btn.classList.remove('text-red-400', 'bg-red-500/10');
-        btn.classList.add('text-zinc-500');
-        indicator?.classList.add('hidden');
-        hiddenOnlyBtn?.classList.add('hidden');
-    }
-}
-
-
-/** Toggles expanded details view. */
+/** Toggles expanded details view for all cards. */
 window.toggleDetails = () => {
     setState('showDetails', !state.showDetails);
     syncDetailsUI();
     renderGrid();
 };
 
-function syncDetailsUI() {
-    const btn = document.getElementById('detailsBtn');
-    const indicator = document.getElementById('detailsIndicator');
-    if (!btn) return;
+/** Toggles the 'Hidden Only' filter mode. */
+window.toggleHiddenOnly = () => {
+    setState('filterHiddenOnly', !state.filterHiddenOnly);
+    syncHiddenOnlyUI();
+    renderFilters();
+    renderGrid();
+};
 
-    if (state.showDetails) {
-        btn.classList.add('text-white', 'bg-white/10');
-        btn.classList.remove('text-zinc-500');
-        indicator?.classList.remove('hidden');
-    } else {
-        btn.classList.remove('text-white', 'bg-white/10');
-        btn.classList.add('text-zinc-500');
-        indicator?.classList.add('hidden');
-    }
-}
-
-/** Toggles responsive search bar. */
+/** Toggles the responsive search bar visibility. */
 window.toggleSearch = () => {
     const container = document.getElementById('searchBarContainer');
     const input = document.getElementById('searchInput');
@@ -341,7 +388,7 @@ window.toggleSearch = () => {
     }
 };
 
-/** Toggles responsive sort menu. */
+/** Toggles the responsive system menu (sort/filters) visibility. */
 window.toggleSortMenu = () => {
     const container = document.getElementById('sortMenuContainer');
     const btn = document.getElementById('sortMobileToggle');
@@ -368,7 +415,6 @@ window.toggleSortMenu = () => {
                 document.removeEventListener('click', closeMenu);
             }
         };
-        // Timeout to prevent immediate closing since the click that opened it bubbles up
         setTimeout(() => document.addEventListener('click', closeMenu), 0);
     } else {
         btn.classList.remove('bg-black/5', 'dark:bg-white/5', 'text-zinc-900', 'dark:text-white');
@@ -376,27 +422,6 @@ window.toggleSortMenu = () => {
         if (indicator) indicator.classList.add('hidden');
     }
 };
-
-/** Toggles hidden-only filter mode. */
-window.toggleHiddenOnly = () => {
-    setState('filterHiddenOnly', !state.filterHiddenOnly);
-    syncHiddenOnlyUI();
-    renderFilters();
-    renderGrid();
-};
-
-function syncHiddenOnlyUI() {
-    const btn = document.getElementById('hiddenOnlyBtn');
-    if (!btn) return;
-
-    if (state.filterHiddenOnly) {
-        btn.classList.add('bg-red-500', 'text-white', 'border-red-400', 'shadow-lg', 'shadow-red-500/20');
-        btn.classList.remove('text-zinc-500', 'hover:text-red-400', 'border-transparent');
-    } else {
-        btn.classList.remove('bg-red-500', 'text-white', 'border-red-400', 'shadow-lg', 'shadow-red-500/20');
-        btn.classList.add('text-zinc-500', 'hover:text-red-400', 'border-transparent');
-    }
-}
 
 // =============================================================================
 // SEARCH & SMART FILTER
@@ -676,7 +701,15 @@ function applyStateToUI() {
     updateThemeIcon();
 
     // 2. View Mode
-    window.setViewMode(state.viewMode);
+    syncViewModeUI();
+    const container = document.getElementById('gridContainer');
+    if (container) {
+        if (state.viewMode === 'grid') {
+            container.className = 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6 pb-20 animate-enter';
+        } else {
+            container.className = 'flex flex-col gap-4 pb-20 animate-enter max-w-4xl mx-auto';
+        }
+    }
 
     // 3. Toggles
     syncMultiSelectUI();

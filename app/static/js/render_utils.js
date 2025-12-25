@@ -102,47 +102,25 @@ function getSynopsisBlockHtml(item, authors) {
 
 // --- Render ---
 
+/**
+ * Renders all filter controls (Type, Status, Rating, Sort).
+ * Handles both desktop and mobile versions.
+ */
 export function renderFilters() {
 	const counts = getCounts();
 
-	// Type Filters - Desktop
-	const typeHtml = ['All', ...MEDIA_TYPES].map(t => {
+	// --- 1. Type Filters ---
+	/**
+	 * Generates HTML for a type filter button.
+	 * @param {string} t - The type (e.g., 'Anime', 'All').
+	 * @param {boolean} isMobile - True if rendering for mobile, false for desktop.
+	 * @returns {string} HTML string for the type filter button.
+	 */
+	const renderTypeBtn = (t, isMobile) => {
 		const isActive = state.filterTypes.includes(t);
 		const count = counts.typeCounts[t] || 0;
-		let colorClass = `bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:border-zinc-400 dark:hover:border-zinc-500`;
-		let scaleClass = isActive ? 'scale-110 shadow-lg' : 'hover:scale-105';
-
-		const themeColors = {
-			'Anime': 'bg-violet-600 border-violet-500 text-white',
-			'Manga': 'bg-pink-600 border-pink-500 text-white',
-			'Book': 'bg-blue-600 border-blue-500 text-white',
-			'Movie': 'bg-red-600 border-red-500 text-white',
-			'Series': 'bg-amber-600 border-amber-500 text-white'
-		};
-
-		if (t === 'All') {
-			colorClass = isActive ? `bg-zinc-800 dark:bg-zinc-200 text-white dark:text-black border-transparent shadow-lg` : `bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200`;
-		} else {
-			const baseStyle = themeColors[t];
-			if (isActive) colorClass = `${baseStyle} shadow-lg`;
-			else colorClass = `bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-${baseStyle.split('-')[1]}-600 dark:text-${baseStyle.split('-')[1]}-400 hover:text-${baseStyle.split('-')[1]}-700 dark:hover:text-${baseStyle.split('-')[1]}-300 hover:border-${baseStyle.split('-')[1]}-400 dark:hover:border-${baseStyle.split('-')[1]}-500`;
-		}
-
-		const countClass = isActive ? `bg-black/20 text-white` : `bg-zinc-100 dark:bg-zinc-800 text-zinc-500`;
 		const icon = t === 'All' ? 'layout-grid' : (ICON_MAP[t] || 'circle');
 
-		return `<button onclick="setFilterType('${t}')" class="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-heading font-bold uppercase tracking-wide border transition-all ${colorClass} ${scaleClass}">
-                    <i data-lucide="${icon}" class="w-3 h-3"></i>
-                    ${t} <span class="px-1.5 py-0.5 rounded-full text-[10px] ${countClass}">${count}</span>
-                </button>`;
-	}).join('');
-
-	const typeContainer = document.getElementById('typeFilters');
-	if (typeContainer) typeContainer.innerHTML = typeHtml;
-
-	// Type Filters - Mobile (Compact)
-	const typeHtmlMobile = ['All', ...MEDIA_TYPES].map(t => {
-		const isActive = state.filterTypes.includes(t);
 		const themeColors = {
 			'Anime': 'bg-violet-600 border-violet-500 text-white',
 			'Manga': 'bg-pink-600 border-pink-500 text-white',
@@ -150,94 +128,133 @@ export function renderFilters() {
 			'Movie': 'bg-red-600 border-red-500 text-white',
 			'Series': 'bg-amber-600 border-amber-500 text-white'
 		};
-		let colorClass = `bg-zinc-100 dark:bg-zinc-800 border-transparent text-zinc-500 dark:text-zinc-400`;
-		if (t === 'All') {
-			if (isActive) colorClass = `bg-zinc-800 dark:bg-zinc-200 text-white dark:text-black border-transparent font-bold`;
+
+		let colorClass, scaleClass, extra;
+		const baseStyle = themeColors[t];
+
+		if (isMobile) {
+			colorClass = `bg-zinc-100 dark:bg-zinc-800 border-transparent text-zinc-500 dark:text-zinc-400`;
+			if (t === 'All') {
+				if (isActive) colorClass = `bg-zinc-800 dark:bg-zinc-200 text-white dark:text-black font-bold`;
+			} else {
+				if (isActive) colorClass = `${baseStyle} font-bold shadow-md`;
+				else colorClass = `bg-zinc-100 dark:bg-zinc-800 border-transparent text-${baseStyle.split('-')[1]}-600 dark:text-${baseStyle.split('-')[1]}-400`;
+			}
+			scaleClass = 'w-full';
+			extra = `<span class="truncate">${t}</span>`;
 		} else {
-			if (isActive) colorClass = `${themeColors[t]} font-bold shadow-md`;
+			scaleClass = isActive ? 'scale-110 shadow-lg' : 'hover:scale-105';
+			if (t === 'All') {
+				colorClass = isActive ? `bg-zinc-800 dark:bg-zinc-200 text-white dark:text-black border-transparent shadow-lg` : `bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200`;
+			} else {
+				if (isActive) colorClass = `${baseStyle} shadow-lg`;
+				else colorClass = `bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-${baseStyle.split('-')[1]}-600 dark:text-${baseStyle.split('-')[1]}-400 hover:text-${baseStyle.split('-')[1]}-700 dark:hover:text-${baseStyle.split('-')[1]}-300 hover:border-${baseStyle.split('-')[1]}-400 dark:hover:border-${baseStyle.split('-')[1]}-500`;
+			}
+			const countClass = isActive ? `bg-black/20 text-white` : `bg-zinc-100 dark:bg-zinc-800 text-zinc-500`;
+			extra = `${t} <span class="px-1.5 py-0.5 rounded-full text-[10px] ${countClass}">${count}</span>`;
 		}
 
-		return `<button onclick="setFilterType('${t}'); event.stopPropagation();" class="flex items-center justify-center px-1 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-wide border transition-all w-full ${colorClass}">
-                    ${t}
+		return `<button onclick="setFilterType('${t}'); ${isMobile ? 'event.stopPropagation();' : ''}" 
+					class="flex items-center ${isMobile ? 'gap-1.5 px-2 py-2 rounded-lg text-[9px]' : 'gap-2 px-4 py-2 rounded-full text-xs font-heading'} font-bold uppercase tracking-wide border transition-all ${colorClass} ${scaleClass}">
+                    <i data-lucide="${icon}" class="w-3 h-3 shrink-0"></i>
+                    ${extra}
                 </button>`;
-	}).join('');
-	const typeContainerMobile = document.getElementById('typeFiltersMobile');
-	if (typeContainerMobile) typeContainerMobile.innerHTML = typeHtmlMobile;
+	};
 
-	// Status Filters - Desktop
-	const statusHtml = ['All', ...STATUS_TYPES].map(s => {
+	const typeContainer = document.getElementById('typeFilters');
+	if (typeContainer) typeContainer.innerHTML = ['All', ...MEDIA_TYPES].map(t => renderTypeBtn(t, false)).join('');
+
+	const typeContainerMobile = document.getElementById('typeFiltersMobile');
+	if (typeContainerMobile) typeContainerMobile.innerHTML = ['All', ...MEDIA_TYPES].map(t => renderTypeBtn(t, true)).join('');
+
+	// --- 2. Status Filters ---
+	/**
+	 * Generates HTML for a status filter button.
+	 * @param {string} s - The status (e.g., 'Completed', 'All').
+	 * @param {boolean} isMobile - True if rendering for mobile, false for desktop.
+	 * @returns {string} HTML string for the status filter button.
+	 */
+	const renderStatusBtn = (s, isMobile) => {
 		const isActive = state.filterStatuses.includes(s);
 		const count = counts.statusCounts[s] || 0;
-		let scaleClass = isActive ? 'scale-110 shadow-lg' : 'hover:scale-105';
+		const icon = s === 'All' ? 'layers' : STATUS_ICON_MAP[s];
+		const baseColor = s === 'All' ? 'zinc' : STATUS_COLOR_MAP[s].split(' ')[0].replace('text-', '');
 
-		let btnClass = isActive
-			? `bg-zinc-800 dark:bg-zinc-200 text-white dark:text-black font-bold border-transparent`
-			: `bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300 hover:border-zinc-400 dark:hover:border-zinc-600`;
+		let btnClass, scaleClass, extra;
 
-		if (isActive && s !== 'All') {
-			const baseColor = STATUS_COLOR_MAP[s].split(' ')[0].replace('text-', '');
-			btnClass = `bg-${baseColor} text-white border-transparent font-bold shadow-lg`;
-			if (s === 'Planning') btnClass = `bg-zinc-500 text-white border-transparent font-bold`;
-		} else if (!isActive && s !== 'All') {
-			btnClass = `${STATUS_COLOR_MAP[s]} font-medium border bg-opacity-10`;
+		if (isMobile) {
+			btnClass = `bg-zinc-100 dark:bg-zinc-800 border-transparent text-zinc-500 dark:text-zinc-400`;
+			if (isActive) {
+				if (s === 'All') btnClass = `bg-zinc-800 dark:bg-zinc-200 text-white dark:text-black font-bold`;
+				else btnClass = `bg-${baseColor} text-white border-transparent font-bold shadow-md`;
+				if (s === 'Planning') btnClass = `bg-zinc-500 text-white border-transparent font-bold`;
+			} else if (s !== 'All') {
+				btnClass = `${STATUS_COLOR_MAP[s]} bg-opacity-5 font-bold`;
+			}
+			scaleClass = 'w-full';
+			extra = `<span class="truncate">${s}</span>`;
+		} else {
+			scaleClass = isActive ? 'scale-110 shadow-lg' : 'hover:scale-105';
+			btnClass = isActive
+				? `bg-zinc-800 dark:bg-zinc-200 text-white dark:text-black font-bold border-transparent`
+				: `bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300 hover:border-zinc-400 dark:hover:border-zinc-600`;
+
+			if (isActive && s !== 'All') {
+				btnClass = `bg-${baseColor} text-white border-transparent font-bold shadow-lg`;
+				if (s === 'Planning') btnClass = `bg-zinc-500 text-white border-transparent font-bold`;
+			} else if (!isActive && s !== 'All') {
+				btnClass = `${STATUS_COLOR_MAP[s]} font-medium border bg-opacity-10`;
+			}
+			extra = `${s} <span class="px-1.5 py-0.5 rounded-full text-[9px] bg-black/20">${count}</span>`;
 		}
 
-		const icon = s === 'All' ? 'layers' : STATUS_ICON_MAP[s];
-
-		return `<button onclick="setFilterStatus('${s}')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wide border transition-all ${btnClass} ${scaleClass}">
-                    <i data-lucide="${icon}" class="w-3 h-3"></i>
-                    ${s} <span class="px-1.5 py-0.5 rounded-full text-[9px] bg-black/20">${count}</span>
-                </button>`
-	}).join('');
+		return `<button onclick="setFilterStatus('${s}'); ${isMobile ? 'event.stopPropagation();' : ''}" 
+					class="flex items-center ${isMobile ? 'gap-1.5 px-2 py-2 rounded-lg text-[9px]' : 'gap-1.5 px-3 py-1.5 rounded-full text-[11px]'} font-bold uppercase tracking-wide border transition-all ${btnClass} ${scaleClass}">
+                    <i data-lucide="${icon}" class="w-3 h-3 shrink-0"></i>
+                    ${extra}
+                </button>`;
+	};
 
 	const statusContainer = document.getElementById('statusFilters');
-	if (statusContainer) statusContainer.innerHTML = statusHtml;
+	if (statusContainer) statusContainer.innerHTML = ['All', ...STATUS_TYPES].map(s => renderStatusBtn(s, false)).join('');
 
-	// Status Filters - Mobile (Compact)
-	const statusHtmlMobile = ['All', ...STATUS_TYPES].map(s => {
-		const isActive = state.filterStatuses.includes(s);
-		let btnClass = `bg-zinc-100 dark:bg-zinc-800 border-transparent text-zinc-500 dark:text-zinc-400`;
-
-		if (isActive) {
-			if (s === 'All') {
-				btnClass = `bg-zinc-800 dark:bg-zinc-200 text-white dark:text-black font-bold border-transparent`;
-			} else {
-				const baseColor = STATUS_COLOR_MAP[s].split(' ')[0].replace('text-', '');
-				btnClass = `bg-${baseColor} text-white border-transparent font-bold shadow-md`;
-				if (s === 'Planning') btnClass = `bg-zinc-500 text-white border-transparent font-bold`;
-			}
-		}
-
-		return `<button onclick="setFilterStatus('${s}'); event.stopPropagation();" class="flex items-center justify-center px-1 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-wide border transition-all w-full ${btnClass}">
-                    ${s}
-                </button>`
-	}).join('');
 	const statusContainerMobile = document.getElementById('statusFiltersMobile');
-	if (statusContainerMobile) statusContainerMobile.innerHTML = statusHtmlMobile;
+	if (statusContainerMobile) statusContainerMobile.innerHTML = ['All', ...STATUS_TYPES].map(s => renderStatusBtn(s, true)).join('');
 
-	// Sort Fields
+	// --- 3. Sort Options ---
 	const sortFieldContainer = document.getElementById('sortFieldFilters');
-	sortFieldContainer.innerHTML = SORT_OPTIONS.map(opt => {
-		const isActive = state.sortBy === opt.id;
-		const activeClass = isActive ? 'text-white font-bold bg-zinc-800 dark:bg-zinc-800' : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300';
-		return `<button onclick="setSortBy('${opt.id}')" class="text-[10px] font-medium uppercase px-2 py-1 rounded-lg transition-colors ${activeClass}">${opt.label}</button>`
-	}).join('');
+	if (sortFieldContainer) {
+		sortFieldContainer.innerHTML = SORT_OPTIONS.map(opt => {
+			const isActive = state.sortBy === opt.id;
+			const activeClass = isActive ? 'text-white font-bold bg-zinc-800 dark:bg-zinc-700 shadow-sm' : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300';
+			return `<button onclick="setSortBy('${opt.id}')" class="flex-1 text-[10px] font-bold uppercase px-2 py-1.5 rounded-lg transition-all text-center ${activeClass}">${opt.label}</button>`;
+		}).join('');
+	}
 
-	// Sort Directions
-	const dirs = [{ val: 'asc', icon: 'arrow-up-narrow-wide' }, { val: 'desc', icon: 'arrow-down-narrow-wide' }];
-	document.getElementById('sortDirectionFilters').innerHTML = dirs.map(d => {
-		const isActive = state.sortOrder === d.val;
-		const activeClass = isActive ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-500/10' : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300';
-		return `<button onclick="setSortOrder('${d.val}')" class="p-1 rounded-lg transition-colors ${activeClass}"><i data-lucide="${d.icon}" class="w-3.5 h-3.5"></i></button>`;
-	}).join('');
+	const sortDirectionContainer = document.getElementById('sortDirectionFilters');
+	if (sortDirectionContainer) {
+		const dirs = [{ val: 'asc', icon: 'arrow-up-narrow-wide', label: 'Asc' }, { val: 'desc', icon: 'arrow-down-narrow-wide', label: 'Desc' }];
+		sortDirectionContainer.innerHTML = dirs.map(d => {
+			const isActive = state.sortOrder === d.val;
+			const activeClass = isActive ? 'text-indigo-600 dark:text-indigo-400 bg-white dark:bg-zinc-800 shadow-sm ring-1 ring-black/5 dark:ring-white/10 scale-[1.02]' : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300';
+			return `<button onclick="setSortOrder('${d.val}')" class="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition-all ${activeClass}">
+						<i data-lucide="${d.icon}" class="w-4 h-4"></i> 
+						<span class="text-[10px] font-black uppercase tracking-widest">${d.label}</span>
+					</button>`;
+		}).join('');
+	}
 
-	// Rating
+	// --- 4. Rating Filters ---
 	const ratingContainer = document.getElementById('ratingFilters');
 	const ratingAllowed = state.filterStatuses.some(s => ['Completed', 'Anticipating', 'Dropped', 'On Hold'].includes(s));
 
-	if (ratingAllowed) {
+	if (ratingAllowed && ratingContainer) {
 		ratingContainer.classList.remove('hidden');
 		ratingContainer.classList.add('flex');
+
+		const mobileContainer = document.getElementById('ratingFiltersMobile');
+		const mobileWrapper = document.getElementById('ratingFiltersMobileContainer');
+
 		// Any Button
 		const anyActive = state.filterRatings.length === 0;
 		const anyBg = anyActive ? 'bg-zinc-800 dark:bg-zinc-200 text-white dark:text-black shadow-lg scale-105' : 'bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200';
@@ -247,30 +264,43 @@ export function renderFilters() {
 			Any <span class="px-1.5 py-0.5 rounded-full text-[9px] ${anyCountClass}">${counts.ratingCounts['Any']}</span>
 		</button>`;
 
-		const buttons = [1, 2, 3, 4].map(r => {
+		const buttonsHtml = [1, 2, 3, 4].map(r => {
 			const isActive = state.filterRatings.includes(r);
 			const colorClass = TEXT_COLORS[r];
 			const count = counts.ratingCounts[r] || 0;
 
-			// Always colored (active-like text) but with dim background if not selected
-			let btnClass = `bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 ${colorClass}`;
-			let scaleClass = 'hover:scale-105 opacity-80 dark:opacity-60 hover:opacity-100';
+			let btnClass = isActive
+				? `bg-zinc-50 dark:bg-zinc-800 ring-1 ring-zinc-300 dark:ring-zinc-600 shadow-lg ${colorClass} scale-110 opacity-100`
+				: `bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 ${colorClass} hover:scale-105 opacity-80 dark:opacity-60 hover:opacity-100`;
 
-			if (isActive) {
-				btnClass = `bg-zinc-50 dark:bg-zinc-800 ring-1 ring-zinc-300 dark:ring-zinc-600 shadow-lg ${colorClass}`;
-				scaleClass = 'scale-110 opacity-100';
-			}
-
-			return `<button onclick="setFilterRating(${r})" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase transition-all duration-200 border border-transparent ${btnClass} ${scaleClass}">
+			return `<button onclick="setFilterRating(${r})" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase transition-all duration-200 border border-transparent ${btnClass}">
 				${RATING_LABELS[r]} <span class="px-1.5 py-0.5 rounded-full text-[9px] bg-black/10 dark:bg-black/30 text-zinc-600 dark:text-white/70 ml-1">${count}</span>
-			</button>`
+			</button>`;
 		}).join('');
 
-		ratingContainer.innerHTML = anyBtn + buttons;
-	} else {
+		ratingContainer.innerHTML = anyBtn + buttonsHtml;
+
+		if (mobileContainer && mobileWrapper) {
+			mobileWrapper.classList.remove('hidden');
+			mobileContainer.innerHTML = [1, 2, 3, 4].map(r => {
+				const isActive = state.filterRatings.includes(r);
+				const colorClass = TEXT_COLORS[r];
+				let btnClass = isActive ? `bg-zinc-800 dark:bg-zinc-200 text-white dark:text-black font-bold shadow-md` : `bg-zinc-100 dark:bg-zinc-800 border-transparent ${colorClass.replace('text-', 'text-opacity-70 text-')}`;
+
+				return `<button onclick="setFilterRating(${r}); event.stopPropagation();" class="flex items-center gap-1.5 px-2 py-2 rounded-lg text-[9px] font-bold uppercase tracking-wide border transition-all w-full ${btnClass}">
+                    <i data-lucide="star" class="w-3 h-3 ${isActive ? 'fill-current' : ''}"></i>
+                    <span class="truncate">${RATING_LABELS[r]}</span>
+                </button>`;
+			}).join('');
+		}
+	} else if (ratingContainer) {
 		ratingContainer.classList.add('hidden');
 		ratingContainer.classList.remove('flex');
+		const mobileWrapper = document.getElementById('ratingFiltersMobileContainer');
+		if (mobileWrapper) mobileWrapper.classList.add('hidden');
 	}
+
+	// Refresh Lucide Icons
 	safeCreateIcons();
 }
 
