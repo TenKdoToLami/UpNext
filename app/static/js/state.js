@@ -49,12 +49,53 @@ export const state = {
 };
 
 /**
- * Updates a single state property.
+ * Keys that should be persisted to LocalStorage.
+ */
+const PERSISTED_KEYS = [
+	'viewMode', 'sortBy', 'sortOrder', 'showDetails',
+	'isHidden', 'isMultiSelect', 'filterHiddenOnly', 'theme'
+];
+
+/**
+ * Saves specific application state to localStorage.
+ */
+function saveUIState() {
+	const data = {};
+	PERSISTED_KEYS.forEach(key => {
+		data[key] = state[key];
+	});
+	localStorage.setItem('upnext_ui_state', JSON.stringify(data));
+}
+
+/**
+ * Loads persisted state from localStorage.
+ */
+export function loadUIState() {
+	try {
+		const stored = localStorage.getItem('upnext_ui_state');
+		if (stored) {
+			const data = JSON.parse(stored);
+			PERSISTED_KEYS.forEach(key => {
+				if (data[key] !== undefined) {
+					state[key] = data[key];
+				}
+			});
+		}
+	} catch (e) {
+		console.error("Failed to load UI state:", e);
+	}
+}
+
+/**
+ * Updates a single state property and persists if needed.
  * @param {string} key - The state property to update
  * @param {*} value - The new value
  */
 export function setState(key, value) {
 	state[key] = value;
+	if (PERSISTED_KEYS.includes(key)) {
+		saveUIState();
+	}
 }
 
 /**

@@ -4,7 +4,7 @@
  * @module main
  */
 
-import { state } from './state.js';
+import { state, setState, loadUIState } from './state.js';
 import { loadItems, deleteItem, saveItem, getDbStatus, selectDatabase } from './api_service.js';
 import { renderFilters, renderGrid, updateGridTruncation } from './render_utils.js';
 import { safeCreateIcons, toggleExpand, debounce } from './dom_utils.js';
@@ -40,12 +40,10 @@ window.toggleTheme = () => {
     const html = document.documentElement;
     if (state.theme === 'dark') {
         html.classList.remove('dark');
-        state.theme = 'light';
-        localStorage.setItem('theme', 'light');
+        setState('theme', 'light');
     } else {
         html.classList.add('dark');
-        state.theme = 'dark';
-        localStorage.setItem('theme', 'dark');
+        setState('theme', 'dark');
     }
     updateThemeIcon();
     // Re-render stats if modal is open to update chart colors
@@ -66,17 +64,7 @@ function updateThemeIcon() {
     }
 }
 
-// Initialize Theme
-(() => {
-    const stored = localStorage.getItem('theme');
-    if (stored === 'light') {
-        document.documentElement.classList.remove('dark');
-        state.theme = 'light';
-    } else {
-        document.documentElement.classList.add('dark');
-        state.theme = 'dark';
-    }
-})();
+// Initialize Theme is now part of state.js loadUIState and initApp logic
 
 // Export functions
 window.openExportModal = openExportModal;
@@ -202,8 +190,8 @@ window.setFilterRating = (r) => {
 // SORT HANDLERS
 // =============================================================================
 
-window.setSortBy = (field) => { state.sortBy = field; renderFilters(); renderGrid(); };
-window.setSortOrder = (order) => { state.sortOrder = order; renderFilters(); renderGrid(); };
+window.setSortBy = (field) => { setState('sortBy', field); renderFilters(); renderGrid(); };
+window.setSortOrder = (order) => { setState('sortOrder', order); renderFilters(); renderGrid(); };
 
 // =============================================================================
 // VIEW MODE HANDLERS
@@ -214,7 +202,7 @@ window.setSortOrder = (order) => { state.sortOrder = order; renderFilters(); ren
  * @param {'grid'|'list'} mode - View mode
  */
 window.setViewMode = (mode) => {
-    state.viewMode = mode;
+    setState('viewMode', mode);
     const btnGrid = document.getElementById('view-grid');
     const btnList = document.getElementById('view-list');
 
@@ -236,18 +224,9 @@ window.setViewMode = (mode) => {
 
 /** Toggles multi-select mode for filters. */
 window.toggleMultiSelect = () => {
-    state.isMultiSelect = !state.isMultiSelect;
-    const btn = document.getElementById('multiSelectBtn');
-    const indicator = document.getElementById('multiSelectIndicator');
-
-    if (state.isMultiSelect) {
-        btn.classList.add('text-white', 'bg-white/10');
-        btn.classList.remove('text-zinc-500');
-        indicator.classList.remove('hidden');
-    } else {
-        btn.classList.remove('text-white', 'bg-white/10');
-        btn.classList.add('text-zinc-500');
-        indicator.classList.add('hidden');
+    setState('isMultiSelect', !state.isMultiSelect);
+    syncMultiSelectUI();
+    if (!state.isMultiSelect) {
         if (state.filterTypes.length > 1) state.filterTypes = ['All'];
         if (state.filterStatuses.length > 1) state.filterStatuses = ['All'];
         state.filterRatings = [];
@@ -256,47 +235,75 @@ window.toggleMultiSelect = () => {
     }
 };
 
+function syncMultiSelectUI() {
+    const btn = document.getElementById('multiSelectBtn');
+    const indicator = document.getElementById('multiSelectIndicator');
+    if (!btn) return;
+
+    if (state.isMultiSelect) {
+        btn.classList.add('text-white', 'bg-white/10');
+        btn.classList.remove('text-zinc-500');
+        indicator?.classList.remove('hidden');
+    } else {
+        btn.classList.remove('text-white', 'bg-white/10');
+        btn.classList.add('text-zinc-500');
+        indicator?.classList.add('hidden');
+    }
+}
+
 /** Toggles hidden items visibility. */
 window.toggleHidden = () => {
-    state.isHidden = !state.isHidden;
-    const btn = document.getElementById('hiddenBtn');
-    const indicator = document.getElementById('hiddenIndicator');
-    const hiddenOnlyBtn = document.getElementById('hiddenOnlyBtn');
-
-    if (state.isHidden) {
-        btn.classList.add('text-red-400', 'bg-red-500/10');
-        btn.classList.remove('text-zinc-500');
-        indicator.classList.remove('hidden');
-        if (hiddenOnlyBtn) hiddenOnlyBtn.classList.remove('hidden');
-    } else {
-        btn.classList.remove('text-red-400', 'bg-red-500/10');
-        btn.classList.add('text-zinc-500');
-        indicator.classList.add('hidden');
-        if (hiddenOnlyBtn) hiddenOnlyBtn.classList.add('hidden');
-        if (state.filterHiddenOnly) window.toggleHiddenOnly();
+    setState('isHidden', !state.isHidden);
+    syncHiddenUI();
+    if (!state.isHidden && state.filterHiddenOnly) {
+        window.toggleHiddenOnly();
     }
     renderFilters();
     renderGrid();
 };
 
+function syncHiddenUI() {
+    const btn = document.getElementById('hiddenBtn');
+    const indicator = document.getElementById('hiddenIndicator');
+    const hiddenOnlyBtn = document.getElementById('hiddenOnlyBtn');
+    if (!btn) return;
+
+    if (state.isHidden) {
+        btn.classList.add('text-red-400', 'bg-red-500/10');
+        btn.classList.remove('text-zinc-500');
+        indicator?.classList.remove('hidden');
+        hiddenOnlyBtn?.classList.remove('hidden');
+    } else {
+        btn.classList.remove('text-red-400', 'bg-red-500/10');
+        btn.classList.add('text-zinc-500');
+        indicator?.classList.add('hidden');
+        hiddenOnlyBtn?.classList.add('hidden');
+    }
+}
+
 
 /** Toggles expanded details view. */
 window.toggleDetails = () => {
-    state.showDetails = !state.showDetails;
+    setState('showDetails', !state.showDetails);
+    syncDetailsUI();
+    renderGrid();
+};
+
+function syncDetailsUI() {
     const btn = document.getElementById('detailsBtn');
     const indicator = document.getElementById('detailsIndicator');
+    if (!btn) return;
 
     if (state.showDetails) {
         btn.classList.add('text-white', 'bg-white/10');
         btn.classList.remove('text-zinc-500');
-        indicator.classList.remove('hidden');
+        indicator?.classList.remove('hidden');
     } else {
         btn.classList.remove('text-white', 'bg-white/10');
         btn.classList.add('text-zinc-500');
-        indicator.classList.add('hidden');
+        indicator?.classList.add('hidden');
     }
-    renderGrid();
-};
+}
 
 /** Toggles responsive search bar. */
 window.toggleSearch = () => {
@@ -350,8 +357,15 @@ window.toggleSortMenu = () => {
 
 /** Toggles hidden-only filter mode. */
 window.toggleHiddenOnly = () => {
-    state.filterHiddenOnly = !state.filterHiddenOnly;
+    setState('filterHiddenOnly', !state.filterHiddenOnly);
+    syncHiddenOnlyUI();
+    renderFilters();
+    renderGrid();
+};
+
+function syncHiddenOnlyUI() {
     const btn = document.getElementById('hiddenOnlyBtn');
+    if (!btn) return;
 
     if (state.filterHiddenOnly) {
         btn.classList.add('bg-red-500', 'text-white', 'border-red-400', 'shadow-lg', 'shadow-red-500/20');
@@ -360,9 +374,7 @@ window.toggleHiddenOnly = () => {
         btn.classList.remove('bg-red-500', 'text-white', 'border-red-400', 'shadow-lg', 'shadow-red-500/20');
         btn.classList.add('text-zinc-500', 'hover:text-red-400', 'border-transparent');
     }
-    renderFilters();
-    renderGrid();
-};
+}
 
 // =============================================================================
 // SEARCH & SMART FILTER
@@ -632,13 +644,37 @@ async function checkDatabaseSelection() {
 }
 
 /**
+ * Applies current state to UI elements.
+ */
+function applyStateToUI() {
+    // 1. Theme
+    const html = document.documentElement;
+    if (state.theme === 'dark') html.classList.add('dark');
+    else html.classList.remove('dark');
+    updateThemeIcon();
+
+    // 2. View Mode
+    window.setViewMode(state.viewMode);
+
+    // 3. Toggles
+    syncMultiSelectUI();
+    syncHiddenUI();
+    syncHiddenOnlyUI();
+    syncDetailsUI();
+
+    // 4. Filters & Sorting (Sync dropdowns)
+    renderFilters();
+}
+
+/**
  * Initializes the application when DOM is ready.
  */
 function initApp() {
+    loadUIState();
     checkDatabaseSelection();
     loadItems();
     populateAutocomplete();
-    window.setViewMode('grid');
+    applyStateToUI();
 
     // Helper for safe event binding
     const addListener = (id, event, handler) => {
