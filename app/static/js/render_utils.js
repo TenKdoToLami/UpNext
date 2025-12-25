@@ -91,13 +91,12 @@ function getAuthorsHtml(authors, extraClass = '') {
  */
 function getSynopsisBlockHtml(item, authors) {
 	if (!item.description) return '';
-	// Calculate available lines for synopsis based on missing fields
-	// Authors: 2 lines, Universe: 1 line, Series: 1 line = 4 lines max
-	let availableLines = 0;
-	if (!authors || !authors.length) availableLines += 2;
+	// Minimum of 2 lines available for synopsis, more if fields are missing
+	let availableLines = 2;
+	if (!authors || !authors.length) availableLines += 1;
 	if (!item.universe) availableLines += 1;
 	if (!item.series) availableLines += 1;
-	if (availableLines <= 0) return '';
+
 	return `<div style="-webkit-line-clamp: ${availableLines}; display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden;" class="text-xs leading-5 text-zinc-500 dark:text-zinc-400 flex-1 min-h-0 border-t border-zinc-100 dark:border-white/5 pt-2 mt-2">${item.description}</div>`;
 }
 
@@ -381,7 +380,7 @@ function generateCardHtml(item) {
 
 	const coverUrl = item.coverUrl ? `/images/${item.coverUrl}` : null;
 	const coverHtml = coverUrl
-		? `<img src="${coverUrl}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105">`
+		? `<img src="${coverUrl}" loading="lazy" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105">`
 		: `<div class="w-full h-full flex items-center justify-center text-zinc-400 dark:text-zinc-700 bg-zinc-100 dark:bg-zinc-900"><i data-lucide="image" class="w-10 h-10 opacity-30"></i></div>`;
 
 	let progressHtml = '';
@@ -430,7 +429,7 @@ function generateCardHtml(item) {
 		let detailBlock = '';
 		if (state.showDetails) {
 			detailBlock = `
-                 <div class="p-4 pt-5 bg-white dark:bg-zinc-900 border-t border-zinc-100 dark:border-white/5 flex flex-col relative z-20 pointer-events-auto h-[10rem] overflow-hidden">
+                 <div class="p-4 pt-5 bg-white dark:bg-zinc-900 border-t border-zinc-100 dark:border-white/5 flex flex-col relative z-20 pointer-events-auto h-[12rem] overflow-hidden">
                      <h3 class="font-heading font-bold text-2xl leading-[1.2] line-clamp-2 text-[var(--theme-col)] transition-colors mb-1.5 shrink-0">${item.title}</h3>
                      <div class="flex flex-col gap-0.5 text-xs font-medium text-zinc-500 dark:text-zinc-400 shrink-0">
                           ${authors.length ? `<div class="text-zinc-600 dark:text-zinc-300 line-clamp-2 block"><i data-lucide="pen-tool" class="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500 inline-block mr-1.5 align-text-bottom pointer-events-none"></i>${authorsHtml}</div>` : ''}
