@@ -277,8 +277,9 @@ function goToToday() {
 /**
  * Opens the Add/Edit Event modal.
  * @param {Object|null} release - Release object to edit, or null for new event
+ * @param {string|null} dateStr - Optional date string to pre-fill
  */
-function openAddEventModal(release = null) {
+function openAddEventModal(release = null, dateStr = null) {
     const modal = document.getElementById('addEventModal');
     if (!modal) return;
 
@@ -298,7 +299,12 @@ function openAddEventModal(release = null) {
         document.getElementById('addEventContent').value = release.content || '';
         document.getElementById('addEventDate').value = release.date.split('T')[0];
         document.getElementById('addEventTime').value = release.time || '';
-        document.getElementById('addEventTracked').checked = release.isTracked !== false;
+        // Tracked is always true for now, hidden from UI
+
+        // Hide recurrence for edit mode (simpler to just edit individual events)
+        document.getElementById('addEventRecur').checked = false;
+        document.getElementById('addEventRecur').parentElement.parentElement.classList.add('hidden');
+        document.getElementById('recurrenceOptions').classList.add('hidden');
 
         // Handle Associated Item
         if (release.item) {
@@ -330,9 +336,25 @@ function openAddEventModal(release = null) {
         // Reset Form
         document.getElementById('addEventSearch').value = '';
         document.getElementById('addEventContent').value = '';
-        document.getElementById('addEventDate').value = new Date().toISOString().split('T')[0];
+
+        // Set Date: use provided dateStr or today
+        let defaultDate = new Date().toISOString().split('T')[0];
+        if (dateStr) defaultDate = dateStr;
+
+        document.getElementById('addEventDate').value = defaultDate;
         document.getElementById('addEventTime').value = '';
-        document.getElementById('addEventTracked').checked = true;
+        // Reset recurrence
+        document.getElementById('addEventRecur').checked = false;
+        document.getElementById('addEventRecur').parentElement.parentElement.classList.remove('hidden');
+        document.getElementById('recurrenceOptions').classList.add('hidden');
+        document.getElementById('recurrenceFreq').value = 'weekly';
+        document.getElementById('recurrenceCount').value = '12';
+        document.getElementById('recurrenceUseCounter').checked = true;
+        document.getElementById('recurrenceStartCount').value = '1';
+        document.getElementById('recurrencePrefix').value = ''; // Reset prefix
+        document.getElementById('startCountContainer').classList.remove('opacity-50');
+        document.getElementById('recurrenceStartCount').disabled = false;
+
         document.getElementById('addEventSuggestions').classList.add('hidden');
         clearSelectedMediaItem();
     }
@@ -397,24 +419,34 @@ function searchMediaItems(query) {
 
         // Render suggestions
         if (matches.length > 0) {
-            suggestions.innerHTML = matches.slice(0, 10).map(item => `
+            suggestions.innerHTML = matches.slice(0, 10).map(item => {
+                const typeColorClass = TEXT_COLORS_MAP[item.type] || 'text-zinc-500';
+                const iconName = ICON_MAP[item.type] || 'box';
+
+                return `
                 <div onclick="selectMediaItem('${item.id}')" 
                     class="flex items-center gap-3 p-3 hover:bg-zinc-50 dark:hover:bg-zinc-800 cursor-pointer transition-colors border-b border-zinc-100 dark:border-zinc-800/50 last:border-0">
                     <img src="${item.coverUrl ? '/images/' + item.coverUrl : '/static/img/placeholder_cover.jpg'}" 
-                        class="w-8 h-12 object-cover rounded bg-zinc-200" onerror="this.src='/static/img/no-cover.png'">
+                        class="w-10 h-14 object-cover rounded shadow-sm bg-zinc-200" onerror="this.src='/static/img/no-cover.png'">
                     <div class="flex-1 min-w-0">
                         <h4 class="font-bold text-sm text-zinc-900 dark:text-white truncate">${item.title}</h4>
-                        <div class="flex items-center gap-2 text-xs">
-                            <span class="${item.userData?.status === 'Planning' ? 'text-emerald-500' : 'text-zinc-500'} font-medium">
-                                ${item.userData?.status || 'Unknown'}
-                            </span>
-                            <span class="text-zinc-400">•</span>
-                            <span class="text-zinc-500">${item.type}</span>
+                        <div class="flex items-center gap-2 text-xs mt-1">
+                            ${item.userData?.status ? `
+                                <span class="${item.userData?.status === 'Planning' ? 'text-emerald-500' : 'text-zinc-500'} font-medium">
+                                    ${item.userData.status}
+                                </span>
+                                <span class="text-zinc-300 dark:text-zinc-700">•</span>
+                            ` : ''}
+                            <div class="flex items-center gap-1.5 ${typeColorClass} font-bold">
+                                <i data-lucide="${iconName}" class="w-3 h-3"></i>
+                                <span>${item.type}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
             suggestions.classList.remove('hidden');
+            if (typeof lucide !== 'undefined') lucide.createIcons();
         } else {
             suggestions.classList.add('hidden');
         }
@@ -461,19 +493,35 @@ async function submitNewEvent() {
     const content = document.getElementById('addEventContent').value;
     const date = document.getElementById('addEventDate').value;
     const time = document.getElementById('addEventTime').value;
-    const isTracked = document.getElementById('addEventTracked').checked;
 
-    if (!content || !date) {
-        showToast('Please fill in required fields', 'error');
+    // Recurrence fields
+    const isRecurring = document.getElementById('addEventRecur').checked;
+    const recurrenceFreq = document.getElementById('recurrenceFreq').value;
+    const recurrenceCount = document.getElementById('recurrenceCount').value;
+    const useCounter = document.getElementById('recurrenceUseCounter').checked;
+    const startCount = document.getElementById('recurrenceStartCount').value;
+    const prefix = document.getElementById('recurrencePrefix').value;
+
+    if (!date) {
+        showToast('Date is required', 'error');
         return;
     }
+
+    // If no content provided, use title or generic text
 
     const payload = {
         date: date,
         time: time || null,
         content: content,
         itemId: calendarState.selectedMediaItem?.id || null,
-        isTracked: isTracked
+        isTracked: true, // Always track
+        recurrence: isRecurring ? {
+            frequency: recurrenceFreq,
+            count: parseInt(recurrenceCount),
+            useCounter: useCounter,
+            startCount: parseInt(startCount),
+            prefix: prefix.trim() // Send custom prefix
+        } : null
     };
 
     const isEdit = !!calendarState.currentEditingId;
@@ -821,7 +869,7 @@ function renderDayCell(day, dateStr, releases, isOtherMonth, isToday) {
                             <div class="carousel-card absolute transition-all duration-300 ease-out cursor-pointer flex items-center justify-center pointer-events-auto"
                                 data-card-index="${index}"
                                 style="height: 100%;"
-                                onclick="/* Click bubbles to parent to open sidebar */">
+                                onclick="">
                                 <div class="h-full relative" style="aspect-ratio: 3/4;">
                                     ${content}
                                     ${r.time ? `<div class="absolute bottom-1 right-1 bg-black/60 backdrop-blur-[2px] px-1.5 py-0.5 rounded text-[9px] font-bold text-white z-[71] pointer-events-none border border-white/10 ring-1 ring-black/20">${r.time}</div>` : ''}
@@ -845,7 +893,7 @@ function renderDayCell(day, dateStr, releases, isOtherMonth, isToday) {
     }
 
     return `
-        <div onclick="showDayDetail('${dateStr}')"
+        <div onclick="event.stopPropagation(); showDayDetail('${dateStr}')"
             class="calendar-day-cell aspect-square rounded-xl flex flex-col items-stretch justify-start overflow-hidden transition-all relative group/cell cursor-pointer
                 ${isOtherMonth
             ? 'bg-zinc-50 dark:bg-zinc-900/30'
@@ -1028,13 +1076,9 @@ function renderUpcomingView() {
                 const prevDate = new Date(sortedReleases[index - 1].date);
                 const currDate = new Date(r.date);
                 // Skip delimiter if we are exactly at the "Today" split point to avoid double lines
-                // But we DO want month delimiters even if they coincide with Today, usually. 
-                // Let's refine: The delimiters are inserted BEFORE the current item.
                 if (prevDate.getMonth() !== currDate.getMonth() || prevDate.getFullYear() !== currDate.getFullYear()) {
                     const monthName = MONTH_NAMES[currDate.getMonth()];
                     const year = currDate.getFullYear();
-                    // Don't insert if it conflicts with Today line? No, let them coexist or just let Today take precedence visually if needed.
-                    // For now, simple insertion.
                     html += `
                         <div class="h-full w-10 shrink-0 flex flex-col items-center justify-center gap-2">
                              <div class="h-full w-px bg-zinc-200 dark:bg-zinc-800"></div>
@@ -1084,16 +1128,13 @@ function renderUpcomingView() {
 /**
  * Renders a single upcoming release item.
  * 
- * Specs:
- * - Poster aspect ratio 2:3
- * - Full Titles
- * - Actions: Delete, Mark as Seen
+ * Renders a single upcoming release item.
  */
 function renderUpcomingItem(release) {
     const item = release.item;
     const type = item?.type || 'Other';
 
-    // Global Card Styles (border, bg, hover rings) - NOW ONLY FOR IMAGE
+    // Global Card Styles
     const cardStyles = TYPE_COLOR_MAP[type] || 'bg-zinc-800 border-zinc-700';
     const textColor = TEXT_COLORS_MAP[type] || 'text-zinc-500';
     const borderColor = BORDER_COLORS[type] || 'border-zinc-700';
@@ -1118,9 +1159,6 @@ function renderUpcomingItem(release) {
                         type === 'Series' ? 'amber' : 'emerald';
 
     // Maximized Card Dimensions for Image
-    // User wants dynamic scaling to fit viewport.
-    // Target Cover Height: ~45-50vh (leaving room for header + text below in a 90vh modal)
-    // Aspect Ratio: 2:3
     const coverHeightVal = 50;
     // Calculate width: (50 * 2/3) vh
     const cardWidthStyle = `style="width: calc(${coverHeightVal}vh * 0.666)"`;
@@ -1149,7 +1187,7 @@ function renderUpcomingItem(release) {
             </div>
 
             <!-- Cover Image Container (The "Box") -->
-            <div class="relative w-full rounded-2xl overflow-hidden shadow-xl transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-2xl bg-white dark:bg-zinc-800 bg-gradient-to-br from-${colorRoot}-500/30 via-transparent to-transparent p-[1px]" ${coverHeightStyle}>
+            <div class="relative w-full rounded-2xl overflow-hidden shadow-xl transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-2xl bg-gradient-to-br from-${colorRoot}-500/80 via-${colorRoot}-500/20 to-transparent p-[4px]" ${coverHeightStyle}>
                 <div class="w-full h-full rounded-2xl overflow-hidden bg-zinc-900 relative">
          ${item?.coverUrl
             ? `<img src="/images/${item.coverUrl}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy">`
@@ -1183,13 +1221,13 @@ function renderUpcomingItem(release) {
             <!-- Text Content (Below the box) -->
             <div class="flex flex-col px-1">
                 <!-- Title (Truncated again) -->
-                <h3 class="font-heading font-bold text-xl ${textColor} leading-tight mb-2 line-clamp-2 group-hover:underline decoration-2 underline-offset-4" title="${item?.title || ''}">
+                <h3 class="font-heading font-bold text-xl ${textColor} leading-tight mb-2 group-hover:underline decoration-2 underline-offset-4" title="${item?.title || ''}">
                     ${item?.title || 'Unknown Title'}
                 </h3>
                 
                 <!-- Description -->
                 ${release.content ? `
-                <p class="text-sm text-zinc-500 dark:text-zinc-400 line-clamp-2 leading-relaxed font-medium">
+                <p class="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed font-medium">
                     ${release.content}
                 </p>
                 ` : ''}
@@ -1216,6 +1254,7 @@ function showDayDetail(dateStr) {
     // Format date for display
     const date = new Date(dateStr);
     dateLabel.textContent = formatDisplayDate(date);
+    const releases = getReleasesForDate(dateStr);
 
     // Render releases
     if (releases.length > 0) {

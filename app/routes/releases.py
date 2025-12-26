@@ -148,14 +148,14 @@ def create_release():
     """
     try:
         data = request.get_json()
-        if not data or not data.get("date") or not data.get("content"):
-            return jsonify({"error": "Date and content are required"}), 400
-            
+        if not data or not data.get("date"):
+             return jsonify({"error": "Date is required"}), 400
+
         try:
             release_date = datetime.strptime(data["date"], "%Y-%m-%d").date()
         except ValueError:
             return jsonify({"error": "Invalid date format. Use YYYY-MM-DD"}), 400
-            
+
         release_time = None
         if data.get("time"):
             try:
@@ -163,22 +163,107 @@ def create_release():
             except ValueError:
                 pass
 
-        new_release = MediaRelease(
-            date=release_date,
-            release_time=release_time,
-            content=data["content"],
-            item_id=data.get("itemId"),
-            is_tracked=data.get("isTracked", True),
-            notification_sent=False
-        )
+        recurrence = data.get("recurrence")
+        content_base = data.get("content", "")
+        item_id = data.get("itemId")
         
-        db.session.add(new_release)
-        db.session.commit()
+        # Helper to generate content string
+        def get_content(prefix, count_val, base):
+            if prefix:
+                return f"{prefix} {count_val} {base}".strip()
+            return base
+
+        created_ids = []
         
-        return jsonify({
-            "status": "success", 
-            "id": new_release.id
-        }), 201
+        if recurrence:
+            freq = recurrence.get("frequency", "weekly")
+            count = int(recurrence.get("count", 1))
+            use_counter = recurrence.get("useCounter", False)
+            start_count = int(recurrence.get("startCount", 1))
+
+            custom_prefix = recurrence.get("prefix")
+            prefix = ""
+            
+            if custom_prefix and custom_prefix.strip():
+                prefix = custom_prefix.strip()
+            # If no custom prefix but use_counter is true, auto-detect
+            elif use_counter:
+                if item_id:
+                     # Fetch item to determine type
+                     item = db.session.get(MediaItem, item_id)
+                     if item:
+                         if item.type in ["Anime", "Series", "TV"]:
+                             prefix = "Episode"
+                         elif item.type in ["Manga", "Book", "Novel"]:
+                             prefix = "Chapter"
+                         else:
+                             prefix = "Part" # Fallback
+                else:
+                    prefix = "Part"
+
+            current_date = release_date
+            current_count = start_count
+            
+            for _ in range(count):
+                final_content = get_content(prefix if use_counter else "", current_count, content_base)
+                # If content is empty (because optional) and no counter, use fallback
+                if not final_content and item_id:
+                     # If we have an item but no content, maybe just use item title or "New Release"?
+                     # But content is supposed to be "Episode X", so final_content is likely set if use_counter is true.
+                     # If use_counter is false and content is empty, validation might fail if we enforce it.
+                     # Let's ensure we have something.
+                     final_content = "New Release"
+
+                new_release = MediaRelease(
+                    date=current_date,
+                    release_time=release_time,
+                    content=final_content or "New Release",
+                    item_id=item_id,
+                    is_tracked=data.get("isTracked", True),
+                    notification_sent=False
+                )
+                db.session.add(new_release)
+                db.session.flush() # flush to get ID
+                created_ids.append(new_release.id)
+
+                # Increment
+                if freq == "weekly":
+                    current_date += timedelta(weeks=1)
+                elif freq == "daily":
+                    current_date += timedelta(days=1)
+                
+                current_count += 1
+            
+            db.session.commit()
+            return jsonify({
+                "status": "success", 
+                "count": len(created_ids),
+                "ids": created_ids
+            }), 201
+
+        else:
+            # Single Event
+            # Content is optional, so handle empty string
+            final_content = content_base
+            if not final_content:
+                final_content = "New Release"
+
+            new_release = MediaRelease(
+                date=release_date,
+                release_time=release_time,
+                content=final_content,
+                item_id=item_id,
+                is_tracked=data.get("isTracked", True),
+                notification_sent=False
+            )
+            
+            db.session.add(new_release)
+            db.session.commit()
+            
+            return jsonify({
+                "status": "success", 
+                "id": new_release.id
+            }), 201
         
     except Exception as e:
         logger.error(f"Error creating release: {e}", exc_info=True)

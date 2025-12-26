@@ -156,15 +156,15 @@
 				<div class="relative">
 					<i data-lucide="search" class="absolute left-3 top-3 w-4 h-4 text-zinc-400"></i>
 					<input type="text" id="addEventSearch" placeholder="Search for anime, manga, etc..."
-						oninput="searchMediaItems(this.value)"
+						oninput="searchMediaItems(this.value)" autocomplete="off"
 						class="w-full pl-10 pr-4 py-2.5 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-sm">
 				</div>
 				<div id="addEventSuggestions"
-					class="absolute left-0 right-0 top-full mt-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-xl max-h-48 overflow-y-auto hidden z-30">
+					class="absolute left-0 right-0 top-full mt-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-xl max-h-48 overflow-y-auto hidden z-30 divide-y divide-zinc-100 dark:divide-zinc-800">
 				</div>
 				<div id="addEventSelectedItem"
 					class="hidden items-center gap-3 p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 rounded-xl">
-					<img id="selectedItemCover" src="" class="w-8 h-10 rounded object-cover bg-zinc-200">
+					<img id="selectedItemCover" src="" class="w-8 h-12 rounded object-cover bg-zinc-200 shadow-sm">
 					<div class="flex-1 min-w-0">
 						<h4 id="selectedItemTitle" class="font-bold text-sm text-zinc-900 dark:text-white truncate">
 						</h4>
@@ -179,8 +179,8 @@
 
 			<div class="space-y-2">
 				<label class="block text-sm font-bold text-zinc-700 dark:text-zinc-300">Event Description <span
-						class="text-red-500">*</span></label>
-				<input type="text" id="addEventContent" required placeholder="e.g. Season 2 Premiere"
+						class="text-zinc-400 font-normal">(Optional)</span></label>
+				<input type="text" id="addEventContent" placeholder="e.g. Season 2 Premiere"
 					class="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-sm">
 			</div>
 
@@ -198,11 +198,65 @@
 				</div>
 			</div>
 
-			<div class="flex items-center gap-3 pt-1">
-				<input type="checkbox" id="addEventTracked" checked
-					class="w-4 h-4 text-emerald-500 rounded focus:ring-emerald-500 border-gray-300">
-				<label for="addEventTracked" class="text-sm font-medium text-zinc-700 dark:text-zinc-300">Track this
-					event (show in Upcoming view)</label>
+		</div>
+
+		<!-- Recurrence Section -->
+		<div class="space-y-4 pt-6 pb-2 border-t border-zinc-100 dark:border-zinc-800">
+			<div class="flex items-center justify-between">
+				<label class="text-sm font-bold text-zinc-700 dark:text-zinc-300">Repeat Event</label>
+				<label class="relative inline-flex items-center cursor-pointer">
+					<input type="checkbox" id="addEventRecur" class="sr-only peer"
+						onchange="document.getElementById('recurrenceOptions').classList.toggle('hidden', !this.checked)">
+					<div
+						class="w-11 h-6 bg-zinc-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-emerald-300 dark:peer-focus:ring-emerald-800 rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-emerald-500">
+					</div>
+				</label>
+			</div>
+
+			<div id="recurrenceOptions"
+				class="hidden space-y-5 bg-zinc-50 dark:bg-zinc-900/50 p-5 rounded-xl border border-zinc-200 dark:border-zinc-800">
+				<div class="grid grid-cols-2 gap-4">
+					<div class="space-y-2">
+						<label class="block text-sm font-bold text-zinc-700 dark:text-zinc-300">Frequency</label>
+						<select id="recurrenceFreq"
+							class="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-sm transition-all">
+							<option value="weekly">Weekly</option>
+							<option value="daily">Daily</option>
+						</select>
+					</div>
+					<div class="space-y-2">
+						<label class="block text-sm font-bold text-zinc-700 dark:text-zinc-300">Repeat
+							Count</label>
+						<input type="number" id="recurrenceCount" value="12" min="1" max="52"
+							class="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-sm transition-all">
+					</div>
+				</div>
+
+				<div class="space-y-4 pt-4 border-t border-zinc-200 dark:border-zinc-700/50">
+					<div class="flex items-center gap-2">
+						<input type="checkbox" id="recurrenceUseCounter" checked
+							class="w-4 h-4 text-emerald-500 rounded focus:ring-emerald-500 border-gray-300"
+							onchange="document.getElementById('startCountContainer').classList.toggle('opacity-50', !this.checked); document.getElementById('recurrencePrefix').disabled = !this.checked; document.getElementById('recurrenceStartCount').disabled = !this.checked;">
+						<label for="recurrenceUseCounter" class="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+							Add counter to description (e.g. "Episode 1")
+						</label>
+					</div>
+
+					<div id="startCountContainer" class="flex items-center gap-4 pl-6 transition-opacity">
+						<div class="flex items-center gap-2">
+							<label
+								class="text-sm font-bold text-zinc-700 dark:text-zinc-300 whitespace-nowrap">Prefix:</label>
+							<input type="text" id="recurrencePrefix" placeholder="Auto"
+								class="w-24 px-4 py-2.5 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none placeholder-zinc-400 transition-all">
+						</div>
+						<div class="flex items-center gap-2">
+							<label class="text-sm font-bold text-zinc-700 dark:text-zinc-300 whitespace-nowrap">Start
+								#:</label>
+							<input type="number" id="recurrenceStartCount" value="1" min="1"
+								class="w-20 px-4 py-2.5 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all">
+						</div>
+					</div>
+				</div>
 			</div>
 		</div>
 
