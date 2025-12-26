@@ -269,24 +269,30 @@ function goToToday() {
 /**
  * Catch up on all overdue releases (mark as seen).
  */
-async function catchUpCal() {
-    if (!confirm('Mark all overdue releases as read? This will remove them from the upcoming list.')) return;
 
-    try {
-        const res = await fetch('/api/releases/catch-up', { method: 'POST' });
-        if (res.ok) {
-            window.showToast('All caught up!', 'success');
-            // Refresh view
-            if (calendarState.currentView === 'upcoming') {
-                loadUpcomingReleases().then(renderUpcomingView);
+async function catchUpCal() {
+    showConfirmationModal(
+        'Catch Up on Releases?',
+        'This will mark all overdue releases as read and remove them from your upcoming list.',
+        async () => {
+            try {
+                const res = await fetch('/api/releases/catch-up', { method: 'POST' });
+                if (res.ok) {
+                    window.showToast('All caught up!', 'success');
+                    // Refresh view
+                    if (calendarState.currentView === 'upcoming') {
+                        loadUpcomingReleases().then(renderUpcomingView);
+                    }
+                } else {
+                    window.showToast('Failed to update releases', 'error');
+                }
+            } catch (e) {
+                console.error('Error catching up:', e);
+                window.showToast('Error catching up', 'error');
             }
-        } else {
-            window.showToast('Failed to update releases', 'error');
-        }
-    } catch (e) {
-        console.error('Error catching up:', e);
-        window.showToast('Error catching up', 'error');
-    }
+        },
+        'info'
+    );
 }
 
 // =============================================================================
@@ -597,28 +603,33 @@ async function submitNewEvent() {
 async function deleteEvent() {
     if (!calendarState.currentEditingId) return;
 
-    if (!confirm('Are you sure you want to delete this event?')) return;
+    showConfirmationModal(
+        'Delete Event?',
+        'Are you sure you want to delete this release event? This action cannot be undone.',
+        async () => {
+            try {
+                const response = await fetch(`/api/releases/${calendarState.currentEditingId}`, {
+                    method: 'DELETE'
+                });
 
-    try {
-        const response = await fetch(`/api/releases/${calendarState.currentEditingId}`, {
-            method: 'DELETE'
-        });
-
-        if (response.ok) {
-            showToast('Event deleted', 'success');
-            closeAddEventModal();
-            if (calendarState.currentView === 'month') {
-                loadReleasesForMonth().then(renderMonthView);
-            } else {
-                loadUpcomingReleases().then(renderUpcomingView);
+                if (response.ok) {
+                    showToast('Event deleted', 'success');
+                    closeAddEventModal();
+                    if (calendarState.currentView === 'month') {
+                        loadReleasesForMonth().then(renderMonthView);
+                    } else {
+                        loadUpcomingReleases().then(renderUpcomingView);
+                    }
+                } else {
+                    showToast('Failed to delete event', 'error');
+                }
+            } catch (error) {
+                console.error('Error deleting event:', error);
+                showToast('Error deleting event', 'error');
             }
-        } else {
-            showToast('Failed to delete event', 'error');
-        }
-    } catch (error) {
-        console.error('Error deleting event:', error);
-        showToast('Error deleting event', 'error');
-    }
+        },
+        'warning'
+    );
 }
 
 // =============================================================================
@@ -1265,16 +1276,30 @@ function renderUpcomingItem(release) {
                 </div>
 
                 <!-- ACTION BUTTONS (Overlay on hover) -->
-                <div class="absolute inset-0 bg-black/40 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 z-20">
+                <div class="absolute inset-0 bg-black/90 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity flex flex-col z-20">
+                    
+                    <!-- Mark as Seen -->
                     <button onclick="event.stopPropagation(); toggleReleaseSeen('${release.id}', ${isTracked})"
-                            class="p-3 rounded-full bg-white dark:bg-zinc-800 text-zinc-800 dark:text-white hover:bg-emerald-500 hover:text-white shadow-xl transform scale-90 hover:scale-110 transition-all"
-                            title="Mark as Seen">
-                        <i data-lucide="eye" class="w-5 h-5"></i>
+                            class="flex-1 w-full flex items-center justify-center gap-2 hover:bg-emerald-500/20 text-white transition-colors group/btn border-b border-white/10"
+                            title="${isTracked ? 'Mark as Seen' : 'Mark as Unseen'}">
+                        <i data-lucide="${isTracked ? 'eye-off' : 'eye'}" class="w-4 h-4 group-hover/btn:scale-110 transition-transform"></i>
+                        <span class="font-bold text-[10px] uppercase tracking-wider">${isTracked ? 'Mark Seen' : 'Mark Unseen'}</span>
                     </button>
+
+                    <!-- Edit -->
+                    <button onclick="event.stopPropagation(); prepareEditEvent('${release.id}')"
+                            class="flex-1 w-full flex items-center justify-center gap-2 hover:bg-indigo-500/20 text-white transition-colors group/btn border-b border-white/10"
+                            title="Edit Release">
+                        <i data-lucide="edit-2" class="w-4 h-4 group-hover/btn:scale-110 transition-transform"></i>
+                        <span class="font-bold text-[10px] uppercase tracking-wider">Edit</span>
+                    </button>
+
+                    <!-- Delete -->
                     <button onclick="event.stopPropagation(); deleteRelease('${release.id}')"
-                            class="p-3 rounded-full bg-white dark:bg-zinc-800 text-zinc-800 dark:text-white hover:bg-red-500 hover:text-white shadow-xl transform scale-90 hover:scale-110 transition-all"
+                            class="flex-1 w-full flex items-center justify-center gap-2 hover:bg-red-500/20 text-white transition-colors group/btn"
                             title="Delete Release">
-                        <i data-lucide="trash-2" class="w-5 h-5"></i>
+                        <i data-lucide="trash-2" class="w-4 h-4 group-hover/btn:scale-110 transition-transform"></i>
+                        <span class="font-bold text-[10px] uppercase tracking-wider">Delete</span>
                     </button>
                 </div>
             </div>
@@ -1437,6 +1462,12 @@ function renderDayDetailItem(release) {
                             title="Delete from Calendar">
                         <i data-lucide="trash-2" class="w-4 h-4"></i>
                     </button>
+
+                    <button onclick="event.stopPropagation(); prepareEditEvent('${release.id}')"
+                            class="p-1.5 rounded-md hover:bg-indigo-50 dark:hover:bg-indigo-900/20 text-zinc-400 hover:text-indigo-500 transition-colors"
+                            title="Edit Release">
+                        <i data-lucide="edit-2" class="w-4 h-4"></i>
+                    </button>
                     
                     <button onclick="event.stopPropagation(); toggleReleaseSeen('${release.id}', ${isTracked})"
                             class="p-1.5 rounded-md hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-zinc-400 ${isTracked ? 'hover:text-emerald-500' : 'text-emerald-500'} transition-colors"
@@ -1492,27 +1523,32 @@ function handleReleaseClick(el, releaseId, itemId) {
  * @param {number|string} id - Release ID to delete
  */
 async function deleteRelease(id) {
-    if (!confirm('Are you sure you want to remove this event from the calendar?')) return;
-
-    try {
-        const res = await fetch(`/api/releases/${id}`, { method: 'DELETE' });
-        if (res.ok) {
-            // Refresh calendar
-            if (calendarState.currentView === 'upcoming') {
-                loadUpcomingReleases().then(renderUpcomingView);
-            } else {
-                navigateMonth(0); // Reloads current month view
-                // Determine if we need to refresh sidebar (if open)
-                if (calendarState.selectedDay) {
-                    setTimeout(() => showDayDetail(calendarState.selectedDay), 500);
+    showConfirmationModal(
+        'Remove Event?',
+        'Are you sure you want to remove this event from the calendar?',
+        async () => {
+            try {
+                const res = await fetch(`/api/releases/${id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    // Refresh calendar
+                    if (calendarState.currentView === 'upcoming') {
+                        loadUpcomingReleases().then(renderUpcomingView);
+                    } else {
+                        navigateMonth(0); // Reloads current month view
+                        // Determine if we need to refresh sidebar (if open)
+                        if (calendarState.selectedDay) {
+                            setTimeout(() => showDayDetail(calendarState.selectedDay), 500);
+                        }
+                    }
+                } else {
+                    console.error('Failed to delete release');
                 }
+            } catch (e) {
+                console.error('Error deleting release:', e);
             }
-        } else {
-            console.error('Failed to delete release');
-        }
-    } catch (e) {
-        console.error('Error deleting release:', e);
-    }
+        },
+        'warning'
+    );
 };
 
 /**
@@ -1557,6 +1593,102 @@ function closeDayDetail() {
     }, 300);
 
     calendarState.selectedDay = null;
+}
+
+// =============================================================================
+// CONFIRMATION MODAL
+// =============================================================================
+
+/**
+ * Shows the custom confirmation modal.
+ * @param {string} title - Modal title
+ * @param {string} message - Modal message (can be longer)
+ * @param {Function} onConfirm - Callback function to execute on confirm
+ * @param {string} type - 'warning' (formatted as delete/destructive) or 'info' (default)
+ * @param {Function} [onCancel] - Optional callback for cancellation
+ */
+function showConfirmationModal(title, message, onConfirm, type = 'info', onCancel = null) {
+    const modal = document.getElementById('confirmationModal');
+    if (!modal) {
+        if (confirm(`${title}\n\n${message}`)) {
+            onConfirm();
+        } else {
+            if (onCancel) onCancel();
+        }
+        return;
+    }
+
+    // Set Content
+    document.getElementById('confirmTitle').textContent = title;
+    document.getElementById('confirmMessage').textContent = message;
+
+    // Type Styling
+    const iconContainer = document.getElementById('confirmIconContainer');
+    const confirmBtn = document.getElementById('btnConfirmAction');
+    const cancelBtn = document.getElementById('btnCancelAction'); // Ensure we target the cancel button
+    const icon = document.getElementById('confirmIcon');
+
+    // Reset Classes
+    iconContainer.className = 'w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-colors';
+    confirmBtn.className = 'flex-1 py-3 rounded-xl font-bold text-sm shadow-lg hover:shadow-xl transition-all text-white';
+
+    if (type === 'warning' || type === 'danger') {
+        // Red Theme
+        iconContainer.classList.add('bg-red-100', 'dark:bg-red-900/20', 'text-red-600', 'dark:text-red-500');
+        confirmBtn.classList.add('bg-red-500', 'hover:bg-red-600');
+        icon.setAttribute('data-lucide', 'trash-2');
+    } else {
+        // Default/Brand Theme
+        iconContainer.classList.add('bg-zinc-100', 'dark:bg-zinc-800', 'text-zinc-900', 'dark:text-white');
+        confirmBtn.classList.add('bg-zinc-900', 'hover:bg-zinc-800', 'dark:bg-white', 'dark:text-black', 'dark:hover:bg-zinc-200');
+        icon.setAttribute('data-lucide', 'check-circle-2');
+    }
+
+    // Set Callbacks
+    confirmBtn.onclick = () => {
+        onConfirm();
+        closeConfirmationModal();
+    };
+
+    const handleCancel = () => {
+        if (onCancel) onCancel();
+        closeConfirmationModal();
+    };
+
+    if (cancelBtn) cancelBtn.onclick = handleCancel;
+
+    // Handle overlay click cancellation
+    modal.onclick = (e) => {
+        if (e.target === modal) {
+            handleCancel();
+        }
+    };
+
+    // Show
+    modal.classList.remove('hidden');
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+
+    requestAnimationFrame(() => {
+        modal.classList.remove('opacity-0');
+        modal.querySelector('div').classList.remove('scale-95');
+        modal.querySelector('div').classList.add('scale-100');
+    });
+}
+
+/**
+ * Closes the confirmation modal.
+ */
+function closeConfirmationModal() {
+    const modal = document.getElementById('confirmationModal');
+    if (!modal) return;
+
+    modal.classList.add('opacity-0');
+    modal.querySelector('div').classList.remove('scale-100');
+    modal.querySelector('div').classList.add('scale-95');
+
+    setTimeout(() => {
+        modal.classList.add('hidden');
+    }, 200);
 }
 
 // =============================================================================
@@ -1621,3 +1753,6 @@ window.deleteRelease = deleteRelease;
 window.toggleReleaseSeen = toggleReleaseSeen;
 window.handleReleaseClick = handleReleaseClick;
 window.catchUpCal = catchUpCal;
+window.prepareEditEvent = prepareEditEvent;
+window.showConfirmationModal = showConfirmationModal;
+window.closeConfirmationModal = closeConfirmationModal;

@@ -11,7 +11,7 @@ import { showToast } from './toast.js';
 
 /**
  * Checks the status of available databases and selection requirements.
- * @returns {Promise<Object>} Status object with needsSelection and available list.
+ * @returns {Promise<{needsSelection: boolean, available: string[], active?: string}>} Status object.
  */
 export async function getDbStatus() {
 	try {
@@ -27,7 +27,7 @@ export async function getDbStatus() {
 /**
  * Sends a request to switch the active database.
  * @param {string} dbName - The filename of the database to select.
- * @returns {Promise<Object>} Success/error status with message.
+ * @returns {Promise<{status: string, message?: string}>} Success/error status with message.
  */
 export async function selectDatabase(dbName) {
 	try {
@@ -69,24 +69,42 @@ export async function loadItems() {
 
 /**
  * Deletes a media item by its ID.
- * Prompts user for confirmation before proceeding.
+ * Prompts user for confirmation using the global styled modal if available,
+ * otherwise falls back to a native confirmation dialog.
+ *
  * @param {string} id - The unique identifier of the item to delete.
- * @returns {Promise<boolean>} True if successfully deleted, false or undefined otherwise.
+ * @returns {Promise<boolean>} True if successfully deleted, false otherwise.
  */
 export async function deleteItem(id) {
-	if (!confirm('Are you sure you want to delete this entry? This action cannot be undone.')) {
-		return false;
-	}
+	return new Promise((resolve) => {
+		const performDelete = async () => {
+			try {
+				const response = await fetch(`/api/items/${id}`, { method: 'DELETE' });
+				if (!response.ok) throw new Error('Delete operation failed');
+				resolve(true);
+			} catch (error) {
+				console.error('Error deleting item:', error);
+				showToast('Failed to delete item. Please try again.', 'error');
+				resolve(false);
+			}
+		};
 
-	try {
-		const response = await fetch(`/api/items/${id}`, { method: 'DELETE' });
-		if (!response.ok) throw new Error('Delete operation failed');
-		return true;
-	} catch (error) {
-		console.error('Error deleting item:', error);
-		showToast('Failed to delete item. Please try again.', 'error');
-		return false;
-	}
+		if (typeof window.showConfirmationModal === 'function') {
+			window.showConfirmationModal(
+				'Delete Entry?',
+				'Are you sure you want to delete this entry? This action cannot be undone.',
+				performDelete,
+				'warning',
+				() => resolve(false) // On cancel
+			);
+		} else {
+			if (!confirm('Are you sure you want to delete this entry? This action cannot be undone.')) {
+				resolve(false);
+				return;
+			}
+			performDelete();
+		}
+	});
 }
 
 /**
@@ -109,4 +127,5 @@ export async function saveItem(formData) {
 
 	return response.json();
 }
+
 

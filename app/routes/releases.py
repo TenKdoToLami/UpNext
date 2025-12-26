@@ -5,10 +5,12 @@ Handles fetching and managing media release events including month-based
 and upcoming/overdue views.
 """
 
-from flask import Blueprint, jsonify, request
 from datetime import date, datetime, timedelta
 import logging
-from sqlalchemy import or_
+from typing import Tuple, Dict, Any, Union
+
+from flask import Blueprint, jsonify, request, Response
+from sqlalchemy import or_, and_
 
 from app.database import db
 from app.models import MediaRelease, MediaItem
@@ -18,10 +20,10 @@ logger = logging.getLogger(__name__)
 
 
 @bp.route("/releases", methods=["GET"])
-def get_releases():
+def get_releases() -> Tuple[Response, int]:
     """
     Fetch releases with optional date filtering.
-    
+
     Query params:
         from: Start date (YYYY-MM-DD), defaults to 30 days ago
         to: End date (YYYY-MM-DD), defaults to 60 days from now
@@ -30,17 +32,17 @@ def get_releases():
         from_str = request.args.get("from")
         to_str = request.args.get("to")
         today = date.today()
-        
+
         if from_str:
             from_date = datetime.strptime(from_str, "%Y-%m-%d").date()
         else:
             from_date = today - timedelta(days=30)
-        
+
         if to_str:
             to_date = datetime.strptime(to_str, "%Y-%m-%d").date()
         else:
             to_date = today + timedelta(days=60)
-        
+
         releases = (
             db.session.query(MediaRelease)
             .filter(MediaRelease.date >= from_date)
@@ -48,7 +50,7 @@ def get_releases():
             .order_by(MediaRelease.date.asc(), MediaRelease.release_time.asc())
             .all()
         )
-        
+
         result = []
         for release in releases:
             release_data = {
@@ -59,7 +61,7 @@ def get_releases():
                 "isTracked": release.is_tracked,
                 "itemId": release.item_id,
             }
-            
+
             if release.item:
                 release_data["item"] = {
                     "id": release.item.id,
@@ -68,9 +70,9 @@ def get_releases():
                     "coverUrl": release.item.cover_url,
                 }
             result.append(release_data)
-        
-        return jsonify(result)
-        
+
+        return jsonify(result), 200
+
     except ValueError as e:
         logger.warning(f"Invalid date format in releases query: {e}")
         return jsonify({"error": "Invalid date format. Use YYYY-MM-DD"}), 400
@@ -80,15 +82,16 @@ def get_releases():
 
 
 @bp.route("/releases/upcoming", methods=["GET"])
-def get_upcoming_releases():
+def get_upcoming_releases() -> Tuple[Response, int]:
     """
     Fetch upcoming releases plus past releases that haven't been marked as seen.
+    Includes logic to show today's releases if they are in the future or time is unset.
     """
     try:
         limit = min(int(request.args.get("limit", 50)), 100)
         offset = int(request.args.get("offset", 0))
         today = date.today()
-        
+
         # 1. Overdue/Unseen Releases (Including Today)
         overdue_releases = (
             db.session.query(MediaRelease)
@@ -108,9 +111,9 @@ def get_upcoming_releases():
             .limit(limit)
             .all()
         )
-        
+
         all_releases = overdue_releases + future_releases
-        
+
         result = []
         for release in all_releases:
             release_data = {
@@ -121,7 +124,7 @@ def get_upcoming_releases():
                 "isTracked": release.is_tracked,
                 "itemId": release.item_id,
             }
-            
+
             if release.item:
                 release_data["item"] = {
                     "id": release.item.id,
@@ -133,23 +136,23 @@ def get_upcoming_releases():
                     }
                 }
             result.append(release_data)
-        
-        return jsonify(result)
-        
+
+        return jsonify(result), 200
+
     except Exception as e:
         logger.error(f"Error fetching upcoming releases: {e}", exc_info=True)
         return jsonify({"error": "Failed to fetch upcoming releases"}), 500
 
 
 @bp.route("/releases/overdue", methods=["GET"])
-def get_overdue_releases():
+def get_overdue_releases() -> Tuple[Response, int]:
     """
     Get the list of overdue, unseen releases with details.
     """
     try:
         limit = int(request.args.get("limit", 5))
         today = date.today()
-        
+
         # Query for overdue releases (Including Today)
         query = (
             db.session.query(MediaRelease)
@@ -157,10 +160,10 @@ def get_overdue_releases():
             .filter(or_(MediaRelease.is_tracked == True, MediaRelease.is_tracked == None))
             .order_by(MediaRelease.date.desc())
         )
-        
+
         total_count = query.count()
         releases = query.limit(limit).all()
-        
+
         items = []
         for release in releases:
             item_data = {
@@ -180,23 +183,42 @@ def get_overdue_releases():
         return jsonify({
             "count": total_count,
             "items": items
-        })
+        }), 200
     except Exception as e:
         logger.error(f"Error fetching overdue releases: {e}", exc_info=True)
         return jsonify({"error": "Failed to fetch overdue releases"}), 500
 
 
 @bp.route("/releases/catch-up", methods=["POST"])
-def catch_up_releases():
+def catch_up_releases() -> Tuple[Response, int]:
     """
     Mark all overdue releases as seen (is_tracked = False).
+    Includes strictly past days, and today's releases IF they are before current time (or have no time).
     """
     try:
         today = date.today()
+        now_time = datetime.now().time()
+
         # Update all overdue releases
+        # Logic:
+        # 1. Date < Today
+        # OR
+        # 2. Date == Today AND (Time < Now OR Time is None)
+
         result = (
             db.session.query(MediaRelease)
-            .filter(MediaRelease.date < today)
+            .filter(
+                or_(
+                    MediaRelease.date < today,
+                    and_(
+                        MediaRelease.date == today,
+                        or_(
+                            MediaRelease.release_time < now_time,
+                            MediaRelease.release_time == None
+                        )
+                    )
+                )
+            )
             .filter(or_(MediaRelease.is_tracked == True, MediaRelease.is_tracked == None))
             .update({MediaRelease.is_tracked: False}, synchronize_session=False)
         )
@@ -209,14 +231,15 @@ def catch_up_releases():
 
 
 @bp.route("/releases", methods=["POST"])
-def create_release():
+def create_release() -> Tuple[Response, int]:
     """
     Create a new release event.
+    Supports single events or recurring series (Series/Manga episode/chapter counting).
     """
     try:
         data = request.get_json()
         if not data or not data.get("date"):
-             return jsonify({"error": "Date is required"}), 400
+            return jsonify({"error": "Date is required"}), 400
 
         try:
             release_date = datetime.strptime(data["date"], "%Y-%m-%d").date()
@@ -233,15 +256,15 @@ def create_release():
         recurrence = data.get("recurrence")
         content_base = data.get("content", "")
         item_id = data.get("itemId")
-        
+
         # Helper to generate content string
-        def get_content(prefix, count_val, base):
-            if prefix:
-                return f"{prefix} {count_val} {base}".strip()
-            return base
+        def get_content(prefix_str: str, count_val: int, base_str: str) -> str:
+            if prefix_str:
+                return f"{prefix_str} {count_val} {base_str}".strip()
+            return base_str
 
         created_ids = []
-        
+
         if recurrence:
             freq = recurrence.get("frequency", "weekly")
             count = int(recurrence.get("count", 1))
@@ -250,32 +273,32 @@ def create_release():
 
             custom_prefix = recurrence.get("prefix")
             prefix = ""
-            
+
             if custom_prefix and custom_prefix.strip():
                 prefix = custom_prefix.strip()
             # If no custom prefix but use_counter is true, auto-detect
             elif use_counter:
                 if item_id:
-                     # Fetch item to determine type
-                     item = db.session.get(MediaItem, item_id)
-                     if item:
-                         if item.type in ["Anime", "Series", "TV"]:
-                             prefix = "Episode"
-                         elif item.type in ["Manga", "Book", "Novel"]:
-                             prefix = "Chapter"
-                         else:
-                             prefix = "Part" # Fallback
+                    # Fetch item to determine type
+                    item = db.session.get(MediaItem, item_id)
+                    if item:
+                        if item.type in ["Anime", "Series", "TV"]:
+                            prefix = "Episode"
+                        elif item.type in ["Manga", "Book", "Novel"]:
+                            prefix = "Chapter"
+                        else:
+                            prefix = "Part"  # Fallback
                 else:
                     prefix = "Part"
 
             current_date = release_date
             current_count = start_count
-            
+
             for _ in range(count):
                 final_content = get_content(prefix if use_counter else "", current_count, content_base)
                 # If content is empty (because optional) and no counter, use fallback
                 if not final_content and item_id:
-                     final_content = "New Release"
+                    final_content = "New Release"
 
                 new_release = MediaRelease(
                     date=current_date,
@@ -286,7 +309,7 @@ def create_release():
                     notification_sent=False
                 )
                 db.session.add(new_release)
-                db.session.flush() # flush to get ID
+                db.session.flush()  # flush to get ID
                 created_ids.append(new_release.id)
 
                 # Increment
@@ -294,12 +317,12 @@ def create_release():
                     current_date += timedelta(weeks=1)
                 elif freq == "daily":
                     current_date += timedelta(days=1)
-                
+
                 current_count += 1
-            
+
             db.session.commit()
             return jsonify({
-                "status": "success", 
+                "status": "success",
                 "count": len(created_ids),
                 "ids": created_ids
             }), 201
@@ -319,15 +342,15 @@ def create_release():
                 is_tracked=data.get("isTracked", True),
                 notification_sent=False
             )
-            
+
             db.session.add(new_release)
             db.session.commit()
-            
+
             return jsonify({
-                "status": "success", 
+                "status": "success",
                 "id": new_release.id
             }), 201
-        
+
     except Exception as e:
         logger.error(f"Error creating release: {e}", exc_info=True)
         db.session.rollback()
@@ -335,7 +358,7 @@ def create_release():
 
 
 @bp.route("/releases/<int:release_id>", methods=["PUT"])
-def update_release(release_id):
+def update_release(release_id: int) -> Tuple[Response, int]:
     """
     Update an existing release event.
     """
@@ -343,17 +366,17 @@ def update_release(release_id):
         release = db.session.get(MediaRelease, release_id)
         if not release:
             return jsonify({"error": "Release not found"}), 404
-            
+
         data = request.get_json()
         if not data:
             return jsonify({"error": "No data provided"}), 400
-            
+
         if "date" in data:
             try:
                 release.date = datetime.strptime(data["date"], "%Y-%m-%d").date()
             except ValueError:
                 return jsonify({"error": "Invalid date format"}), 400
-                
+
         if "content" in data:
             release.content = data["content"]
         if "time" in data:
@@ -368,10 +391,10 @@ def update_release(release_id):
             release.item_id = data["itemId"]
         if "isTracked" in data:
             release.is_tracked = data["isTracked"]
-            
+
         db.session.commit()
         return jsonify({"status": "success"}), 200
-        
+
     except Exception as e:
         logger.error(f"Error updating release {release_id}: {e}", exc_info=True)
         db.session.rollback()
@@ -379,7 +402,7 @@ def update_release(release_id):
 
 
 @bp.route("/releases/<int:release_id>", methods=["DELETE"])
-def delete_release(release_id):
+def delete_release(release_id: int) -> Tuple[Response, int]:
     """
     Remove a release event from the calendar.
     """
@@ -387,11 +410,11 @@ def delete_release(release_id):
         release = db.session.get(MediaRelease, release_id)
         if not release:
             return jsonify({"error": "Release not found"}), 404
-            
+
         db.session.delete(release)
         db.session.commit()
         return jsonify({"status": "success"}), 200
-        
+
     except Exception as e:
         logger.error(f"Error deleting release {release_id}: {e}", exc_info=True)
         db.session.rollback()
