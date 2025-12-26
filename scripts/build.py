@@ -55,7 +55,7 @@ def build_project():
         logger.warning("Build artifact not found in 'dist' directory.")
 
     # 3. Finalization
-    _cleanup_build_artifacts(root_dir)
+    _cleanup_build_artifacts(root_dir, target_exe)
     logger.info("Build operation completed successfully.")
 
 
@@ -77,7 +77,7 @@ Categories=Utility;
     logger.info("Linux Desktop entry generated.")
 
 
-def _cleanup_build_artifacts(root_dir: str):
+def _cleanup_build_artifacts(root_dir: str, target_exe: str):
     """Removes temporary filesystem objects created during the build."""
     for folder in ['build', 'dist']:
         path = os.path.join(root_dir, folder)
@@ -86,7 +86,8 @@ def _cleanup_build_artifacts(root_dir: str):
 
     logger.info("-" * 30)
     logger.info("✨ Build Complete!")
-    logger.info(f"   - Executable: {os.path.basename(target_exe)}")
+    if target_exe:
+        logger.info(f"   - Executable: {os.path.basename(target_exe)}")
 
 
 if __name__ == "__main__":

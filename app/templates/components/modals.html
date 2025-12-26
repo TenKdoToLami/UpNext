@@ -456,7 +456,7 @@
 
 <!-- DETAIL MODAL -->
 <div id="detailModal"
-	class="fixed inset-0 z-[60] flex items-center justify-center bg-zinc-500/30 dark:bg-black/95 backdrop-blur-md hidden opacity-0 transition-all duration-300"
+	class="fixed inset-0 z-[90] flex items-center justify-center bg-zinc-500/30 dark:bg-black/95 backdrop-blur-md hidden opacity-0 transition-all duration-300"
 	onclick="if(event.target === this) closeDetail()">
 	<div id="detailModalContent"
 		class="bg-white dark:bg-zinc-950 border-2 rounded-3xl w-full max-w-[95rem] h-[92vh] overflow-hidden flex flex-col shadow-2xl relative animate-enter transition-colors duration-300 border-zinc-200 dark:border-zinc-800">
@@ -470,7 +470,7 @@
 
 <!-- ENTRY WIZARD MODAL -->
 <div id="modal"
-	class="fixed inset-0 z-[70] flex items-center justify-center bg-zinc-500/30 dark:bg-black/90 backdrop-blur-md hidden opacity-0 transition-opacity duration-200"
+	class="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-500/30 dark:bg-black/90 backdrop-blur-md hidden opacity-0 transition-opacity duration-200"
 	onclick="if(event.target === this) closeModal()">
 	<div class="bg-white dark:bg-[#0c0c0e] border border-zinc-200 dark:border-zinc-800 rounded-3xl w-full max-w-2xl h-[650px] max-h-[90vh] overflow-hidden flex flex-col shadow-2xl transform scale-95 transition-all duration-200 animate-enter"
 		id="modalContent">
@@ -1189,3 +1189,4 @@
 </div>
 
 {% include 'components/db_select_modal.html' %}
+{% include 'components/calendar_modal.html' %}

@@ -26,10 +26,11 @@ def create_app():
     app.config.from_object("app.config")
 
     # Register Blueprints for API, Exports, and HTML Views
-    from app.routes import api, export, views
+    from app.routes import api, export, views, releases
     app.register_blueprint(views.bp)
     app.register_blueprint(api.bp)
     app.register_blueprint(export.bp)
+    app.register_blueprint(releases.bp)
 
     # Initialize Database with SQLAlchemy
     from app.database import db

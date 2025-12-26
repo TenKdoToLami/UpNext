@@ -389,3 +389,105 @@ html.dark .scroll-mode .wizard-step {
 .scroll-mode .edit-only-header {
 	display: block !important;
 }
+
+/* ==========================================================================
+   Calendar Styles
+   ========================================================================== */
+
+.calendar-day-cell {
+	min-height: 4rem;
+}
+
+@media (max-width: 640px) {
+	.calendar-day-cell {
+		min-height: 3rem;
+		padding: 0.25rem;
+	}
+
+	.calendar-day-cell span {
+		font-size: 0.75rem;
+	}
+}
+
+#calendarDayDetail {
+	box-shadow: -10px 0 40px rgba(0, 0, 0, 0.1);
+}
+
+html.dark #calendarDayDetail {
+	box-shadow: -10px 0 40px rgba(0, 0, 0, 0.5);
+}
+
+#monthYearPicker {
+	animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+	}
+
+	to {
+		opacity: 1;
+	}
+}
+
+
+
+@media (max-width: 640px) {
+	#calendarModalContent .px-8 {
+		padding-left: 1rem;
+		padding-right: 1rem;
+	}
+
+	.calendar-day-cell {
+		min-height: 4rem;
+		/* Taller cells for images */
+		padding: 0.25rem;
+	}
+
+	.calendar-day-cell span {
+		font-size: 0.7rem;
+	}
+}
+
+.calendar-cover-grid {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	grid-template-rows: repeat(2, 1fr);
+	gap: 2px;
+	width: 100%;
+	height: 100%;
+	overflow: hidden;
+	border-radius: 0.5rem;
+	margin-top: 2px;
+}
+
+.calendar-cover-preview {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	border-radius: 0.125rem;
+	transition: opacity 0.2s;
+}
+
+.calendar-cover-preview:hover {
+	opacity: 0.8;
+}
+
+/* Autocomplete Scrollbar */
+#addEventSuggestions::-webkit-scrollbar {
+	width: 6px;
+}
+
+#addEventSuggestions::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+#addEventSuggestions::-webkit-scrollbar-thumb {
+	background-color: rgba(161, 161, 170, 0.3);
+	border-radius: 3px;
+}
+
+html.dark #addEventSuggestions::-webkit-scrollbar-thumb {
+	background-color: rgba(255, 255, 255, 0.2);
+}

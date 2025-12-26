@@ -124,11 +124,18 @@ def main() -> None:
     # 4. Cleanup/Exit when browser closes (if app mode waits)
     # If browser didn't wait (non-app mode), keep script alive manually
     if not waited and threading.active_count() > 0:
-        print("Server is running. Press Enter to exit.")
+        logger.info("Server is running. Press Ctrl+C to exit.")
         try:
-             input()
-        except EOFError:
-            pass
+            # Check if stdin is available (it might be lost in bundled mode)
+            if sys.stdin and sys.stdin.isatty():
+                input()
+            else:
+                # Keep main thread alive if stdin is not available
+                while True:
+                    time.sleep(1)
+        except (KeyboardInterrupt, EOFError):
+            logger.info("Shutting down...")
+            sys.exit(0)
 
 
 if __name__ == '__main__':
