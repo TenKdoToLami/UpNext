@@ -102,6 +102,8 @@ function openCalendarModal() {
     });
 
     // Load releases based on CURRENT view
+    updateViewToggle();
+
     const loadPromise = calendarState.currentView === 'month'
         ? loadReleasesForMonth().then(renderMonthView)
         : loadUpcomingReleases().then(renderUpcomingView);
@@ -145,22 +147,9 @@ function setCalendarView(view) {
     calendarState.currentView = view;
     updateViewToggle();
 
-    const monthView = document.getElementById('calendarMonthView');
-    const upcomingView = document.getElementById('calendarUpcomingView');
-    const monthNav = document.getElementById('monthNavControls');
-    const todayBtn = document.getElementById('btnCalToday'); // ID added in HTML
-
     if (view === 'month') {
-        monthView?.classList.remove('hidden');
-        upcomingView?.classList.add('hidden');
-        monthNav?.classList.remove('opacity-0', 'pointer-events-none');
-        todayBtn?.classList.remove('opacity-0', 'pointer-events-none');
-        renderMonthView();
+        loadReleasesForMonth().then(renderMonthView);
     } else {
-        monthView?.classList.add('hidden');
-        upcomingView?.classList.remove('hidden');
-        monthNav?.classList.add('opacity-0', 'pointer-events-none');
-        todayBtn?.classList.add('opacity-0', 'pointer-events-none');
         loadUpcomingReleases().then(renderUpcomingView);
     }
 
@@ -173,6 +162,10 @@ function setCalendarView(view) {
 function updateViewToggle() {
     const monthBtn = document.getElementById('calViewMonth');
     const upcomingBtn = document.getElementById('calViewUpcoming');
+    const monthNav = document.getElementById('monthNavNew');
+    const todayBtn = document.getElementById('btnCalToday');
+    const monthView = document.getElementById('calendarMonthView');
+    const upcomingView = document.getElementById('calendarUpcomingView');
 
     const activeClass = 'bg-zinc-900 dark:bg-white text-white dark:text-black';
     const inactiveClass = 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white';
@@ -182,11 +175,35 @@ function updateViewToggle() {
         monthBtn?.classList.add(...activeClass.split(' '));
         upcomingBtn?.classList.remove(...activeClass.split(' '));
         upcomingBtn?.classList.add(...inactiveClass.split(' '));
+
+        if (monthNav) {
+            monthNav.style.display = 'flex';
+            monthNav.classList.remove('hidden');
+            monthNav.classList.add('flex');
+        }
+        if (todayBtn) {
+            todayBtn.style.display = 'flex';
+            todayBtn.classList.remove('hidden');
+        }
+        monthView?.classList.remove('hidden');
+        upcomingView?.classList.add('hidden');
     } else {
         upcomingBtn?.classList.remove(...inactiveClass.split(' '));
         upcomingBtn?.classList.add(...activeClass.split(' '));
         monthBtn?.classList.remove(...activeClass.split(' '));
         monthBtn?.classList.add(...inactiveClass.split(' '));
+
+        if (monthNav) {
+            monthNav.style.display = 'none';
+            monthNav.classList.add('hidden');
+            monthNav.classList.remove('flex');
+        }
+        if (todayBtn) {
+            todayBtn.style.display = 'none';
+            todayBtn.classList.add('hidden');
+        }
+        monthView?.classList.add('hidden');
+        upcomingView?.classList.remove('hidden');
     }
 }
 
@@ -933,82 +950,77 @@ function updateCarouselPositions(carousel, activeIndex, total) {
 /**
  * Renders the upcoming events list as a horizontal scroll.
  */
-/**
- * Renders the upcoming events list as a horizontal scroll.
- */
 function renderUpcomingView() {
     const list = document.getElementById('calendarUpcomingList');
     if (!list) return;
 
-    if (calendarState.releases.length === 0) {
-        list.className = "flex items-center justify-center w-full h-full"; // Reset flex-row if empty
-        list.innerHTML = `
-            <div class="flex flex-col items-center justify-center text-center py-16">
-                <i data-lucide="calendar-x" class="w-16 h-16 text-zinc-300 dark:text-zinc-700 mb-4"></i>
-                <h3 class="text-lg font-bold text-zinc-500 dark:text-zinc-400 mb-2">No Upcoming Releases</h3>
-                <p class="text-sm text-zinc-400 dark:text-zinc-600">Add releases to your library items to see them here.</p>
-            </div>
-        `;
-        if (typeof lucide !== 'undefined') lucide.createIcons();
-        return;
-    }
-
-    // Reset class for horizontal scroll
-    list.className = "flex-1 overflow-x-auto custom-scrollbar p-6 flex items-center gap-0"; // Gap handled by items/delimiters
-
-    // Enable horizontal scroll with mouse wheel
-    list.onwheel = (evt) => {
-        if (evt.deltaY === 0) return;
-        evt.preventDefault();
-        list.scrollLeft += evt.deltaY;
-    };
-
-    // Group releases by month-year
-    const grouped = {};
-    const sortedReleases = [...calendarState.releases].sort((a, b) => new Date(a.date) - new Date(b.date));
-
-    sortedReleases.forEach(r => {
-        const d = new Date(r.date);
-        const key = `${d.getFullYear()}-${d.getMonth()}`; // "2025-11"
-        if (!grouped[key]) grouped[key] = [];
-        grouped[key].push(r);
-    });
-
-    let html = '';
-    const keys = Object.keys(grouped);
-
-    keys.forEach((key, index) => {
-        const [year, month] = key.split('-').map(Number);
-
-        // Items for this month
-        const items = grouped[key];
-
-        // Container for this month's items
-        html += `<div class="flex items-center gap-8 px-4 shrink-0">`;
-
-        items.forEach(r => {
-            html += renderUpcomingItem(r);
-        });
-
-        html += `</div>`;
-
-        // Add delimiter if not last group
-        if (index < keys.length - 1) {
-            html += `
-                <div class="h-[60%] w-px bg-zinc-200 dark:bg-zinc-800 shrink-0 mx-4 flex flex-col items-center justify-center gap-2">
+    try {
+        if (!calendarState.releases || calendarState.releases.length === 0) {
+            list.className = "flex items-center justify-center w-full h-full";
+            list.innerHTML = `
+                <div class="flex flex-col items-center justify-center text-center py-16">
+                    <i data-lucide="calendar-x" class="w-16 h-16 text-zinc-300 dark:text-zinc-700 mb-4"></i>
+                    <h3 class="text-lg font-bold text-zinc-500 dark:text-zinc-400 mb-2">No Upcoming Releases</h3>
+                    <p class="text-sm text-zinc-400 dark:text-zinc-600">You're all caught up!</p>
                 </div>
             `;
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+            return;
         }
-    });
 
-    // Add a "Load More" trigger area at end?
-    html += `<div id="upcomingEndTrigger" class="w-10 h-full shrink-0"></div>`;
+        // Reset class for horizontal scroll
+        list.className = "flex-1 overflow-x-auto custom-scrollbar p-6 flex items-start gap-6";
 
-    list.innerHTML = html;
+        // Enable horizontal scroll with mouse wheel
+        list.onwheel = (evt) => {
+            if (evt.deltaY === 0) return;
+            evt.preventDefault();
+            list.scrollLeft += evt.deltaY;
+        };
 
+        const todayDate = new Date();
+        todayDate.setHours(0, 0, 0, 0);
 
-    if (typeof lucide !== 'undefined') {
-        lucide.createIcons();
+        // Sort releases by date
+        const sortedReleases = [...calendarState.releases].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        // Find the split point between overdue (past) and future
+        const firstFutureIndex = sortedReleases.findIndex(r => new Date(r.date) >= todayDate);
+
+        let html = '';
+
+        // Render Items
+        sortedReleases.forEach((r, index) => {
+            // If this is the start of the future section (and not the very first item), insert delimiter
+            if (index === firstFutureIndex && firstFutureIndex > 0) {
+                html += `
+                    <div class="h-full w-px mx-4 flex flex-col items-center justify-center gap-2 shrink-0">
+                         <div class="h-full w-0.5 bg-red-500/50 rounded-full"></div>
+                         <div class="p-2 rounded-full bg-red-500/10 border border-red-500/30 text-red-500">
+                            <span class="text-xs font-bold whitespace-nowrap -rotate-90 block">TODAY</span>
+                         </div>
+                         <div class="h-full w-0.5 bg-red-500/50 rounded-full"></div>
+                    </div>
+                `;
+            }
+
+            try {
+                html += renderUpcomingItem(r);
+            } catch (err) {
+                console.error("Error rendering upcoming item:", err);
+            }
+        });
+
+        html += `<div id="upcomingEndTrigger" class="w-4 h-full shrink-0"></div>`;
+        list.innerHTML = html;
+
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+
+    } catch (e) {
+        console.error("Critical error in renderUpcomingView:", e);
+        list.innerHTML = `<div class="p-10 text-zinc-500 text-center font-medium">Unable to load upcoming releases. Please try again.</div>`;
     }
 }
 
@@ -1017,86 +1029,99 @@ function renderUpcomingView() {
  * Renders a single upcoming release item.
  * 
  * Specs:
- * - Centered in middle of modal height (this is handled by parent flex align-items: enter)
- * - Date atop the card
- * - Media type icon on top left with lucide icon
- * Renders a single upcoming release item card.
- * Global styled card with full title and simplified metadata.
+ * - Poster aspect ratio 2:3
+ * - Full Titles
+ * - Actions: Delete, Mark as Seen
  */
 function renderUpcomingItem(release) {
     const item = release.item;
     const type = item?.type || 'Other';
 
-    // Global Card Styles (border, bg, hover rings)
+    // Global Card Styles (border, bg, hover rings) - NOW ONLY FOR IMAGE
     const cardStyles = TYPE_COLOR_MAP[type] || 'bg-zinc-800 border-zinc-700';
     const textColor = TEXT_COLORS_MAP[type] || 'text-zinc-500';
+    const borderColor = BORDER_COLORS[type] || 'border-zinc-700';
     const iconName = ICON_MAP[type] || 'calendar';
 
-    // Determine colors for date/text logic if needed
-
     const dateObj = new Date(release.date);
-    const monthStr = MONTH_NAMES_SHORT[dateObj.getMonth()].toUpperCase();
+    // FULL MONTH NAME
+    const monthStr = MONTH_NAMES[dateObj.getMonth()];
     const dayStr = dateObj.getDate();
-    const dayName = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][dateObj.getDay()];
+    // FULL WEEKDAY NAME
+    const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
 
-    const iconBg = TYPE_COLORS[type] || 'bg-zinc-800'; // Uses solid bg from TYPE_COLORS (e.g. bg-violet-500)
+    const iconBg = TYPE_COLORS[type] || 'bg-zinc-800';
     const rating = item?.userData?.rating || 0;
-    const cardHeight = "h-[450px]";
-    const cardWidth = "w-[280px]";
+
+    // Maximized Card Dimensions for Image
+    // User wants dynamic scaling to fit viewport.
+    // Target Cover Height: ~45-50vh (leaving room for header + text below in a 90vh modal)
+    // Aspect Ratio: 2:3
+    const coverHeightVal = 50;
+    // Calculate width: (50 * 2/3) vh
+    const cardWidthStyle = `style="width: calc(${coverHeightVal}vh * 0.666)"`;
+    // Use inline style for height to avoid Tailwind scanner issues
+    const coverHeightStyle = `style="height: ${coverHeightVal}vh"`;
+
+    // Determine isTracked status for action button
+    const isTracked = release.isTracked !== false;
 
     return `
-        <div class="flex flex-col gap-3 shrink-0 group ${cardWidth} snap-center cursor-pointer" onclick="window.openDetail('${item?.id || ''}')">
+        <div class="flex flex-col gap-3 shrink-0 group snap-start cursor-pointer mb-2 relative" ${cardWidthStyle} onclick="window.openDetail('${item?.id || ''}')">
             
             <!-- Date atop card -->
             <div class="flex items-baseline gap-2 px-1">
-                <span class="text-3xl font-bold text-zinc-900 dark:text-white">${dayStr}</span>
+                <span class="text-4xl font-bold text-zinc-900 dark:text-white">${dayStr}</span>
                 <div class="flex flex-col leading-none">
-                    <span class="text-xs font-bold ${textColor}">${monthStr}</span>
-                    <span class="text-[10px] font-medium text-zinc-400 uppercase">${dayName}</span>
+                    <span class="text-sm font-bold ${textColor}">${monthStr}</span>
+                    <span class="text-xs font-medium text-zinc-400 uppercase">${dayName}</span>
                 </div>
             </div>
 
-            <!-- Card Container (Styles applied here) -->
-            <div class="relative ${cardHeight} rounded-2xl overflow-hidden shadow-lg transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-2xl border ${cardStyles}">
-                
-                <!-- Cover Image -->
+            <!-- Cover Image Container (The "Box") -->
+            <div class="relative w-full rounded-2xl overflow-hidden shadow-xl transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-2xl border-2 ${borderColor} bg-white dark:bg-zinc-800" ${coverHeightStyle}>
                 ${item?.coverUrl
-            ? `<img src="/images/${item.coverUrl}" class="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity" loading="lazy">`
-            : `<div class="w-full h-full bg-zinc-800/50 flex items-center justify-center flex-col gap-2">
-                         <i data-lucide="${iconName}" class="w-12 h-12 ${textColor} opacity-50"></i>
-                         <span class="text-zinc-600 dark:text-zinc-400 font-bold text-lg text-center px-4">${item?.title || 'No Cover'}</span>
+            ? `<img src="/images/${item.coverUrl}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy">`
+            : `<div class="w-full h-full flex items-center justify-center flex-col gap-3 opacity-50">
+                         <i data-lucide="${iconName}" class="w-16 h-16 ${textColor}"></i>
+                         <span class="text-zinc-500 font-bold text-xl text-center px-6">${item?.title || 'No Cover'}</span>
                        </div>`
         }
-
-                <!-- Top Left: Media Type Icon (Solid BG, White Icon) -->
-                <div class="absolute top-3 left-3 w-10 h-10 rounded-xl ${iconBg} bg-opacity-90 backdrop-blur-md flex items-center justify-center shadow-lg z-10 transition-transform group-hover:scale-110 border border-white/20">
-                    <i data-lucide="${iconName}" class="w-5 h-5 text-white"></i>
+                
+                <!-- Media Type Icon (Floating top left) -->
+                <div class="absolute top-4 left-4 w-12 h-12 rounded-xl ${iconBg} text-white flex items-center justify-center shadow-lg z-10 border border-white/20">
+                    <i data-lucide="${iconName}" class="w-6 h-6"></i>
                 </div>
 
-                <!-- Bottom Gradient Overlay -->
-                <div class="absolute bottom-0 inset-x-0 h-1/2 bg-gradient-to-t from-black via-black/50 to-transparent flex flex-col justify-end p-5 z-10">
-                    <div class="flex items-center justify-between mb-2">
-                        <!-- Rating (if any) -->
-                         ${rating > 0 ? `
-                        <div class="flex items-center gap-1 bg-black/30 px-2 py-1 rounded-lg border border-white/5">
-                            <i data-lucide="star" class="w-3 h-3 text-amber-400 fill-amber-400"></i>
-                            <span class="text-xs font-bold text-white">${rating}</span>
-                        </div>
-                        ` : '<div></div>'}
-                    </div>
-                    
-                    <!-- Title (Full length, no truncation) -->
-                    <h3 class="font-heading font-bold text-xl text-white leading-tight drop-shadow-md">
-                        ${item?.title || 'Unknown Title'}
-                    </h3>
-                    
-                    <!-- Optional: Content Snippet -->
-                    ${release.content ? `<p class="text-xs text-zinc-300 mt-1 line-clamp-2">${release.content}</p>` : ''}
+                <!-- ACTION BUTTONS (Overlay on hover) -->
+                <div class="absolute inset-0 bg-black/40 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 z-20">
+                    <button onclick="event.stopPropagation(); toggleReleaseSeen('${release.id}', ${isTracked})"
+                            class="p-3 rounded-full bg-white dark:bg-zinc-800 text-zinc-800 dark:text-white hover:bg-emerald-500 hover:text-white shadow-xl transform scale-90 hover:scale-110 transition-all"
+                            title="Mark as Seen">
+                        <i data-lucide="eye" class="w-5 h-5"></i>
+                    </button>
+                    <button onclick="event.stopPropagation(); deleteRelease('${release.id}')"
+                            class="p-3 rounded-full bg-white dark:bg-zinc-800 text-zinc-800 dark:text-white hover:bg-red-500 hover:text-white shadow-xl transform scale-90 hover:scale-110 transition-all"
+                            title="Delete Release">
+                        <i data-lucide="trash-2" class="w-5 h-5"></i>
+                    </button>
                 </div>
             </div>
-            
-            <!-- Reflection/Shadow hack -->
-            <div class="mx-4 h-1 bg-zinc-900/10 rounded-full blur opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+            <!-- Text Content (Below the box) -->
+            <div class="flex flex-col px-1">
+                <!-- Title (Truncated again) -->
+                <h3 class="font-heading font-bold text-xl ${textColor} leading-tight mb-2 line-clamp-2 group-hover:underline decoration-2 underline-offset-4" title="${item?.title || ''}">
+                    ${item?.title || 'Unknown Title'}
+                </h3>
+                
+                <!-- Description -->
+                ${release.content ? `
+                <p class="text-sm text-zinc-500 dark:text-zinc-400 line-clamp-2 leading-relaxed font-medium">
+                    ${release.content}
+                </p>
+                ` : ''}
+            </div>
         </div>
     `;
 }
@@ -1184,8 +1209,7 @@ function renderDayDetailItem(release) {
         group-[.is-expanded]:from-${colorRoot}-500/10 
         group-[.is-expanded]:via-transparent 
         group-[.is-expanded]:to-transparent
-        group-[.is-expanded]:border-l-2 
-        group-[.is-expanded]:border-t-2 
+        group-[.is-expanded]:border-2 
         group-[.is-expanded]:${borderColor}
     `;
 
@@ -1267,16 +1291,16 @@ function renderDayDetailItem(release) {
  * Handles click on release item:
  * 1st click: Expands details
  * 2nd click: Opens item info modal
+ * @param {HTMLElement} el - The element clicked
+ * @param {string|number} releaseId - ID of the release
+ * @param {string|number} itemId - ID of the media item
  */
-window.handleReleaseClick = function (el, releaseId, itemId) {
+function handleReleaseClick(el, releaseId, itemId) {
     if (el.classList.contains('is-expanded')) {
-        // Already expanded -> Open Info if logic allows
         if (itemId && window.openDetail) {
             window.openDetail(itemId);
         }
     } else {
-        // Expand
-        // Collapse others first? Optional.
         document.querySelectorAll('.release-item.is-expanded').forEach(item => {
             if (item !== el) {
                 item.classList.remove('is-expanded');
@@ -1288,29 +1312,28 @@ window.handleReleaseClick = function (el, releaseId, itemId) {
         el.classList.add('is-expanded');
         el.querySelector('.title-el').classList.remove('line-clamp-2');
         el.querySelector('.desc-el').classList.remove('line-clamp-2');
-
-        // Refresh icons if needed (though existing icons define geometry)
     }
-};
+}
 
 /**
  * Deletes a calendar release event.
+ * @param {number|string} id - Release ID to delete
  */
-window.deleteRelease = async function (id) {
+async function deleteRelease(id) {
     if (!confirm('Are you sure you want to remove this event from the calendar?')) return;
 
     try {
         const res = await fetch(`/api/releases/${id}`, { method: 'DELETE' });
         if (res.ok) {
             // Refresh calendar
-            navigateMonth(0); // Reloads current view
-            // Close sidebar if empty? logic handled by render
-            // But we need to refresh the SIDEBAR too if it's open.
-            // navigateMonth re-renders the grid. 
-            // If sidebar is open, we should re-fetch releases for the SELECTED day.
-            if (calendarState.selectedDay) {
-                // We need to wait for navigateMonth to update state, then refresh sidebar
-                setTimeout(() => showDayDetail(calendarState.selectedDay), 500);
+            if (calendarState.currentView === 'upcoming') {
+                loadUpcomingReleases().then(renderUpcomingView);
+            } else {
+                navigateMonth(0); // Reloads current month view
+                // Determine if we need to refresh sidebar (if open)
+                if (calendarState.selectedDay) {
+                    setTimeout(() => showDayDetail(calendarState.selectedDay), 500);
+                }
             }
         } else {
             console.error('Failed to delete release');
@@ -1322,8 +1345,11 @@ window.deleteRelease = async function (id) {
 
 /**
  * Toggles the 'seen' (tracked) status of a release.
+ * @param {number|string} id - Release ID
+ * @param {boolean} currentIsTracked - Current tracking status
  */
-window.toggleReleaseSeen = async function (id, currentIsTracked) {
+async function toggleReleaseSeen(id, currentIsTracked) {
+    const isUpcoming = calendarState.currentView === 'upcoming';
     try {
         const res = await fetch(`/api/releases/${id}`, {
             method: 'PUT',
@@ -1332,15 +1358,19 @@ window.toggleReleaseSeen = async function (id, currentIsTracked) {
         });
 
         if (res.ok) {
-            navigateMonth(0);
-            if (calendarState.selectedDay) {
-                setTimeout(() => showDayDetail(calendarState.selectedDay), 500);
+            if (isUpcoming) {
+                loadUpcomingReleases().then(renderUpcomingView);
+            } else {
+                navigateMonth(0);
+                if (calendarState.selectedDay) {
+                    setTimeout(() => showDayDetail(calendarState.selectedDay), 500);
+                }
             }
         }
     } catch (e) {
         console.error('Error updating release:', e);
     }
-};
+}
 
 /**
  * Closes the day detail panel.
@@ -1400,6 +1430,15 @@ window.goToToday = goToToday;
 window.openMonthYearPicker = openMonthYearPicker;
 window.closeMonthYearPicker = closeMonthYearPicker;
 window.changePickerYear = changePickerYear;
+// =============================================================================
+// WINDOW BINDINGS
+// =============================================================================
+
+window.openCalendarModal = openCalendarModal;
+window.closeCalendarModal = closeCalendarModal;
+window.setCalendarView = setCalendarView;
+window.navigateMonth = navigateMonth;
+window.goToToday = goToToday;
 window.selectMonth = selectMonth;
 window.showDayDetail = showDayDetail;
 window.closeDayDetail = closeDayDetail;
@@ -1409,5 +1448,12 @@ window.searchMediaItems = searchMediaItems;
 window.selectMediaItem = selectMediaItem;
 window.clearSelectedMediaItem = clearSelectedMediaItem;
 window.submitNewEvent = submitNewEvent;
+window.deleteEvent = deleteEvent;
+window.openMonthYearPicker = openMonthYearPicker;
+window.closeMonthYearPicker = closeMonthYearPicker;
+window.changePickerYear = changePickerYear;
 window.handleCarouselWheel = handleCarouselWheel;
 window.handleCarouselDotClick = handleCarouselDotClick;
+window.deleteRelease = deleteRelease;
+window.toggleReleaseSeen = toggleReleaseSeen;
+window.handleReleaseClick = handleReleaseClick;

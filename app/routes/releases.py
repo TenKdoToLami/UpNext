@@ -1,12 +1,14 @@
 """
 API Routes for Release Calendar.
 
-Handles fetching and managing media release events.
+Handles fetching and managing media release events including month-based
+and upcoming/overdue views.
 """
 
 from flask import Blueprint, jsonify, request
 from datetime import date, datetime, timedelta
 import logging
+from sqlalchemy import or_
 
 from app.database import db
 from app.models import MediaRelease, MediaItem
@@ -23,15 +25,10 @@ def get_releases():
     Query params:
         from: Start date (YYYY-MM-DD), defaults to 30 days ago
         to: End date (YYYY-MM-DD), defaults to 60 days from now
-    
-    Returns:
-        JSON array of release objects with associated media info.
     """
     try:
-        # Parse date range from query params
         from_str = request.args.get("from")
         to_str = request.args.get("to")
-        
         today = date.today()
         
         if from_str:
@@ -44,9 +41,6 @@ def get_releases():
         else:
             to_date = today + timedelta(days=60)
         
-        logger.info(f"Fetching releases from {from_date} to {to_date}")
-        
-        # Query releases within date range
         releases = (
             db.session.query(MediaRelease)
             .filter(MediaRelease.date >= from_date)
@@ -54,7 +48,6 @@ def get_releases():
             .order_by(MediaRelease.date.asc())
             .all()
         )
-        logger.info(f"Found {len(releases)} releases")
         
         result = []
         for release in releases:
@@ -66,7 +59,6 @@ def get_releases():
                 "itemId": release.item_id,
             }
             
-            # Include associated media item info if available
             if release.item:
                 release_data["item"] = {
                     "id": release.item.id,
@@ -74,13 +66,12 @@ def get_releases():
                     "type": release.item.type,
                     "coverUrl": release.item.cover_url,
                 }
-            
             result.append(release_data)
         
         return jsonify(result)
         
     except ValueError as e:
-        logger.warning(f"Invalid date format: {e}")
+        logger.warning(f"Invalid date format in releases query: {e}")
         return jsonify({"error": "Invalid date format. Use YYYY-MM-DD"}), 400
     except Exception as e:
         logger.error(f"Error fetching releases: {e}", exc_info=True)
@@ -90,31 +81,37 @@ def get_releases():
 @bp.route("/releases/upcoming", methods=["GET"])
 def get_upcoming_releases():
     """
-    Fetch upcoming releases from today onwards.
-    
-    Query params:
-        limit: Maximum number of releases (default 50)
-        offset: Pagination offset (default 0)
-    
-    Returns:
-        JSON array of upcoming release objects.
+    Fetch upcoming releases plus past releases that haven't been marked as seen.
     """
     try:
         limit = min(int(request.args.get("limit", 50)), 100)
         offset = int(request.args.get("offset", 0))
         today = date.today()
         
-        releases = (
+        # 1. Overdue/Unseen Releases
+        overdue_releases = (
+            db.session.query(MediaRelease)
+            .filter(MediaRelease.date < today)
+            .filter(or_(MediaRelease.is_tracked == True, MediaRelease.is_tracked == None))
+            .order_by(MediaRelease.date.asc()) 
+            .all()
+        )
+
+        # 2. Future Releases
+        future_releases = (
             db.session.query(MediaRelease)
             .filter(MediaRelease.date >= today)
+            .filter(or_(MediaRelease.is_tracked == True, MediaRelease.is_tracked == None))
             .order_by(MediaRelease.date.asc())
             .offset(offset)
             .limit(limit)
             .all()
         )
         
+        all_releases = overdue_releases + future_releases
+        
         result = []
-        for release in releases:
+        for release in all_releases:
             release_data = {
                 "id": release.id,
                 "date": release.date.isoformat(),
@@ -129,47 +126,37 @@ def get_upcoming_releases():
                     "title": release.item.title,
                     "type": release.item.type,
                     "coverUrl": release.item.cover_url,
+                    "userData": {
+                        "rating": release.item.rating if release.item.user_data else 0
+                    }
                 }
-            
             result.append(release_data)
         
         return jsonify(result)
         
     except Exception as e:
         logger.error(f"Error fetching upcoming releases: {e}", exc_info=True)
-        return jsonify({"error": "Failed to fetch releases"}), 500
+        return jsonify({"error": "Failed to fetch upcoming releases"}), 500
 
 
 @bp.route("/releases", methods=["POST"])
 def create_release():
     """
     Create a new release event.
-    
-    Payload:
-        date: YYYY-MM-DD (required)
-        content: Text description (required)
-        itemId: ID of associated media item (optional)
-        isTracked: Boolean (default True)
     """
     try:
         data = request.get_json()
-        if not data:
-            return jsonify({"error": "No data provided"}), 400
-            
-        release_date_str = data.get("date")
-        content = data.get("content")
-        
-        if not release_date_str or not content:
+        if not data or not data.get("date") or not data.get("content"):
             return jsonify({"error": "Date and content are required"}), 400
             
         try:
-            release_date = datetime.strptime(release_date_str, "%Y-%m-%d").date()
+            release_date = datetime.strptime(data["date"], "%Y-%m-%d").date()
         except ValueError:
             return jsonify({"error": "Invalid date format. Use YYYY-MM-DD"}), 400
             
         new_release = MediaRelease(
             date=release_date,
-            content=content,
+            content=data["content"],
             item_id=data.get("itemId"),
             is_tracked=data.get("isTracked", True),
             notification_sent=False
@@ -180,7 +167,6 @@ def create_release():
         
         return jsonify({
             "status": "success", 
-            "message": "Release created",
             "id": new_release.id
         }), 201
         
@@ -193,7 +179,7 @@ def create_release():
 @bp.route("/releases/<int:release_id>", methods=["PUT"])
 def update_release(release_id):
     """
-    Update an existing release.
+    Update an existing release event.
     """
     try:
         release = db.session.get(MediaRelease, release_id)
@@ -204,7 +190,6 @@ def update_release(release_id):
         if not data:
             return jsonify({"error": "No data provided"}), 400
             
-        # Update fields if provided
         if "date" in data:
             try:
                 release.date = datetime.strptime(data["date"], "%Y-%m-%d").date()
@@ -213,16 +198,13 @@ def update_release(release_id):
                 
         if "content" in data:
             release.content = data["content"]
-            
         if "itemId" in data:
             release.item_id = data["itemId"]
-            
         if "isTracked" in data:
             release.is_tracked = data["isTracked"]
             
         db.session.commit()
-        
-        return jsonify({"status": "success", "message": "Release updated"}), 200
+        return jsonify({"status": "success"}), 200
         
     except Exception as e:
         logger.error(f"Error updating release {release_id}: {e}", exc_info=True)
@@ -233,7 +215,7 @@ def update_release(release_id):
 @bp.route("/releases/<int:release_id>", methods=["DELETE"])
 def delete_release(release_id):
     """
-    Delete a release.
+    Remove a release event from the calendar.
     """
     try:
         release = db.session.get(MediaRelease, release_id)
@@ -242,8 +224,7 @@ def delete_release(release_id):
             
         db.session.delete(release)
         db.session.commit()
-        
-        return jsonify({"status": "success", "message": "Release deleted"}), 200
+        return jsonify({"status": "success"}), 200
         
     except Exception as e:
         logger.error(f"Error deleting release {release_id}: {e}", exc_info=True)
