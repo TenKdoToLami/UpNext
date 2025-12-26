@@ -3,8 +3,28 @@ import sys
 
 # App Identification
 APP_NAME = "UpNext"
+import socket
+
+def find_available_port(host, preferred_ports):
+    """
+    Finds an available port from a list of preferred ports.
+    If none are available, returns a random free port.
+    """
+    for port in preferred_ports:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            if s.connect_ex((host, port)) != 0:
+                return port
+                
+    # Fallback: bind to 0 to let OS choose
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind((host, 0))
+        return s.getsockname()[1]
+
+# App Identification
+APP_NAME = "UpNext"
 HOST = "127.0.0.1"
-PORT = 5000
+PREFERRED_PORTS = [5000, 5001, 8000, 8080, 8888]
+PORT = find_available_port(HOST, PREFERRED_PORTS)
 
 # Path and Environment Configuration
 # We handle both standard development runs and frozen PyInstaller executables.
