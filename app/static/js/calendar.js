@@ -343,10 +343,8 @@ function openAddEventModal(release = null, dateStr = null) {
 
         document.getElementById('addEventDate').value = defaultDate;
         document.getElementById('addEventTime').value = '';
-        // Reset recurrence
         document.getElementById('addEventRecur').checked = false;
-        document.getElementById('addEventRecur').parentElement.parentElement.classList.remove('hidden');
-        document.getElementById('recurrenceOptions').classList.add('hidden');
+        if (typeof toggleRecurrence === 'function') toggleRecurrence(false);
         document.getElementById('recurrenceFreq').value = 'weekly';
         document.getElementById('recurrenceCount').value = '12';
         document.getElementById('recurrenceUseCounter').checked = true;
@@ -484,6 +482,27 @@ function clearSelectedMediaItem() {
     document.getElementById('addEventSearch').parentElement.classList.remove('hidden');
     document.getElementById('addEventSelectedItem').classList.add('hidden');
     document.getElementById('addEventSelectedItem').classList.remove('flex');
+}
+
+/**
+ * Toggles the disabled state of recurrence options.
+ * @param {boolean} enabled - Whether recurrence is enabled
+ */
+function toggleRecurrence(enabled) {
+    const container = document.getElementById('recurrenceOptions');
+    if (!container) return;
+
+    // Visual state
+    if (enabled) {
+        container.classList.remove('hidden');
+        // Small delay to allow transition if we added one, but for now just show
+    } else {
+        container.classList.add('hidden');
+    }
+
+    // Functional state
+    const inputs = container.querySelectorAll('input, select');
+    inputs.forEach(input => input.disabled = !enabled);
 }
 
 /**
@@ -1126,9 +1145,16 @@ function renderUpcomingView() {
 
 
 /**
- * Renders a single upcoming release item.
+ * Renders a single upcoming release item card.
  * 
- * Renders a single upcoming release item.
+ * Features:
+ * - Responsive sizing based on viewport height (vh)
+ * - Dynamic color theming based on media type
+ * - Hover effects for cover image and action buttons
+ * - "Seen" and "Delete" actions
+ * 
+ * @param {Object} release - The release object containing date, time, and associated item
+ * @returns {string} HTML string for the release card
  */
 function renderUpcomingItem(release) {
     const item = release.item;
@@ -1550,6 +1576,7 @@ window.selectMediaItem = selectMediaItem;
 window.clearSelectedMediaItem = clearSelectedMediaItem;
 window.submitNewEvent = submitNewEvent;
 window.deleteEvent = deleteEvent;
+window.toggleRecurrence = toggleRecurrence;
 window.openMonthYearPicker = openMonthYearPicker;
 window.closeMonthYearPicker = closeMonthYearPicker;
 window.changePickerYear = changePickerYear;
