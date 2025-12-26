@@ -1,8 +1,8 @@
-from datetime import datetime, date
+from datetime import datetime, date, time
 import uuid
 from typing import List, Optional
 
-from sqlalchemy import String, Integer, Text, Boolean, DateTime, JSON, LargeBinary, ForeignKey, Date
+from sqlalchemy import String, Integer, Text, Boolean, DateTime, JSON, LargeBinary, ForeignKey, Date, Time
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import db
@@ -269,6 +269,7 @@ class MediaRelease(db.Model):
     item_id: Mapped[Optional[str]] = mapped_column(ForeignKey("media_items.id"), nullable=True)
     
     date: Mapped[date] = mapped_column(Date, nullable=False)
+    release_time: Mapped[Optional[time]] = mapped_column(Time, nullable=True)
     content: Mapped[str] = mapped_column(String(255), nullable=False)
     
     is_tracked: Mapped[bool] = mapped_column(Boolean, default=True)

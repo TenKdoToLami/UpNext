@@ -116,6 +116,30 @@ function openCalendarModal() {
     if (typeof lucide !== 'undefined') {
         lucide.createIcons();
     }
+
+    // Add global listener for sidebar
+    setTimeout(() => {
+        document.addEventListener('click', handleGlobalClick);
+    }, 100);
+}
+
+/**
+ * Handles global clicks to close sidebar or deselection.
+ */
+function handleGlobalClick(e) {
+    const sidebar = document.getElementById('calendarDayDetail');
+
+    // Safety check
+    if (!sidebar || sidebar.classList.contains('hidden')) return;
+
+    // 1. If clicking inside sidebar, do nothing
+    if (sidebar.contains(e.target)) return;
+
+    // 2. If clicking a day cell (that opens sidebar), do nothing (let cell handler work)
+    if (e.target.closest('.calendar-day-cell') || e.target.closest('.carousel-card')) return;
+
+    // 3. Otherwise, clicking outside -> Close sidebar
+    closeDayDetail();
 }
 
 /**
@@ -133,6 +157,8 @@ function closeCalendarModal() {
         closeDayDetail();
         closeMonthYearPicker();
     }, 200);
+
+    document.removeEventListener('click', handleGlobalClick);
 }
 
 // =============================================================================
@@ -249,9 +275,6 @@ function goToToday() {
 // =============================================================================
 
 /**
- * Opens the Add Event modal.
- */
-/**
  * Opens the Add/Edit Event modal.
  * @param {Object|null} release - Release object to edit, or null for new event
  */
@@ -274,6 +297,7 @@ function openAddEventModal(release = null) {
         // Fill Form
         document.getElementById('addEventContent').value = release.content || '';
         document.getElementById('addEventDate').value = release.date.split('T')[0];
+        document.getElementById('addEventTime').value = release.time || '';
         document.getElementById('addEventTracked').checked = release.isTracked !== false;
 
         // Handle Associated Item
@@ -307,6 +331,7 @@ function openAddEventModal(release = null) {
         document.getElementById('addEventSearch').value = '';
         document.getElementById('addEventContent').value = '';
         document.getElementById('addEventDate').value = new Date().toISOString().split('T')[0];
+        document.getElementById('addEventTime').value = '';
         document.getElementById('addEventTracked').checked = true;
         document.getElementById('addEventSuggestions').classList.add('hidden');
         clearSelectedMediaItem();
@@ -430,14 +455,12 @@ function clearSelectedMediaItem() {
 }
 
 /**
- * Submits the new event.
- */
-/**
  * Submits the new or updated event.
  */
 async function submitNewEvent() {
     const content = document.getElementById('addEventContent').value;
     const date = document.getElementById('addEventDate').value;
+    const time = document.getElementById('addEventTime').value;
     const isTracked = document.getElementById('addEventTracked').checked;
 
     if (!content || !date) {
@@ -447,6 +470,7 @@ async function submitNewEvent() {
 
     const payload = {
         date: date,
+        time: time || null,
         content: content,
         itemId: calendarState.selectedMediaItem?.id || null,
         isTracked: isTracked
@@ -800,6 +824,7 @@ function renderDayCell(day, dateStr, releases, isOtherMonth, isToday) {
                                 onclick="/* Click bubbles to parent to open sidebar */">
                                 <div class="h-full relative" style="aspect-ratio: 3/4;">
                                     ${content}
+                                    ${r.time ? `<div class="absolute bottom-1 right-1 bg-black/60 backdrop-blur-[2px] px-1.5 py-0.5 rounded text-[9px] font-bold text-white z-[71] pointer-events-none border border-white/10 ring-1 ring-black/20">${r.time}</div>` : ''}
                                 </div>
                             </div>
                         `;
@@ -981,23 +1006,54 @@ function renderUpcomingView() {
         const todayDate = new Date();
         todayDate.setHours(0, 0, 0, 0);
 
-        // Sort releases by date
-        const sortedReleases = [...calendarState.releases].sort((a, b) => new Date(a.date) - new Date(b.date));
+        // Sort releases by date and then time (NULL considered 00:00)
+        const sortedReleases = [...calendarState.releases].sort((a, b) => {
+            const dateDiff = new Date(a.date) - new Date(b.date);
+            if (dateDiff !== 0) return dateDiff;
+            const timeA = a.time || '00:00';
+            const timeB = b.time || '00:00';
+            return timeA.localeCompare(timeB);
+        });
 
         // Find the split point between overdue (past) and future
         const firstFutureIndex = sortedReleases.findIndex(r => new Date(r.date) >= todayDate);
 
         let html = '';
 
+
         // Render Items
         sortedReleases.forEach((r, index) => {
+            // Month delimiter check inside loop to handle all items in order
+            if (index > 0) {
+                const prevDate = new Date(sortedReleases[index - 1].date);
+                const currDate = new Date(r.date);
+                // Skip delimiter if we are exactly at the "Today" split point to avoid double lines
+                // But we DO want month delimiters even if they coincide with Today, usually. 
+                // Let's refine: The delimiters are inserted BEFORE the current item.
+                if (prevDate.getMonth() !== currDate.getMonth() || prevDate.getFullYear() !== currDate.getFullYear()) {
+                    const monthName = MONTH_NAMES[currDate.getMonth()];
+                    const year = currDate.getFullYear();
+                    // Don't insert if it conflicts with Today line? No, let them coexist or just let Today take precedence visually if needed.
+                    // For now, simple insertion.
+                    html += `
+                        <div class="h-full w-10 shrink-0 flex flex-col items-center justify-center gap-2">
+                             <div class="h-full w-px bg-zinc-200 dark:bg-zinc-800"></div>
+                             <div class="py-4 text-xs font-bold text-zinc-400 -rotate-90 whitespace-nowrap tracking-widest uppercase">
+                                ${monthName} ${year}
+                             </div>
+                             <div class="h-full w-px bg-zinc-200 dark:bg-zinc-800"></div>
+                        </div>
+                    `;
+                }
+            }
+
             // If this is the start of the future section (and not the very first item), insert delimiter
             if (index === firstFutureIndex && firstFutureIndex > 0) {
                 html += `
-                    <div class="h-full w-px mx-4 flex flex-col items-center justify-center gap-2 shrink-0">
+                    <div class="h-full w-px mx-6 flex flex-col items-center justify-center gap-2 shrink-0">
                          <div class="h-full w-0.5 bg-red-500/50 rounded-full"></div>
-                         <div class="p-2 rounded-full bg-red-500/10 border border-red-500/30 text-red-500">
-                            <span class="text-xs font-bold whitespace-nowrap -rotate-90 block">TODAY</span>
+                         <div class="py-6 px-1.5 rounded-full bg-red-500/10 border border-red-500/30 text-red-500">
+                            <span class="text-sm font-bold whitespace-nowrap -rotate-90 block tracking-wider">TODAY</span>
                          </div>
                          <div class="h-full w-0.5 bg-red-500/50 rounded-full"></div>
                     </div>
@@ -1053,6 +1109,14 @@ function renderUpcomingItem(release) {
     const iconBg = TYPE_COLORS[type] || 'bg-zinc-800';
     const rating = item?.userData?.rating || 0;
 
+    // Determine color name for gradient (simplified mapping)
+    const colorRoot =
+        type === 'Anime' ? 'violet' :
+            type === 'Manga' ? 'pink' :
+                type === 'Book' ? 'blue' :
+                    type === 'Movie' ? 'red' :
+                        type === 'Series' ? 'amber' : 'emerald';
+
     // Maximized Card Dimensions for Image
     // User wants dynamic scaling to fit viewport.
     // Target Cover Height: ~45-50vh (leaving room for header + text below in a 90vh modal)
@@ -1076,17 +1140,25 @@ function renderUpcomingItem(release) {
                     <span class="text-sm font-bold ${textColor}">${monthStr}</span>
                     <span class="text-xs font-medium text-zinc-400 uppercase">${dayName}</span>
                 </div>
+                ${release.time ? `
+                <div class="ml-auto bg-${colorRoot}-50 dark:bg-${colorRoot}-500/10 px-2 py-0.5 rounded-md border border-${colorRoot}-200 dark:border-${colorRoot}-500/20 flex items-center gap-1.5 shadow-sm">
+                    <i data-lucide="clock" class="w-2.5 h-2.5 text-${colorRoot}-500/70 dark:text-${colorRoot}-400/70"></i>
+                    <span class="text-[10px] font-bold text-${colorRoot}-700 dark:text-${colorRoot}-300 font-mono tracking-tight">${release.time}</span>
+                </div>
+                ` : ''}
             </div>
 
             <!-- Cover Image Container (The "Box") -->
-            <div class="relative w-full rounded-2xl overflow-hidden shadow-xl transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-2xl border-2 ${borderColor} bg-white dark:bg-zinc-800" ${coverHeightStyle}>
-                ${item?.coverUrl
+            <div class="relative w-full rounded-2xl overflow-hidden shadow-xl transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-2xl bg-white dark:bg-zinc-800 bg-gradient-to-br from-${colorRoot}-500/30 via-transparent to-transparent p-[1px]" ${coverHeightStyle}>
+                <div class="w-full h-full rounded-2xl overflow-hidden bg-zinc-900 relative">
+         ${item?.coverUrl
             ? `<img src="/images/${item.coverUrl}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy">`
             : `<div class="w-full h-full flex items-center justify-center flex-col gap-3 opacity-50">
                          <i data-lucide="${iconName}" class="w-16 h-16 ${textColor}"></i>
                          <span class="text-zinc-500 font-bold text-xl text-center px-6">${item?.title || 'No Cover'}</span>
                        </div>`
         }
+                </div>
                 
                 <!-- Media Type Icon (Floating top left) -->
                 <div class="absolute top-4 left-4 w-12 h-12 rounded-xl ${iconBg} text-white flex items-center justify-center shadow-lg z-10 border border-white/20">
@@ -1135,17 +1207,9 @@ function renderUpcomingItem(release) {
  * @param {string} dateStr - Date string (YYYY-MM-DD)
  */
 function showDayDetail(dateStr) {
-    console.log('showDayDetail called for:', dateStr);
-    const releases = getReleasesForDate(dateStr);
-
-    // Allow opening even if empty, to show "No events" or allow adding
-    // if (releases.length === 0) return;
-
     const panel = document.getElementById('calendarDayDetail');
     const dateLabel = document.getElementById('dayDetailDate');
     const content = document.getElementById('dayDetailContent');
-
-    console.log('Panel elements:', { panel, dateLabel, content });
 
     if (!panel || !content) return;
 
@@ -1205,12 +1269,13 @@ function renderDayDetailItem(release) {
     // Fading border from top-left: We use a gradient background that looks like a top-left tint fade
     // plus a top and left border that appears on selection.
     const selectedClasses = `
-        group-[.is-expanded]:bg-gradient-to-br 
-        group-[.is-expanded]:from-${colorRoot}-500/10 
-        group-[.is-expanded]:via-transparent 
-        group-[.is-expanded]:to-transparent
-        group-[.is-expanded]:border-2 
-        group-[.is-expanded]:${borderColor}
+        [&.is-expanded]:bg-gradient-to-br 
+        [&.is-expanded]:from-${colorRoot}-500/10 
+        [&.is-expanded]:via-transparent 
+        [&.is-expanded]:to-transparent
+        [&.is-expanded]:ring-2
+        [&.is-expanded]:ring-${colorRoot}-500/50
+        [&.is-expanded]:border-transparent
     `;
 
     return `
@@ -1246,6 +1311,13 @@ function renderDayDetailItem(release) {
                     <div class="flex items-center gap-1.5">
                         <i data-lucide="${iconName}" class="w-3 h-3 ${textColor}"></i>
                         <span class="text-[10px] font-bold uppercase tracking-wide ${textColor}">${type}</span>
+                        ${release.time ? `
+                            <span class="text-[10px] text-zinc-300 dark:text-zinc-600">•</span>
+                            <div class="flex items-center gap-1 bg-${colorRoot}-50 dark:bg-${colorRoot}-500/10 px-1.5 py-0.5 rounded text-${colorRoot}-700 dark:text-${colorRoot}-300 border border-${colorRoot}-200 dark:border-${colorRoot}-500/20">
+                                <i data-lucide="clock" class="w-2.5 h-2.5 opacity-70"></i>
+                                <span class="text-[10px] font-bold font-mono">${release.time}</span>
+                            </div>
+                        ` : ''}
                         ${(item?.status || item?.userData?.status) ? `
                             <span class="text-[10px] text-zinc-300 dark:text-zinc-600">•</span>
                             <span class="text-[10px] font-medium text-zinc-400">${item.status || item.userData.status}</span>
@@ -1415,21 +1487,11 @@ function formatDisplayDate(date) {
  * Gets releases for a specific date.
  */
 function getReleasesForDate(dateStr) {
-    return calendarState.releases.filter(r => r.date === dateStr);
+    return calendarState.releases
+        .filter(r => r.date === dateStr)
+        .sort((a, b) => (a.time || '00:00').localeCompare(b.time || '00:00'));
 }
 
-// =============================================================================
-// WINDOW BINDINGS
-// =============================================================================
-
-window.openCalendarModal = openCalendarModal;
-window.closeCalendarModal = closeCalendarModal;
-window.setCalendarView = setCalendarView;
-window.navigateMonth = navigateMonth;
-window.goToToday = goToToday;
-window.openMonthYearPicker = openMonthYearPicker;
-window.closeMonthYearPicker = closeMonthYearPicker;
-window.changePickerYear = changePickerYear;
 // =============================================================================
 // WINDOW BINDINGS
 // =============================================================================

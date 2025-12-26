@@ -45,7 +45,7 @@ def get_releases():
             db.session.query(MediaRelease)
             .filter(MediaRelease.date >= from_date)
             .filter(MediaRelease.date <= to_date)
-            .order_by(MediaRelease.date.asc())
+            .order_by(MediaRelease.date.asc(), MediaRelease.release_time.asc())
             .all()
         )
         
@@ -54,6 +54,7 @@ def get_releases():
             release_data = {
                 "id": release.id,
                 "date": release.date.isoformat(),
+                "time": release.release_time.strftime("%H:%M") if release.release_time else None,
                 "content": release.content,
                 "isTracked": release.is_tracked,
                 "itemId": release.item_id,
@@ -93,7 +94,7 @@ def get_upcoming_releases():
             db.session.query(MediaRelease)
             .filter(MediaRelease.date < today)
             .filter(or_(MediaRelease.is_tracked == True, MediaRelease.is_tracked == None))
-            .order_by(MediaRelease.date.asc()) 
+            .order_by(MediaRelease.date.asc(), MediaRelease.release_time.asc())
             .all()
         )
 
@@ -102,7 +103,7 @@ def get_upcoming_releases():
             db.session.query(MediaRelease)
             .filter(MediaRelease.date >= today)
             .filter(or_(MediaRelease.is_tracked == True, MediaRelease.is_tracked == None))
-            .order_by(MediaRelease.date.asc())
+            .order_by(MediaRelease.date.asc(), MediaRelease.release_time.asc())
             .offset(offset)
             .limit(limit)
             .all()
@@ -115,6 +116,7 @@ def get_upcoming_releases():
             release_data = {
                 "id": release.id,
                 "date": release.date.isoformat(),
+                "time": release.release_time.strftime("%H:%M") if release.release_time else None,
                 "content": release.content,
                 "isTracked": release.is_tracked,
                 "itemId": release.item_id,
@@ -154,8 +156,16 @@ def create_release():
         except ValueError:
             return jsonify({"error": "Invalid date format. Use YYYY-MM-DD"}), 400
             
+        release_time = None
+        if data.get("time"):
+            try:
+                release_time = datetime.strptime(data["time"], "%H:%M").time()
+            except ValueError:
+                pass
+
         new_release = MediaRelease(
             date=release_date,
+            release_time=release_time,
             content=data["content"],
             item_id=data.get("itemId"),
             is_tracked=data.get("isTracked", True),
@@ -198,6 +208,14 @@ def update_release(release_id):
                 
         if "content" in data:
             release.content = data["content"]
+        if "time" in data:
+            if data["time"]:
+                try:
+                    release.release_time = datetime.strptime(data["time"], "%H:%M").time()
+                except ValueError:
+                    pass
+            else:
+                release.release_time = None
         if "itemId" in data:
             release.item_id = data["itemId"]
         if "isTracked" in data:
