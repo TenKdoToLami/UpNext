@@ -190,11 +190,16 @@ function updateViewToggle() {
     const upcomingBtn = document.getElementById('calViewUpcoming');
     const monthNav = document.getElementById('monthNavNew');
     const todayBtn = document.getElementById('btnCalToday');
+    const catchUpBtn = document.getElementById('btnCatchUp');
     const monthView = document.getElementById('calendarMonthView');
     const upcomingView = document.getElementById('calendarUpcomingView');
 
     const activeClass = 'bg-zinc-900 dark:bg-white text-white dark:text-black';
     const inactiveClass = 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white';
+
+    // Helper to toggle visibility with flex
+    const showFlex = (el) => { if (el) { el.style.display = 'flex'; el.classList.remove('hidden'); } };
+    const hide = (el) => { if (el) { el.style.display = 'none'; el.classList.add('hidden'); } };
 
     if (calendarState.currentView === 'month') {
         monthBtn?.classList.remove(...inactiveClass.split(' '));
@@ -202,15 +207,10 @@ function updateViewToggle() {
         upcomingBtn?.classList.remove(...activeClass.split(' '));
         upcomingBtn?.classList.add(...inactiveClass.split(' '));
 
-        if (monthNav) {
-            monthNav.style.display = 'flex';
-            monthNav.classList.remove('hidden');
-            monthNav.classList.add('flex');
-        }
-        if (todayBtn) {
-            todayBtn.style.display = 'flex';
-            todayBtn.classList.remove('hidden');
-        }
+        if (monthNav) showFlex(monthNav);
+        if (todayBtn) showFlex(todayBtn);
+        if (catchUpBtn) hide(catchUpBtn);
+
         monthView?.classList.remove('hidden');
         upcomingView?.classList.add('hidden');
     } else {
@@ -219,15 +219,11 @@ function updateViewToggle() {
         monthBtn?.classList.remove(...activeClass.split(' '));
         monthBtn?.classList.add(...inactiveClass.split(' '));
 
-        if (monthNav) {
-            monthNav.style.display = 'none';
-            monthNav.classList.add('hidden');
-            monthNav.classList.remove('flex');
-        }
-        if (todayBtn) {
-            todayBtn.style.display = 'none';
-            todayBtn.classList.add('hidden');
-        }
+        if (monthNav) hide(monthNav);
+        if (todayBtn) hide(todayBtn);
+        // Show Catch Up button in place of "Today"
+        if (catchUpBtn) showFlex(catchUpBtn);
+
         monthView?.classList.add('hidden');
         upcomingView?.classList.remove('hidden');
     }
@@ -267,6 +263,29 @@ function goToToday() {
         loadReleasesForMonth().then(renderMonthView);
     } else {
         loadUpcomingReleases().then(renderUpcomingView);
+    }
+}
+
+/**
+ * Catch up on all overdue releases (mark as seen).
+ */
+async function catchUpCal() {
+    if (!confirm('Mark all overdue releases as read? This will remove them from the upcoming list.')) return;
+
+    try {
+        const res = await fetch('/api/releases/catch-up', { method: 'POST' });
+        if (res.ok) {
+            window.showToast('All caught up!', 'success');
+            // Refresh view
+            if (calendarState.currentView === 'upcoming') {
+                loadUpcomingReleases().then(renderUpcomingView);
+            }
+        } else {
+            window.showToast('Failed to update releases', 'error');
+        }
+    } catch (e) {
+        console.error('Error catching up:', e);
+        window.showToast('Error catching up', 'error');
     }
 }
 
@@ -1075,15 +1094,31 @@ function renderUpcomingView() {
 
         // Sort releases by date and then time (NULL considered 00:00)
         const sortedReleases = [...calendarState.releases].sort((a, b) => {
-            const dateDiff = new Date(a.date) - new Date(b.date);
+            // Robust Date Comparison (Local)
+            const aParts = a.date.split('-').map(Number);
+            const bParts = b.date.split('-').map(Number);
+            const aDate = new Date(aParts[0], aParts[1] - 1, aParts[2]);
+            const bDate = new Date(bParts[0], bParts[1] - 1, bParts[2]);
+
+            const dateDiff = aDate - bDate;
             if (dateDiff !== 0) return dateDiff;
-            const timeA = a.time || '00:00';
-            const timeB = b.time || '00:00';
+
+            // Time Sorting: No time = Start of Day (00:00:00)
+            // As per new requirement: "All without time should be considered as 0:00 of that day"
+            const timeA = a.time || '00:00:00';
+            const timeB = b.time || '00:00:00';
             return timeA.localeCompare(timeB);
         });
 
         // Find the split point between overdue (past) and future
-        const firstFutureIndex = sortedReleases.findIndex(r => new Date(r.date) >= todayDate);
+        // Find the split point between overdue (past) and future
+        // New requirement: "All stuff that is realease today... should all be moved into the pre today line"
+        // Future = Date > Today
+        const firstFutureIndex = sortedReleases.findIndex(r => {
+            const parts = r.date.split('-').map(Number);
+            const rDate = new Date(parts[0], parts[1] - 1, parts[2]);
+            return rDate > todayDate; // Changed from >= to >
+        });
 
         let html = '';
 
@@ -1585,3 +1620,4 @@ window.handleCarouselDotClick = handleCarouselDotClick;
 window.deleteRelease = deleteRelease;
 window.toggleReleaseSeen = toggleReleaseSeen;
 window.handleReleaseClick = handleReleaseClick;
+window.catchUpCal = catchUpCal;

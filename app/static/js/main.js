@@ -565,9 +565,7 @@ window.saveEntry = async () => {
             submitBtn.disabled = false;
             submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
             submitBtn.innerHTML = 'Finish';
-            // Note: If in edit mode, it should be 'Save Changes'. 
-            // ideally we check state.isEditMode but the modal is usually closed on success anyway.
-            // If error occurred, we should restore correct text.
+
             if (state.isEditMode) submitBtn.innerHTML = 'Save Changes';
         }
     }
@@ -722,6 +720,39 @@ function applyStateToUI() {
 }
 
 /**
+ * Checks for overdue releases and prompts the user to catch up.
+ */
+async function checkOverdueReleases() {
+    try {
+        const t = Date.now();
+        const res = await fetch(`/api/releases/overdue?limit=5&t=${t}`);
+        if (res.ok) {
+            const data = await res.json();
+            if (data.count > 0 && data.items) {
+                // Spawn a toast for each item
+                data.items.forEach((item, index) => {
+                    const delay = index * 200; // Stagger slightly
+                    setTimeout(() => {
+                        window.showRichToast({
+                            title: item.item?.title || 'Unseen Release',
+                            message: `Missed: ${item.content || 'New Release'} (${item.date})`,
+                            coverUrl: item.item?.coverUrl,
+                            type: 'info',
+                            actionLabel: 'Mark as Seen',
+                            onAction: () => {
+                                window.toggleReleaseSeen(item.id, true);
+                            }
+                        });
+                    }, delay);
+                });
+            }
+        }
+    } catch (e) {
+        console.error('Error checking overdue releases:', e);
+    }
+}
+
+/**
  * Initializes the application when DOM is ready.
  */
 function initApp() {
@@ -730,6 +761,9 @@ function initApp() {
     loadItems();
     populateAutocomplete();
     applyStateToUI();
+
+    // Check for overdue releases (delayed slightly to allow UI to settle)
+    setTimeout(checkOverdueReleases, 1000);
 
     // Helper for safe event binding
     const addListener = (id, event, handler) => {

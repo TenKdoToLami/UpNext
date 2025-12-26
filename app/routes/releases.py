@@ -89,19 +89,19 @@ def get_upcoming_releases():
         offset = int(request.args.get("offset", 0))
         today = date.today()
         
-        # 1. Overdue/Unseen Releases
+        # 1. Overdue/Unseen Releases (Including Today)
         overdue_releases = (
             db.session.query(MediaRelease)
-            .filter(MediaRelease.date < today)
+            .filter(MediaRelease.date <= today)
             .filter(or_(MediaRelease.is_tracked == True, MediaRelease.is_tracked == None))
             .order_by(MediaRelease.date.asc(), MediaRelease.release_time.asc())
             .all()
         )
 
-        # 2. Future Releases
+        # 2. Future Releases (Starting Tomorrow)
         future_releases = (
             db.session.query(MediaRelease)
-            .filter(MediaRelease.date >= today)
+            .filter(MediaRelease.date > today)
             .filter(or_(MediaRelease.is_tracked == True, MediaRelease.is_tracked == None))
             .order_by(MediaRelease.date.asc(), MediaRelease.release_time.asc())
             .offset(offset)
@@ -139,6 +139,73 @@ def get_upcoming_releases():
     except Exception as e:
         logger.error(f"Error fetching upcoming releases: {e}", exc_info=True)
         return jsonify({"error": "Failed to fetch upcoming releases"}), 500
+
+
+@bp.route("/releases/overdue", methods=["GET"])
+def get_overdue_releases():
+    """
+    Get the list of overdue, unseen releases with details.
+    """
+    try:
+        limit = int(request.args.get("limit", 5))
+        today = date.today()
+        
+        # Query for overdue releases (Including Today)
+        query = (
+            db.session.query(MediaRelease)
+            .filter(MediaRelease.date <= today)
+            .filter(or_(MediaRelease.is_tracked == True, MediaRelease.is_tracked == None))
+            .order_by(MediaRelease.date.desc())
+        )
+        
+        total_count = query.count()
+        releases = query.limit(limit).all()
+        
+        items = []
+        for release in releases:
+            item_data = {
+                "id": release.id,
+                "date": release.date.isoformat(),
+                "content": release.content,
+                "item": None
+            }
+            if release.item:
+                item_data["item"] = {
+                    "title": release.item.title,
+                    "type": release.item.type,
+                    "coverUrl": release.item.cover_url
+                }
+            items.append(item_data)
+
+        return jsonify({
+            "count": total_count,
+            "items": items
+        })
+    except Exception as e:
+        logger.error(f"Error fetching overdue releases: {e}", exc_info=True)
+        return jsonify({"error": "Failed to fetch overdue releases"}), 500
+
+
+@bp.route("/releases/catch-up", methods=["POST"])
+def catch_up_releases():
+    """
+    Mark all overdue releases as seen (is_tracked = False).
+    """
+    try:
+        today = date.today()
+        # Update all overdue releases
+        result = (
+            db.session.query(MediaRelease)
+            .filter(MediaRelease.date < today)
+            .filter(or_(MediaRelease.is_tracked == True, MediaRelease.is_tracked == None))
+            .update({MediaRelease.is_tracked: False}, synchronize_session=False)
+        )
+        db.session.commit()
+        return jsonify({"status": "success", "updated": result}), 200
+    except Exception as e:
+        logger.error(f"Error catching up releases: {e}", exc_info=True)
+        db.session.rollback()
+        return jsonify({"error": "Failed to catch up releases"}), 500
 
 
 @bp.route("/releases", methods=["POST"])
@@ -208,10 +275,6 @@ def create_release():
                 final_content = get_content(prefix if use_counter else "", current_count, content_base)
                 # If content is empty (because optional) and no counter, use fallback
                 if not final_content and item_id:
-                     # If we have an item but no content, maybe just use item title or "New Release"?
-                     # But content is supposed to be "Episode X", so final_content is likely set if use_counter is true.
-                     # If use_counter is false and content is empty, validation might fail if we enforce it.
-                     # Let's ensure we have something.
                      final_content = "New Release"
 
                 new_release = MediaRelease(
