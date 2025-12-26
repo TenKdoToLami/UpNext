@@ -16,6 +16,7 @@ import {
 	showStep, validateStep, updateDynamicLinks, updateDots,
 	animateStepChange, getNextValidStep, getPrevValidStep
 } from './wizard_logic.js';
+import { loadItemEvents } from './events_carousel.js';
 
 // =============================================================================
 // MODAL OPERATIONS
@@ -267,9 +268,6 @@ function renderSidebarNav() {
     `).join('');
 
 	safeCreateIcons();
-	// Hide links for hidden sections needs to be handled dynamically:
-	// We can rely on IntersectionObserver to ignore hidden sections or duplicate updateFormUI logic here.
-	// For now, let's auto-hide links if their target section is hidden.
 	updateSidebarVisibility();
 }
 
@@ -859,7 +857,7 @@ export function renderDetailView(item, content) {
                 </div>
             </div>
             
-            <div class="flex-1 flex flex-col h-full bg-white dark:bg-[#0c0c0e] relative">
+            <div class="flex-1 overflow-y-auto custom-scrollbar h-full bg-white dark:bg-[#0c0c0e] relative">
                 <div class="p-10 pb-6 border-b border-zinc-100 dark:border-white/5 relative">
                     ${linksHtml ? `<div class="absolute top-8 right-16 mr-6 flex gap-2 z-20">${linksHtml}</div>` : ''}
                     <div class="flex flex-wrap gap-2 mb-4 mt-12">
@@ -875,7 +873,7 @@ export function renderDetailView(item, content) {
                         ${item.universe ? `<div onclick="smartFilter(event, 'universe', '${item.universe}')" class="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 cursor-pointer transition-colors"><i data-lucide="globe" class="w-5 h-5"></i> ${item.universe}</div>` : ''}
                     </div>
                 </div>
-                <div class="flex-1 overflow-y-auto custom-scrollbar p-10 pt-6 space-y-8">
+                <div class="p-10 pt-6 space-y-8">
                     
                     ${(item.review || item.rating) ? `
                     <div class="bg-zinc-50 dark:bg-zinc-900/50 border border-[color:var(--theme-col)] rounded-2xl p-6 relative flow-root min-h-[160px]">
@@ -895,6 +893,9 @@ export function renderDetailView(item, content) {
                             ${item.review.length > 0 ? `<button type="button" id="btn-detail-review-${item.id}" onclick="event.stopPropagation(); window.toggleExpand('${item.id}', 'detail-review')" class="text-xs text-[var(--theme-col)] font-bold mt-2 hover:underline relative z-20">Read More</button>` : ''}
                          </div>` : ''}
                     </div>` : ''}
+
+                    <!-- EVENTS CAROUSEL -->
+                    <div id="detail-events-${item.id}" class="hidden"></div>
 
                     ${item.description ? `
                     <div class="bg-zinc-50 dark:bg-zinc-900/5 border border-[color:var(--theme-col)] rounded-xl p-6 group/desc">
@@ -922,10 +923,12 @@ export function renderDetailView(item, content) {
 
 	safeCreateIcons();
 
-	safeCreateIcons();
-
 	// Check for overflow after render
-	setTimeout(() => updateDetailTruncation(item.id), 50);
+	setTimeout(() => {
+		updateDetailTruncation(item.id);
+		const eventsContainer = document.getElementById(`detail-events-${item.id}`);
+		loadItemEvents(item.id, eventsContainer);
+	}, 50);
 }
 
 /**

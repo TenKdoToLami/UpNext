@@ -43,8 +43,13 @@ def get_releases() -> Tuple[Response, int]:
         else:
             to_date = today + timedelta(days=60)
 
+        if item_id := request.args.get("item_id"):
+            query = db.session.query(MediaRelease).filter(MediaRelease.item_id == item_id)
+        else:
+            query = db.session.query(MediaRelease)
+
         releases = (
-            db.session.query(MediaRelease)
+            query
             .filter(MediaRelease.date >= from_date)
             .filter(MediaRelease.date <= to_date)
             .order_by(MediaRelease.date.asc(), MediaRelease.release_time.asc())
@@ -198,12 +203,6 @@ def catch_up_releases() -> Tuple[Response, int]:
     try:
         today = date.today()
         now_time = datetime.now().time()
-
-        # Update all overdue releases
-        # Logic:
-        # 1. Date < Today
-        # OR
-        # 2. Date == Today AND (Time < Now OR Time is None)
 
         result = (
             db.session.query(MediaRelease)
