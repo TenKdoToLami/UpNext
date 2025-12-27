@@ -844,7 +844,7 @@ export function renderDetailView(item, content) {
 	content.innerHTML = `
         <div class="media-${item.type} relative h-full flex flex-col lg:flex-row">
             <div class="relative w-full lg:w-[45%] h-64 lg:h-full shrink-0 bg-zinc-100 dark:bg-zinc-900 overflow-hidden group border-r border-zinc-200 dark:border-zinc-800">
-                ${coverUrl ? `<img src="${coverUrl}" class="w-full h-full object-contain bg-zinc-50 dark:bg-zinc-950/50">` : '<div class="w-full h-full flex items-center justify-center text-zinc-400 dark:text-zinc-700 bg-zinc-100 dark:bg-zinc-900"><i data-lucide="image" class="w-24 h-24 opacity-20"></i></div>'}
+                ${coverUrl ? `<img src="${coverUrl}" loading="lazy" class="w-full h-full object-contain bg-zinc-50 dark:bg-zinc-950/50">` : '<div class="w-full h-full flex items-center justify-center text-zinc-400 dark:text-zinc-700 bg-zinc-100 dark:bg-zinc-900"><i data-lucide="image" class="w-24 h-24 opacity-20"></i></div>'}
                 <div class="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-60 pointer-events-none"></div>
                 
                 <div class="absolute bottom-6 left-6 right-6 flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">

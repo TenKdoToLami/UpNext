@@ -507,7 +507,7 @@ function generateCardHtml(item) {
 				: '';
 
 			const detailCover = coverUrl
-				? `<img src="${coverUrl}" class="w-full h-full object-contain rounded-lg shadow-xl">`
+				? `<img src="${coverUrl}" loading="lazy" class="w-full h-full object-contain rounded-lg shadow-xl">`
 				: `<div class="w-full h-full flex items-center justify-center text-zinc-500 dark:text-zinc-700 bg-zinc-100 dark:bg-zinc-800 rounded-lg"><i data-lucide="image" class="w-12 h-12 opacity-30"></i></div>`;
 
 			const hasRating = ['Completed', 'Anticipating', 'Dropped', 'On Hold'].includes(item.status) && item.rating;

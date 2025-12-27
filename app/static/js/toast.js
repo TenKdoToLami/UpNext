@@ -129,7 +129,7 @@ function renderToast(toastData) {
         contentHtml = `
             <div class="flex p-3 gap-3 relative z-10">
                 <div class="w-12 h-16 shrink-0 rounded-lg overflow-hidden bg-zinc-100 dark:bg-zinc-800 shadow-sm border border-zinc-200 dark:border-zinc-700">
-                    <img src="/images/${toastData.coverUrl}" class="w-full h-full object-cover" onerror="this.style.display='none'">
+                    <img src="/images/${toastData.coverUrl}" class="w-full h-full object-cover" loading="lazy" onerror="this.style.display='none'">
                 </div>
                 <div class="flex-1 min-w-0 py-0.5 pr-6">
                     <h4 class="text-sm font-bold text-zinc-900 dark:text-white truncate leading-tight mb-1">${toastData.title || 'Notification'}</h4>

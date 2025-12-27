@@ -223,7 +223,7 @@
 					<summary>
 						<!-- Left Thumbnail (if cover enabled) -->
 						{% if 'coverUrl' in fields and item.coverUrl %}
-						<img src="{{ item.coverUrl }}" class="thumb">
+						<img src="{{ item.coverUrl }}" class="thumb" loading="lazy">
 						{% elif 'coverUrl' in fields %}
 						<div class="thumb no-thumb">No IMG</div>
 						{% endif %}
@@ -249,7 +249,7 @@
 							<!-- Large Cover if expanded -->
 							{% if 'coverUrl' in fields and item.coverUrl %}
 							<div>
-								<img src="{{ item.coverUrl }}" class="cover-large">
+								<img src="{{ item.coverUrl }}" class="cover-large" loading="lazy">
 							</div>
 							{% endif %}
 

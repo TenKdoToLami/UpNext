@@ -49,6 +49,8 @@ Modular project structure:
     -   `static/`: Production assets (img, js, css).
     -   `templates/`: Jinja2 templates.
 -   **`scripts/`**: Automation tools for build and cleanup.
+    -   `build.py`: Orchestrates the PyInstaller compilation process.
+    -   `clean.py`: Wipes build artifacts and Python cache.
 -   **`data/`**: Local SQLite databases and covers.
 
 ## Key Components

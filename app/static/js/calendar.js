@@ -357,6 +357,7 @@ function openAddEventModal(release = null, dateStr = null) {
             document.getElementById('selectedItemTitle').textContent = release.item.title;
             document.getElementById('selectedItemType').textContent = release.item.type;
             document.getElementById('selectedItemCover').src = release.item.coverUrl ? `/images/${release.item.coverUrl}` : '';
+            if (release.item.coverUrl) document.getElementById('selectedItemCover').loading = "lazy";
         } else {
             clearSelectedMediaItem();
         }
@@ -460,7 +461,7 @@ function searchMediaItems(query) {
                 <div onclick="selectMediaItem('${item.id}')" 
                     class="flex items-center gap-3 p-3 hover:bg-zinc-50 dark:hover:bg-zinc-800 cursor-pointer transition-colors border-b border-zinc-100 dark:border-zinc-800/50 last:border-0">
                     <img src="${item.coverUrl ? '/images/' + item.coverUrl : '/static/img/placeholder_cover.jpg'}" 
-                        class="w-10 h-14 object-cover rounded shadow-sm bg-zinc-200" onerror="this.src='/static/img/no-cover.png'">
+                        class="w-10 h-14 object-cover rounded shadow-sm bg-zinc-200" loading="lazy" onerror="this.src='/static/img/no-cover.png'">
                     <div class="flex-1 min-w-0">
                         <h4 class="font-bold text-sm text-zinc-900 dark:text-white truncate">${item.title}</h4>
                         <div class="flex items-center gap-2 text-xs mt-1">
@@ -506,6 +507,7 @@ function selectMediaItem(itemId) {
     document.getElementById('selectedItemTitle').textContent = item.title;
     document.getElementById('selectedItemType').textContent = item.type;
     document.getElementById('selectedItemCover').src = item.coverUrl ? `/images/${item.coverUrl}` : '';
+    if (item.coverUrl) document.getElementById('selectedItemCover').loading = "lazy";
 }
 
 /**
