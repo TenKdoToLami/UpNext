@@ -197,8 +197,10 @@ def get_overdue_releases() -> Tuple[Response, int]:
 @bp.route("/releases/catch-up", methods=["POST"])
 def catch_up_releases() -> Tuple[Response, int]:
     """
-    Mark all overdue releases as seen (is_tracked = False).
-    Includes strictly past days, and today's releases IF they are before current time (or have no time).
+    Mark all previous and current overdue releases as seen.
+    
+    Includes strictly past days, and today's releases IF they are before 
+    the current system time (or have no specific time set).
     """
     try:
         today = date.today()

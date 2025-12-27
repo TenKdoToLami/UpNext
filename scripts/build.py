@@ -62,7 +62,7 @@ def build_project():
 def _create_linux_desktop_entry(root_dir: str, target_exe: str):
     """Generates a .desktop file for Linux desktop environments."""
     desktop_file = os.path.join(root_dir, 'UpNext.desktop')
-    icon_path = os.path.join(root_dir, 'app', 'static', 'icon.png')
+    icon_path = os.path.join(root_dir, 'app', 'static', 'img', 'icon.png')
     content = f"""[Desktop Entry]
 Name=UpNext
 Exec={target_exe}

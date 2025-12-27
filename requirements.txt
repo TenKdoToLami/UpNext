@@ -27,6 +27,8 @@ Pygments==2.19.2
 pyinstaller==6.17.0
 pyinstaller-hooks-contrib==2025.10
 pytest==9.0.2
+pythonnet>=3.0.0
+pywebview>=5.0.0
 pytokens==0.3.0
 setuptools==80.9.0
 tinycss2==1.5.1

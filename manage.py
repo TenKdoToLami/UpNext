@@ -4,41 +4,39 @@ import os
 import subprocess
 import logging
 
-# Ensure we're running from the root directory
-root_dir = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(root_dir)
-
-from app import create_app
-from app.config import HOST, PORT
-from app.services.app_lifecycle import run_application_stack
-from app.utils.logging_setup import setup_logging
-
-# Configure logging
-setup_logging()
-logger = logging.getLogger("manage")
+# Ensure we're running from the root directory to allow absolute imports
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+if ROOT_DIR not in sys.path:
+    sys.path.append(ROOT_DIR)
 
 
 def main():
     """Main entry point for project management."""
-    # Environment Detection and Self-Correction
-    root_dir = os.path.dirname(os.path.abspath(__file__))
-    venv_dir = os.path.join(root_dir, '.venv')
+    # Environment Detection and Self-Correction: ensure we run inside the venv
+    venv_dir = os.path.join(ROOT_DIR, '.venv')
     
-    if os.path.exists(venv_dir):
-        if sys.prefix != venv_dir:
-            python_exe = os.path.join(venv_dir, "Scripts", "python.exe") if sys.platform == "win32" else os.path.join(venv_dir, "bin", "python")
-            
-            if os.path.exists(python_exe):
-                cmd = [python_exe] + sys.argv
-                try:
-                    subprocess.run(cmd, check=True)
-                    sys.exit(0)
-                except Exception as e:
-                    print(f"FAILED to re-execute in environment: {e}")
-                    sys.exit(1)
+    if os.path.exists(venv_dir) and sys.prefix != venv_dir:
+        python_exe = os.path.join(venv_dir, "Scripts", "python.exe") if sys.platform == "win32" else os.path.join(venv_dir, "bin", "python")
+        
+        if os.path.exists(python_exe):
+            cmd = [python_exe] + sys.argv
+            try:
+                subprocess.run(cmd, check=True)
+                sys.exit(0)
+            except Exception as e:
+                print(f"CRITICAL: Failed to re-execute in environment: {e}")
+                sys.exit(1)
 
     # Lazy imports to prevent dependency errors before venv switch
+    from app import create_app
+    from app.config import HOST, PORT
+    from app.services.app_lifecycle import run_application_stack
+    from app.utils.logging_setup import setup_logging
     from scripts import build, clean
+
+    # Configure logging
+    setup_logging()
+    logger = logging.getLogger("manage")
     
     parser = argparse.ArgumentParser(
         description="UpNext Management CLI",

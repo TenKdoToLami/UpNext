@@ -16,16 +16,15 @@ logger = logging.getLogger(__name__)
 
 class DataManager:
     """
-    Handles data persistence for the application using SQLAlchemy models.
-    Provides methods for CRUD operations on MediaItem objects.
+    Service layer for library data persistence.
+    
+    This class handles all CRUD operations by mapping high-level application data 
+    structures to underlying SQLAlchemy models. It ensures data normalization 
+    across the core media, user tracking, and metadata tables.
     """
 
     def __init__(self):
-        """
-        Initialize the DataManager.
-        
-        This service wraps SQLAlchemy calls. In a larger app, you might inject the db session here.
-        """
+        """Initialize the DataManager."""
         pass
 
     def get_items(self) -> List[Dict[str, Any]]:
@@ -44,13 +43,13 @@ class DataManager:
 
     def get_item(self, item_id: str) -> Optional[Dict[str, Any]]:
         """
-        Retrieve a single media item by its ID.
+        Retrieve a single media item by its primary key.
         
         Args:
-            item_id (str): The unique identifier of the item.
+            item_id: The unique UUID of the item.
             
         Returns:
-            Optional[Dict[str, Any]]: The serialized item if found, else None.
+            The serialized item dictionary if found, else None.
         """
         try:
             item = db.session.get(MediaItem, item_id)
@@ -61,16 +60,14 @@ class DataManager:
 
     def add_item(self, data: Dict[str, Any]) -> bool:
         """
-        Add a new media item to the database.
-        
-        Splits the incoming flat data dictionary into the normalized 5-table structure:
-        MediaItem (Core), MediaCover (Images), MediaUserData (User State), MediaMetadata (Stats).
+        Create a new media record and its associated relational components.
         
         Args:
-            data (Dict[str, Any]): Flat dictionary containing all item fields.
-            
+            data: Flat dictionary containing core fields (title, type) and 
+                  related metadata (status, rating, etc.).
+                  
         Returns:
-            bool: True if transaction committed successfully, False otherwise.
+            True if successful, False otherwise.
         """
         try:
             # 1. Initialize Core Item
@@ -133,14 +130,14 @@ class DataManager:
 
     def update_item(self, item_id: str, data: Dict[str, Any]) -> bool:
         """
-        Update an existing media item across all related tables.
+        Update an existing media item across all related storage tables.
         
         Args:
-            item_id (str): The unique identifier of the item.
-            data (Dict[str, Any]): Dictionary of fields to update (partial updates supported).
+            item_id: The unique identifier of the item.
+            data: Dictionary of fields to update (supports partial updates).
             
         Returns:
-            bool: True if item was found and updated, False otherwise.
+            True if item was successfully updated, else False.
         """
         try:
             item = db.session.get(MediaItem, item_id)
@@ -165,7 +162,7 @@ class DataManager:
             item.external_links = data.get("externalLinks", item.external_links)
             item.children = data.get("children", item.children)
 
-            # Update User Tracking Data (ensure table link exists)
+            # Update User Tracking Data
             if not item.user_data:
                 item.user_data = MediaUserData(item_id=item.id)
             
@@ -183,7 +180,7 @@ class DataManager:
             item.user_data.notes = data.get("notes", item.user_data.notes)
             item.user_data.is_hidden = data.get("isHidden", item.user_data.is_hidden)
 
-            # Update Cover Information (partial binary/mime updates)
+            # Update Cover Information
             if not item.cover:
                 item.cover = MediaCover(item_id=item.id)
             if "cover_image" in data:
@@ -216,10 +213,10 @@ class DataManager:
         Delete a media item by its ID.
         
         Args:
-            item_id (str): The ID of the item to delete.
+            item_id: The ID of the item to delete.
             
         Returns:
-            bool: True if the item was found and deleted, False otherwise.
+            True if successfully deleted, False otherwise.
         """
         try:
             item = db.session.get(MediaItem, item_id)

@@ -42,5 +42,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon='../app/static/icon.ico'
+    icon='../app/static/img/icon.ico'
 )

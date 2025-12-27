@@ -1,14 +1,14 @@
 """
 Application Lifecycle Service.
 
-Centralizes the logic for starting the Flask server, launching the UI,
-and monitoring the process lifecycle.
+Centralizes the logic for starting the Flask server and running the native GUI.
 """
 import sys
 import threading
 import time
 import socket
 import logging
+import webview
 from typing import Callable
 
 from app.services.browser import launch_browser_app
@@ -44,8 +44,8 @@ def run_application_stack(create_app_func: Callable, host: str, port: int):
     
     1. Starts Flask Server (Thread)
     2. Waits for Server Port
-    3. Launches Browser (Process)
-    4. Monitors Browser Process & Handles Shutdown
+    3. Launches Native Window
+    4. Blocks until window is closed
     """
     # 1. Start Server
     start_flask_server_thread(create_app_func, host, port)
@@ -54,59 +54,32 @@ def run_application_stack(create_app_func: Callable, host: str, port: int):
     if not wait_for_server(host, port):
         logger.error("Server failed to start within timeout.")
         
-    # 3. Launch UI via Service
+    # 3. Create Native Window
     target_url = f'http://{host}:{port}'
-    start_time = time.time()
-    logger.info("Launching browser...")
-    process = launch_browser_app(target_url)
+    launch_browser_app(target_url)
 
-    if not process:
-        print("\n" + "=" * 50)
-        print("WARNING: 'App Mode' not supported by found browser.")
-        print("Opened in standard tab. Automatic shutdown disabled.")
-        print("You must press Ctrl+C to stop the server.")
-        print("=" * 50 + "\n")
-
-    # 4. Handle Process Lifecycle
-    if process:
-        try:
-            process.wait()
-            end_time = time.time()
-            duration = end_time - start_time
-            
-            if duration < 5:
-                print("\n" + "!" * 50)
-                print("Window closed almost immediately after launch.")
-                print("!" * 50)
-                # In frozen apps, input might not be available, handle gracefully
-                if sys.stdin and sys.stdin.isatty():
-                    user_input = input("Stop the server and exit? (Y/n): ").strip().lower()
-                    if user_input in ('y', 'yes', ''):
-                        logger.info("Shutting down...")
-                        sys.exit(0)
-                    else:
-                        logger.info("Keeping server alive. Press Ctrl+C to exit manually.")
-                else:
-                     logger.warning("Interactive prompt skipped (no TTY). Keeping server alive safely.")
-            else:
-                logger.info("Browser closed. Shutting down server...")
-                sys.exit(0)
-
-        except KeyboardInterrupt:
-            logger.info("Interrupted. Shutting down...")
-            if process.poll() is None:
-                process.terminate()
-            sys.exit(0)
+    # 4. Start GUI Loop (Blocking)
+    # 4. Start GUI Loop (Blocking)
+    logger.info("Starting native window loop...")
     
-    # 5. Fallback loop
-    if threading.active_count() > 0:
-        logger.info("Server is running. Press Ctrl+C to exit.")
-        try:
-            if sys.stdin and sys.stdin.isatty():
-                input()
-            else:
-                while True:
-                    time.sleep(1)
-        except (KeyboardInterrupt, EOFError):
-            logger.info("Shutting down...")
-            sys.exit(0)
+    # Resolve icon path
+    import os
+    basedir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    icon_path = os.path.join(basedir, 'app', 'static', 'img', 'icon.ico')
+
+    # debug=True enables DevTools (F12) for debugging.
+    # We disable auto-opening of DevTools by setting 'OPEN_DEVTOOLS_IN_DEBUG' to False.
+    webview.settings['OPEN_DEVTOOLS_IN_DEBUG'] = False
+    
+    # Manually apply icon for Windows (pywebview 6.x workaround)
+    try:
+        from app.utils.win32_icon import set_window_icon
+        # Note: Title must match exactly what is passed to create_window ("UpNext")
+        set_window_icon("UpNext", icon_path)
+    except Exception as e:
+        logger.error(f"Failed to apply Windows icon: {e}")
+
+    webview.start(debug=True, icon=icon_path)
+    
+    logger.info("Window closed. Exiting...")
+    sys.exit(0)

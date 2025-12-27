@@ -92,7 +92,13 @@ function openCalendarModal() {
     const today = new Date();
     calendarState.currentYear = today.getFullYear();
     calendarState.currentMonth = today.getMonth();
-    if (!calendarState.currentView) calendarState.currentView = 'month';
+
+    // Use persistent state if available
+    if (window.state && window.state.calendarView) {
+        calendarState.currentView = window.state.calendarView;
+    } else if (!calendarState.currentView) {
+        calendarState.currentView = 'month';
+    }
 
     // Show modal with animation
     modal.classList.remove('hidden');
@@ -171,6 +177,10 @@ function closeCalendarModal() {
  */
 function setCalendarView(view) {
     calendarState.currentView = view;
+    // Persist to global state
+    if (window.setState) {
+        window.setState('calendarView', view);
+    }
     updateViewToggle();
 
     if (view === 'month') {

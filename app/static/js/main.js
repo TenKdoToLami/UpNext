@@ -495,10 +495,8 @@ window.previewImage = (input) => {
 // =============================================================================
 
 /** Saves the current entry form. */
-// Flag to prevent double submission
 let isWizardSaving = false;
 
-/** Saves the current entry form. */
 window.saveEntry = async () => {
     if (isWizardSaving) return;
 
@@ -755,8 +753,8 @@ async function checkOverdueReleases() {
 /**
  * Initializes the application when DOM is ready.
  */
-function initApp() {
-    loadUIState();
+async function initApp() {
+    await loadUIState();
     checkDatabaseSelection();
     loadItems();
     populateAutocomplete();

@@ -1,6 +1,6 @@
 # UpNext - Personal Media Tracker
 
-UpNext is a beautiful, local web application designed to help you track your media consumption (Anime, Manga, Books, Movies, Series). It features a modern, glassmorphism-inspired interface, rich metadata tracking, and a powerful rating system.
+Local web application for tracking media consumption (Anime, Manga, Books, Movies, Series). Glassmorphism interface, metadata tracking, and rating system.
 
 ## ✨ Features
 
@@ -9,73 +9,73 @@ UpNext is a beautiful, local web application designed to help you track your med
 -   **Rich Metadata**: Store authors, studios, alternative titles, series ordering, and universes (e.g., MCU).
 -   **Privacy & Review**: Mark items as "Hidden" and add personal reviews with a 4-point rating system.
 -   **Modern UI**: Responsive design with dark mode, grid/list views, and vibrant aesthetics.
--   **Advanced Tracking**: New fields for `release_date`, `completed_at`, and `reread_count` for better personal statistics.
--   **Normalized Database**: High-performance 5-table SQLite architecture (`data/library.db`)—all your data stays yours.
--   **Export**: Export your library to JSON, CSV, XML, or beautiful HTML cards/lists.
--   **Library Statistics**: Visualize your media habits with dynamic charts (Distribution, Status, Ratings, and Growth) powered by Chart.js.
+-   **Advanced Tracking**: Store `release_date`, `completed_at`, and `reread_count` for personal statistics.
+-   **Normalized Database**: 5-table SQLite architecture (`data/library.db`) for high-performance offline storage.
+-   **Export**: Generate JSON, CSV, XML, or HTML cards/lists.
+-   **Release Calendar**: Plan future consumption with a dedicated view and overdue notifications.
+-   **Multi-Database Support**: Switch between specialized libraries or maintain a private archive.
+-   **Library Statistics**: Visualize habits with dynamic charts (Distribution, Status, Ratings, Growth).
 
 ## 🚀 Getting Started
 
-### Installation
+### Prerequisites
 
-1.  **Clone the Repository**:
+-   **Python 3.11** (Recommended):
+    -   **Windows (CMD/PowerShell)**: `winget install Python.Python.3.11`
+    -   **Linux (Ubuntu/Debian)**: `sudo apt update && sudo apt install python3.11 python3.11-venv`
+    -   **Linux (Fedora)**: `sudo dnf install python3.11`
+-   **Dependencies**: Listed in `requirements.txt` (installed during setup).
+
+### Development Environment Setup
+Running from source requires a configured virtual environment. Follow the steps for your operating system:
+
+#### 🖥️ Windows
+1.  **Clone & Enter**:
+    ```powershell
+    git clone https://github.com/TenKdoToLami/UpNext.git
+    cd UpNext
+    ```
+2.  **Initialize Environment**:
+    ```powershell
+    python -m venv .venv
+    .\.venv\Scripts\activate
+    pip install -r requirements.txt
+    ```
+3.  **Run**:
+    ```powershell
+    python manage.py run
+    ```
+
+#### 🐧 Linux
+1.  **Clone & Enter**:
     ```bash
     git clone https://github.com/TenKdoToLami/UpNext.git
     cd UpNext
     ```
-
-2.  **Install Dependencies**:
-    Ensure you have Python 3.8+ installed.
+2.  **Initialize Environment**:
     ```bash
+    python3.11 -m venv .venv
+    source .venv/bin/activate
     pip install -r requirements.txt
     ```
-
-### Usage
-
-We provide a unified management script, `manage.py`, to handle all tasks.
-
-**1. Run the Application**
-Start the local server and open the app in your browser:
-```bash
-python3 manage.py run
-```
-
-**2. Build Executable (Standalone)**
-Create a native application (`UpNext` or `UpNext.exe`) in the project root:
-```bash
-python3 manage.py build
-```
-*Successfully built apps include high-res icons and can be moved anywhere on your system.*
-
-**3. Clean Project**
-Remove temporary build files and caches:
-```bash
-python3 manage.py clean
-```
-
-## 🛠️ Development
-
-### Project Structure
--   **`manage.py`**: The main entry point for running and building the project.
--   **`app/`**: Core application code (Flask blueprints, services, models, UI assets).
-    -   `static/js/stats.js`: Logic for data visualization and dashboard rendering.
--   **`data/`**: User data storage (library.db, images).
--   **`scripts/`**: Helper scripts for build/run/clean automation.
-
-### Setting Up Dev Environment
-1.  **Create a Virtual Environment**:
+3.  **Run**:
     ```bash
-    python3 -m venv .venv
-    source .venv/bin/activate  # Windows: .venv\Scripts\activate
+    python3.11 manage.py run
     ```
-2.  **Install Dev Dependencies**:
-    ```bash
-    pip install pytest black isort
-    ```
-3.  **Run Tests**:
-    ```bash
-    pytest
-    ```
+
+### Standalone Usage
+If you do not wish to set up a Python environment, you can build a standalone executable:
+```bash
+# Activation required before building
+python manage.py build
+```
+The resulting `UpNext.exe` (Windows) or `UpNext` (Linux) can be moved and run anywhere without Python installed.
+
+## 🛠️ Project Management
+Available commands via `manage.py`:
+-   `run`: Launch development server and GUI.
+-   `build`: Compile into standalone binary.
+-   `clean`: Wipe build files and Python cache.
 
 ## 📄 License
 [MIT License](LICENSE)

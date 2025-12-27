@@ -45,7 +45,16 @@ export const state = {
 	TOTAL_STEPS: 11,
 
 	// Theme state
-	theme: 'dark'
+	theme: 'dark',
+
+	// Persistent Module States
+	statsChartTypes: {
+		typeChart: 'doughnut',
+		statusChart: 'doughnut',
+		ratingChart: 'doughnut',
+		growthChart: 'line'
+	},
+	calendarView: 'month'
 };
 
 /**
@@ -53,37 +62,82 @@ export const state = {
  */
 const PERSISTED_KEYS = [
 	'viewMode', 'sortBy', 'sortOrder', 'showDetails',
-	'isHidden', 'isMultiSelect', 'filterHiddenOnly', 'theme'
+	'isHidden', 'isMultiSelect', 'filterHiddenOnly', 'theme',
+	'statsChartTypes', 'calendarView'
 ];
 
 /**
- * Saves specific application state to localStorage.
+ * Helper to wait for pywebview to be ready.
  */
-function saveUIState() {
-	const data = {};
-	PERSISTED_KEYS.forEach(key => {
-		data[key] = state[key];
+function waitForPywebview(timeout = 1000) {
+	return new Promise(resolve => {
+		if (window.pywebview) return resolve(true);
+
+		const timer = setTimeout(() => resolve(false), timeout);
+
+		window.addEventListener('pywebviewready', () => {
+			clearTimeout(timer);
+			resolve(true);
+		}, { once: true });
 	});
-	localStorage.setItem('upnext_ui_state', JSON.stringify(data));
 }
 
 /**
- * Loads persisted state from localStorage.
+ * Saves specific application state to persistent storage.
+ * Uses pywebview native API if available, falls back to LocalStorage.
  */
-export function loadUIState() {
-	try {
-		const stored = localStorage.getItem('upnext_ui_state');
-		if (stored) {
-			const data = JSON.parse(stored);
-			PERSISTED_KEYS.forEach(key => {
-				if (data[key] !== undefined) {
-					state[key] = data[key];
-				}
-			});
+async function saveUIState(key, value) {
+	const isNative = await waitForPywebview(200);
+
+	if (isNative && window.pywebview.api) {
+		try {
+			await window.pywebview.api.save_app_config(key, value);
+		} catch (e) {
+			console.error("Native save failed:", e);
 		}
-	} catch (e) {
-		console.error("Failed to load UI state:", e);
+	} else {
+		// Fallback or Sync Mirror
+		const stored = localStorage.getItem('upnext_ui_state') || '{}';
+		const data = JSON.parse(stored);
+		data[key] = value;
+		localStorage.setItem('upnext_ui_state', JSON.stringify(data));
 	}
+}
+
+/**
+ * Loads persisted state from storage.
+ */
+export async function loadUIState() {
+	let data = {};
+
+	// 1. Try Native Config (Wait briefly)
+	const isNative = await waitForPywebview(500);
+
+	if (isNative && window.pywebview.api) {
+		try {
+			data = await window.pywebview.api.get_app_config();
+		} catch (e) {
+			console.error("Native load failed:", e);
+		}
+	}
+
+	// 2. Merge/Fallback to LocalStorage if native empty (or first run)
+	if (Object.keys(data).length === 0) {
+		try {
+			const stored = localStorage.getItem('upnext_ui_state');
+			if (stored) data = JSON.parse(stored);
+		} catch (e) { console.error(e); }
+	}
+
+	// 3. Apply to state
+	PERSISTED_KEYS.forEach(key => {
+		if (data[key] !== undefined) {
+			state[key] = data[key];
+		}
+	});
+
+	// 4. Trigger UI updates based on loaded state if needed
+	// (Caller usually calls applyStateToUI next)
 }
 
 /**
@@ -94,7 +148,7 @@ export function loadUIState() {
 export function setState(key, value) {
 	state[key] = value;
 	if (PERSISTED_KEYS.includes(key)) {
-		saveUIState();
+		saveUIState(key, value);
 	}
 }
 
@@ -117,4 +171,8 @@ export function resetFormState() {
 	state.currentChildren = [];
 	state.currentLinks = [];
 }
+
+// Expose to window for non-module scripts (like legacy calendar logic)
+window.state = state;
+window.setState = setState;
 

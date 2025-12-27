@@ -1,9 +1,11 @@
 import os
 import sys
+import socket
 
 # App Identification
 APP_NAME = "UpNext"
-import socket
+HOST = "127.0.0.1"
+
 
 def find_available_port(host, preferred_ports):
     """
@@ -20,9 +22,7 @@ def find_available_port(host, preferred_ports):
         s.bind((host, 0))
         return s.getsockname()[1]
 
-# App Identification
-APP_NAME = "UpNext"
-HOST = "127.0.0.1"
+
 PREFERRED_PORTS = [5000, 5001, 8000, 8080, 8888]
 PORT = find_available_port(HOST, PREFERRED_PORTS)
 

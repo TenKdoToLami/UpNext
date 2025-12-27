@@ -169,15 +169,23 @@ def delete_item(item_id):
 
 
 def _validate_item(data: Dict[str, Any], is_update: bool = False) -> None:
-    """Validates item data against allowed constants."""
-    # Type validation: Required on create, optional on update (but must be valid if passed)
-    if not is_update:
-        if "type" not in data or data.get("type") not in MEDIA_TYPES:
-             raise ValueError(f"Invalid media type: {data.get('type')}")
-    else:
-        if "type" in data and data.get("type") not in MEDIA_TYPES:
-             raise ValueError(f"Invalid media type: {data.get('type')}")
+    """
+    Validates item data against allowed constants.
+    
+    Args:
+        data: The item dictionary to validate.
+        is_update: Whether this is an update to an existing item.
+        
+    Raises:
+        ValueError: If validation fails.
+    """
+    # Type validation
+    item_type = data.get("type")
+    if not is_update or "type" in data:
+        if item_type not in MEDIA_TYPES:
+             raise ValueError(f"Invalid media type: {item_type}")
 
-    # Status validation: Optional but must be valid if passed
-    if "status" in data and data.get("status") not in STATUS_TYPES:
-        raise ValueError(f"Invalid status: {data.get('status')}")
+    # Status validation
+    status = data.get("status")
+    if status and status not in STATUS_TYPES:
+        raise ValueError(f"Invalid status: {status}")

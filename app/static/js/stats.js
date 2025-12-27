@@ -4,7 +4,7 @@
  * @module stats
  */
 
-import { state } from './state.js';
+import { state, setState } from './state.js';
 import { TYPE_COLOR_MAP, STATUS_COLOR_MAP, MEDIA_TYPES, ICON_MAP, STATUS_ICON_MAP, STAR_FILLS } from './constants.js';
 
 let typeChartInstance = null;
@@ -12,12 +12,6 @@ let statusChartInstance = null;
 let growthChartInstance = null;
 let ratingChartInstance = null;
 let activeMediaTypes = [...MEDIA_TYPES]; // Global filter, default all active
-let chartTypes = {
-	typeChart: 'doughnut',
-	statusChart: 'doughnut',
-	ratingChart: 'doughnut',
-	growthChart: 'line'
-};
 
 // Reusable chart options for consistency
 const COMMON_CHART_OPTIONS = {
@@ -87,6 +81,7 @@ const COMMON_CHART_OPTIONS = {
 	hoverOffset: 4
 };
 
+
 /**
  * Calculates statistics from the current state items.
  */
@@ -95,8 +90,7 @@ function calculateStats() {
 	const statusCounts = {};
 	const ratingCounts = { 'Bad': 0, 'Ok': 0, 'Good': 0, 'Masterpiece': 0 };
 
-	// Apply Global Filter First
-	// Apply Global Filter
+	// Apply Global Filter to the calculation
 	const filteredItems = state.items.filter(item => activeMediaTypes.includes(item.type));
 
 	let totalItems = filteredItems.length;
@@ -165,8 +159,10 @@ export function openStatsModal() {
 window.openStatsModal = openStatsModal;
 
 window.setChartType = (chartName, type) => {
-	if (chartTypes[chartName]) {
-		chartTypes[chartName] = type;
+	if (state.statsChartTypes[chartName]) {
+		const newTypes = { ...state.statsChartTypes };
+		newTypes[chartName] = type;
+		setState('statsChartTypes', newTypes);
 		updateCharts();
 	}
 };
@@ -434,6 +430,14 @@ function renderCharts(stats) {
 
 	if (!typeCtx || !statusCtx) return;
 
+	// Use persisted chart types
+	const chartTypes = state.statsChartTypes || {
+		typeChart: 'doughnut',
+		statusChart: 'doughnut',
+		ratingChart: 'doughnut',
+		growthChart: 'line'
+	};
+
 	// Register plugin safely
 	if (typeof ChartDataLabels !== 'undefined') {
 		Chart.register(ChartDataLabels);
@@ -535,6 +539,8 @@ function renderGrowthChart(stats) {
 	const ctx = document.getElementById('growthChart');
 	if (!ctx) return;
 
+	const chartTypes = state.statsChartTypes || { growthChart: 'line' };
+
 	// Use filtered items for growth chart too!
 	const sortedItems = [...stats.filteredItems] // Using the filtered list from calculateStats
 		.filter(i => i.createdAt)
@@ -630,6 +636,8 @@ function renderGrowthChart(stats) {
 function renderRatingChart(stats) {
 	const ctx = document.getElementById('ratingChart');
 	if (!ctx) return;
+
+	const chartTypes = state.statsChartTypes || { ratingChart: 'doughnut' };
 
 	const rawLabels = ['Bad', 'Ok', 'Good', 'Masterpiece'];
 	const data = rawLabels.map(l => stats.ratingCounts[l]);
