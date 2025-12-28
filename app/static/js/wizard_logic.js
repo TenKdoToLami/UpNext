@@ -15,15 +15,12 @@ import {
 	ICON_MAP
 } from './constants.js';
 import { safeCreateIcons } from './dom_utils.js';
+import { showToast } from './toast.js';
 
 // =============================================================================
 // STEP NAVIGATION
 // =============================================================================
 
-/**
- * Determines which steps should be skipped based on current form values.
- * @returns {number[]} Array of step numbers to skip
- */
 /**
  * Determines which steps should be skipped based on current form values.
  * @returns {number[]} Array of step numbers to skip
@@ -34,36 +31,22 @@ export function getSkippedSteps() {
 
 	const skipped = [];
 
-	// Skip progress (7) and rating (8) for items not yet consumed
-	// REVISED: Progress (7) skipped for Planning & Completed.
-	// REVISED: Rating (8) skipped ONLY for Planning.
-	// (Enable rating for Reading/Watching and Anticipating as per user request to rate released parts)
+	// Logic for skipping steps:
+	// - Progress (7): Skipped for 'Planning' and 'Completed'
+	// - Rating (8): Skipped ONLY for 'Planning' (Allowed for Anticipating/Reading/Dropped)
+	// - Seasons/Volumes (10): Skipped for Manga/Movie
+	// - Privacy (11): Skipped if globally visible
 
 	if (status === 'Planning' || status === 'Reading/Watching') {
-		// New Step 7 (Progress): Skip if Planning or Completed.
-		// (Reading/Watching shows progress)
 		if (status === 'Planning') {
 			skipped.push(7);
 			skipped.push(8);
 		}
 	} else {
-		// For other statuses (Completed, Dropped, On Hold, Anticipating)
-
-		// Anticipating: Show Progress (7) AND Rating (8) now.
-		// Original logic skipped 8. We remove that.
-
-		// Completed: Skip Progress (7)
 		if (status === 'Completed') {
 			skipped.push(7);
 		}
 	}
-
-	// Double check logic above.
-	// Simplified based on updateFormUI translation:
-	// Progress (7): Hide if Planning or Completed
-	// Rating (8): Hide if Planning or Reading/Watching
-
-	// Skip seasons/volumes (10) for Manga and Movie ALWAYS
 	if (['Manga', 'Movie'].includes(type)) {
 		skipped.push(10);
 	}
@@ -273,19 +256,19 @@ export function validateStep(step) {
 	switch (step) {
 		case 1: // Media Type
 			if (!document.getElementById('type').value) {
-				alert('Please select a media type.');
+				showToast('Please select a media type to continue.', 'warning');
 				return false;
 			}
 			break;
 		case 2: // Status
 			if (!document.getElementById('status').value) {
-				alert('Please select a status.');
+				showToast('Please select a status to continue.', 'warning');
 				return false;
 			}
 			break;
 		case 4: // Basic Info
 			if (!document.getElementById('title').value.trim()) {
-				alert('Title is required.');
+				showToast('Title is required to proceed.', 'warning');
 				return false;
 			}
 			break;

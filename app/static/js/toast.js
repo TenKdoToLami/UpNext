@@ -84,6 +84,7 @@ function renderToast(toastData) {
     const typeStyles = {
         success: 'bg-emerald-50/95 dark:bg-zinc-900/95 border-emerald-500/30',
         error: 'bg-red-50/95 dark:bg-zinc-900/95 border-red-500/30',
+        warning: 'bg-amber-50/95 dark:bg-zinc-900/95 border-amber-500/30',
         info: 'bg-white/95 dark:bg-zinc-900/95 border-zinc-200 dark:border-zinc-800'
     };
 
@@ -93,6 +94,13 @@ function renderToast(toastData) {
     // Circle circumference = 2 * pi * r. r=9 -> C ~ 56.5
     const radius = 9;
     const circumference = 2 * Math.PI * radius;
+
+    const timerColor = {
+        success: 'stroke-emerald-500',
+        error: 'stroke-red-500',
+        warning: 'stroke-amber-500',
+        info: 'stroke-indigo-500'
+    };
 
     const timerHtml = toastData.duration > 0 ? `
         <div class="absolute top-3 right-3 z-20 cursor-pointer hover:scale-110 transition-transform" 
@@ -105,7 +113,7 @@ function renderToast(toastData) {
                     stroke-width="2"></circle>
                 <!-- Progress Circle -->
                 <circle cx="12" cy="12" r="${radius}" 
-                    class="fill-transparent stroke-emerald-500 transition-[stroke-dashoffset] ease-linear"
+                    class="fill-transparent ${timerColor[type] || timerColor.info} transition-[stroke-dashoffset] ease-linear"
                     stroke-width="2"
                     stroke-dasharray="${circumference}"
                     stroke-dashoffset="0"
@@ -142,11 +150,13 @@ function renderToast(toastData) {
         const iconMap = {
             success: 'check-circle',
             error: 'alert-circle',
+            warning: 'alert-triangle',
             info: 'info'
         };
         const iconColor = {
             success: 'text-emerald-500',
             error: 'text-red-500',
+            warning: 'text-amber-500',
             info: 'text-zinc-500'
         };
 
@@ -328,7 +338,7 @@ function dismissToastById(id) {
 /**
  * Shows a standard or rich toast.
  * @param {string} message - Message text
- * @param {'success'|'error'|'info'} type - Toast type
+ * @param {'success'|'error'|'warning'|'info'} type - Toast type
  * @param {number} duration - Duration in ms
  * @param {Object} richOptions - Optional rich data { title, coverUrl, actionLabel, onAction }
  */

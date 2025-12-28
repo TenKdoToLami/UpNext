@@ -592,7 +592,20 @@ async function submitNewEvent() {
         });
 
         if (response.ok) {
-            showToast(isEdit ? 'Event updated' : 'Event created', 'success');
+            const item = calendarState.selectedMediaItem;
+            const message = isEdit ? 'Event updated successfully.' : 'New event created.';
+
+            if (item && item.coverUrl) {
+                showRichToast({
+                    title: isEdit ? `Updated Event: ${item.title}` : `New Event: ${item.title}`,
+                    message: message,
+                    coverUrl: item.coverUrl,
+                    type: 'success'
+                });
+            } else {
+                showToast(isEdit ? 'Event updated' : 'Event created', 'success');
+            }
+
             closeAddEventModal();
             // Refresh current view
             if (calendarState.currentView === 'month') {
@@ -625,7 +638,18 @@ async function deleteEvent() {
                 });
 
                 if (response.ok) {
-                    showToast('Event deleted', 'success');
+                    const item = calendarState.selectedMediaItem;
+                    if (item && item.coverUrl) {
+                        showRichToast({
+                            title: `Deleted Event`,
+                            message: `Removed '${item.title}' from calendar.`,
+                            coverUrl: item.coverUrl,
+                            type: 'info'
+                        });
+                    } else {
+                        showToast('Event deleted', 'success');
+                    }
+
                     closeAddEventModal();
                     if (calendarState.currentView === 'month') {
                         loadReleasesForMonth().then(renderMonthView);
@@ -1552,6 +1576,30 @@ async function deleteRelease(id) {
                             setTimeout(() => showDayDetail(calendarState.selectedDay), 500);
                         }
                     }
+
+                    // Show Toast (Ideally look up item before delete, but we can do a generic rich toast if cover is known or just generic)
+                    // Since we don't have the item object readily available post-delete without lookup, 
+                    // we can't easily show the cover unless we passed it. 
+                    // However, we are inside a context where we might knwow it? 
+                    // NO, deleteRelease is called from onclick. 
+                    // We can try to find it in state releases.
+
+                    let foundItem = null;
+                    if (calendarState.releases) {
+                        const rel = calendarState.releases.find(r => r.id == id);
+                        if (rel) foundItem = rel.item;
+                    }
+
+                    if (foundItem && foundItem.coverUrl) {
+                        showRichToast({
+                            title: 'Event Removed',
+                            message: `Removed '${foundItem.title}' from calendar.`,
+                            coverUrl: foundItem.coverUrl,
+                            type: 'info'
+                        });
+                    } else {
+                        showToast('Event removed from calendar', 'info');
+                    }
                 } else {
                     console.error('Failed to delete release');
                 }
@@ -1585,6 +1633,27 @@ async function toggleReleaseSeen(id, currentIsTracked) {
                 if (calendarState.selectedDay) {
                     setTimeout(() => showDayDetail(calendarState.selectedDay), 500);
                 }
+            }
+
+            // Show Feedback Toast
+            let foundItem = null;
+            if (calendarState.releases) {
+                const rel = calendarState.releases.find(r => r.id == id);
+                if (rel) foundItem = rel.item;
+            }
+
+            const action = currentIsTracked ? 'Marked as Seen' : 'Marked as Unseen';
+            const type = currentIsTracked ? 'success' : 'info'; // Seen = Success/Green
+
+            if (foundItem && foundItem.coverUrl) {
+                showRichToast({
+                    title: action,
+                    message: `${foundItem.title}`,
+                    coverUrl: foundItem.coverUrl,
+                    type: type
+                });
+            } else {
+                showToast(`${action}: ${foundItem ? foundItem.title : 'Event'}`, type);
             }
         }
     } catch (e) {

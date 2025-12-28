@@ -550,10 +550,17 @@ window.saveEntry = async () => {
         const file = document.getElementById('coverImage').files[0];
         if (file) formData.append('image', file);
 
-        await saveItem(formData);
+        const savedItem = await saveItem(formData);
         closeModal();
         loadItems();
-        showToast('Entry saved successfully!', 'success');
+
+        // Show Rich Toast
+        showRichToast({
+            title: state.isEditMode ? `Updated '${savedItem.item.title}'` : `Added '${savedItem.item.title}'`,
+            message: state.isEditMode ? 'Item updated successfully.' : 'Added to your library.',
+            coverUrl: savedItem.item.coverUrl,
+            type: 'success'
+        });
     } catch (e) {
         console.error("Error saving entry:", e);
         showToast("Failed to save entry. Please try again.", 'error');
@@ -606,11 +613,26 @@ window.closeDetail = () => {
 window.editFromDetail = (id) => { window.closeDetail(); window.openModal(id); };
 
 window.deleteFromDetail = async (id) => {
+    // Get item details before deletion for toast
+    const item = state.items.find(i => i.id === id);
+    const title = item?.title || 'Entry';
+    const coverUrl = item?.coverUrl;
+
     const deleted = await deleteItem(id);
     if (deleted) {
         window.closeDetail();
         loadItems();
-        showToast('Entry deleted.', 'info');
+
+        if (coverUrl) {
+            showRichToast({
+                title: `Deleted '${title}'`,
+                message: 'Removed from library.',
+                coverUrl: coverUrl,
+                type: 'info' // Using info or trash-themed color if available, default info is fine
+            });
+        } else {
+            showToast(`Deleted '${title}' from library.`, 'info');
+        }
     }
 };
 
