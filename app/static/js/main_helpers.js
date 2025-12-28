@@ -431,7 +431,9 @@ export function prevStep() {
  */
 export function jumpToStep(step) {
 	if (step === state.currentStep || step > state.maxReachedStep) return;
-	if (!validateStep(state.currentStep)) return;
+
+	// Only validate if moving forward
+	if (step > state.currentStep && !validateStep(state.currentStep)) return;
 
 	const direction = step > state.currentStep ? 'right' : 'left';
 	animateStepChange(state.currentStep, step, direction);
@@ -558,15 +560,98 @@ export function selectStatus(s) {
  * @param {string} t - Selected type
  */
 function selectTypeVisuals(t) {
+	const COLOR_MAP = {
+		'Anime': 'violet', 'Manga': 'pink', 'Book': 'blue',
+		'Movie': 'red', 'Series': 'amber'
+	};
+	const colorName = COLOR_MAP[t] || 'zinc';
+
 	document.querySelectorAll('[id^="type-card-"]').forEach(el => {
-		el.classList.remove('selected', 'ring-2', 'ring-indigo-500', 'bg-zinc-800');
-		el.classList.add('border-zinc-800');
+		if (el.id !== `type-card-${t}`) restoreDefaultVisuals(el);
 	});
 
 	const card = document.getElementById(`type-card-${t}`);
-	if (card) {
-		card.classList.add('selected', 'ring-2', 'ring-indigo-500', 'bg-zinc-800');
-		card.classList.remove('border-zinc-800');
+	if (!card) return;
+
+	Array.from(card.classList).forEach(cls => {
+		if (cls.startsWith('bg-') || cls.startsWith('dark:bg-') ||
+			cls.startsWith('hover:bg-') || cls.startsWith('dark:hover:bg-') ||
+			(cls.startsWith('border-') && cls !== 'border-2') ||
+			cls.startsWith('dark:border-')) {
+			card.classList.remove(cls);
+		}
+	});
+
+	card.classList.add('selected', 'scale-[1.02]', 'ring-4', 'ring-indigo-500/50', 'bg-black', 'dark:bg-white');
+
+	const innerText = card.querySelector('span');
+	if (innerText) {
+		Array.from(innerText.classList).forEach(cls => {
+			if (cls.startsWith('text-') || cls.startsWith('dark:text-')) innerText.classList.remove(cls);
+		});
+		innerText.classList.add(`text-${colorName}-400`, `dark:text-${colorName}-600`, 'font-bold');
+	}
+}
+
+/** Extracts the Tailwind color name from an element's ID. */
+function elementColorName(el) {
+	const COLOR_MAP = {
+		'Anime': 'violet', 'Manga': 'pink', 'Book': 'blue', 'Movie': 'red', 'Series': 'amber',
+		'Planning': 'zinc', 'NumberOne': 'zinc', 'Reading': 'sky', 'Watching': 'sky',
+		'Dropped': 'red', 'On': 'orange', 'Hold': 'orange', 'Anticipating': 'fuchsia', 'Completed': 'emerald'
+	};
+	for (const key of Object.keys(COLOR_MAP)) {
+		if (el.id.includes(key)) return COLOR_MAP[key];
+	}
+	return 'zinc';
+}
+
+/** Restores a selection card to its default unselected visual state. */
+function restoreDefaultVisuals(el) {
+	const c = elementColorName(el);
+
+	el.classList.remove('selected', 'ring-4', 'ring-indigo-500/50', 'scale-[1.02]');
+
+	Array.from(el.classList).forEach(cls => {
+		if (cls.startsWith('bg-') || cls.startsWith('dark:bg-') ||
+			cls.startsWith('hover:bg-') || cls.startsWith('dark:hover:bg-') ||
+			(cls.startsWith('border-') && cls !== 'border-2') ||
+			cls.startsWith('dark:border-')) {
+			el.classList.remove(cls);
+		}
+	});
+
+	if (c === 'zinc') {
+		el.classList.add('bg-zinc-100', 'dark:bg-zinc-800/80', 'border-zinc-300', 'dark:border-zinc-600');
+	} else {
+		el.classList.add(`bg-${c}-100`, `dark:bg-${c}-500/10`, `border-${c}-300`, `dark:border-${c}-500/30`);
+	}
+
+	const innerText = el.querySelector('span');
+	if (innerText) {
+		Array.from(innerText.classList).forEach(cls => {
+			if (cls.startsWith('text-') || cls.startsWith('dark:text-')) innerText.classList.remove(cls);
+		});
+		innerText.classList.remove('font-bold');
+		innerText.classList.add(`text-${c}-600`, `dark:text-${c}-400`);
+	}
+
+	const innerIcon = el.querySelector('i');
+	if (innerIcon) {
+		Array.from(innerIcon.classList).forEach(cls => {
+			if (cls.startsWith('text-') || cls.startsWith('dark:text-')) innerIcon.classList.remove(cls);
+		});
+		innerIcon.classList.add(`text-${c}-500`, `dark:text-${c}-400`);
+	}
+
+	const innerBg = el.querySelector('div.p-3');
+	if (innerBg) {
+		Array.from(innerBg.classList).forEach(cls => {
+			if (cls.startsWith('bg-') || cls.startsWith('dark:bg-') || cls.startsWith('group-hover:bg-')) {
+				innerBg.classList.remove(cls);
+			}
+		});
+		innerBg.classList.add('bg-white', 'dark:bg-zinc-900/50', 'group-hover:bg-zinc-100');
 	}
 }
 
@@ -576,16 +661,37 @@ function selectTypeVisuals(t) {
  */
 function selectStatusVisuals(s) {
 	const idSafe = s.replace(/[^a-zA-Z]/g, '');
+	const COLOR_MAP = {
+		'Planning': 'zinc', 'Reading/Watching': 'sky', 'Dropped': 'red',
+		'On Hold': 'orange', 'Anticipating': 'fuchsia', 'Completed': 'emerald'
+	};
+	const colorName = Object.entries(COLOR_MAP).find(([k]) => s.includes(k) || k.includes(s))?.[1] || 'zinc';
+	const selectedCardId = `status-card-${idSafe}`;
 
 	document.querySelectorAll('[id^="status-card-"]').forEach(el => {
-		el.classList.remove('selected', 'ring-2', 'ring-indigo-500', 'bg-zinc-800');
-		el.classList.add('border-zinc-800');
+		if (el.id !== selectedCardId) restoreDefaultVisuals(el);
 	});
 
-	const card = document.getElementById(`status-card-${idSafe}`);
-	if (card) {
-		card.classList.add('selected', 'ring-2', 'ring-indigo-500', 'bg-zinc-800');
-		card.classList.remove('border-zinc-800');
+	const card = document.getElementById(selectedCardId);
+	if (!card) return;
+
+	Array.from(card.classList).forEach(cls => {
+		if (cls.startsWith('bg-') || cls.startsWith('dark:bg-') ||
+			cls.startsWith('hover:bg-') || cls.startsWith('dark:hover:bg-') ||
+			(cls.startsWith('border-') && cls !== 'border-2') ||
+			cls.startsWith('dark:border-')) {
+			card.classList.remove(cls);
+		}
+	});
+
+	card.classList.add('selected', 'scale-[1.02]', 'ring-4', 'ring-indigo-500/50', 'bg-black', 'dark:bg-white');
+
+	const innerText = card.querySelector('span');
+	if (innerText) {
+		Array.from(innerText.classList).forEach(cls => {
+			if (cls.startsWith('text-') || cls.startsWith('dark:text-')) innerText.classList.remove(cls);
+		});
+		innerText.classList.add(`text-${colorName}-400`, `dark:text-${colorName}-600`, 'font-bold');
 	}
 }
 

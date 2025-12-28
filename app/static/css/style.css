@@ -299,10 +299,18 @@ html.dark .media-badge {
 }
 
 .selection-card.selected {
-	background: var(--theme-col, #6366f1);
 	border-color: var(--theme-col, #6366f1);
-	color: white;
 	box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+}
+
+html:not(.dark) .selection-card.selected {
+	background: #18181b;
+	color: var(--theme-col, #6366f1);
+}
+
+html.dark .selection-card.selected {
+	background: #ffffff;
+	color: var(--theme-col, #6366f1);
 }
 
 /* --- Edit Modal (Full Screen) --- */
