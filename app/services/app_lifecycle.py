@@ -62,10 +62,13 @@ def run_application_stack(create_app_func: Callable, host: str, port: int):
     # 4. Start GUI Loop (Blocking)
     logger.info("Starting native window loop...")
     
-    # Resolve icon path
+    # Resolve icon path (use PNG on Linux, ICO on Windows)
     import os
     basedir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    icon_path = os.path.join(basedir, 'app', 'static', 'img', 'icon.ico')
+    if sys.platform == 'win32':
+        icon_path = os.path.join(basedir, 'app', 'static', 'img', 'icon.ico')
+    else:
+        icon_path = os.path.join(basedir, 'app', 'static', 'img', 'icon.png')
 
     # debug=True enables DevTools (F12) for debugging.
     # We disable auto-opening of DevTools by setting 'OPEN_DEVTOOLS_IN_DEBUG' to False.

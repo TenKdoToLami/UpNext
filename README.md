@@ -20,56 +20,83 @@ Local web application for tracking media consumption (Anime, Manga, Books, Movie
 
 ### Prerequisites
 
--   **Python 3.11** (Recommended):
-    -   **Windows (CMD/PowerShell)**: `winget install Python.Python.3.11`
-    -   **Linux (Ubuntu/Debian)**: `sudo apt update && sudo apt install python3.11 python3.11-venv`
-    -   **Linux (Fedora)**: `sudo dnf install python3.11`
+-   **Python 3.11+** (Python 3.12 also works)
 -   **Dependencies**: Listed in `requirements.txt` (installed during setup).
 
 ### Development Environment Setup
-Running from source requires a configured virtual environment. Follow the steps for your operating system:
 
 #### 🖥️ Windows
-1.  **Clone & Enter**:
+1.  **Install Python**:
+    ```powershell
+    winget install Python.Python.3.11
+    ```
+2.  **Clone & Enter**:
     ```powershell
     git clone https://github.com/TenKdoToLami/UpNext.git
     cd UpNext
     ```
-2.  **Initialize Environment**:
+3.  **Initialize Environment**:
     ```powershell
     python -m venv .venv
     .\.venv\Scripts\activate
     pip install -r requirements.txt
     ```
-3.  **Run**:
+4.  **Run**:
     ```powershell
     python manage.py run
     ```
 
-#### 🐧 Linux
-1.  **Clone & Enter**:
+#### 🐧 Linux (Ubuntu/Debian/Pop!_OS)
+1.  **Install Python 3.11** (if not available in default repos):
+    ```bash
+    sudo add-apt-repository ppa:deadsnakes/ppa
+    sudo apt update
+    sudo apt install python3.11 python3.11-venv python3.11-dev
+    ```
+    *Note: On Ubuntu 24.04+, you may also use the system Python 3.12.*
+
+2.  **Install System Dependencies** (required for pywebview):
+    ```bash
+    sudo apt install libgirepository1.0-dev libcairo2-dev pkg-config gir1.2-webkit2-4.1
+    ```
+
+3.  **Clone & Enter**:
     ```bash
     git clone https://github.com/TenKdoToLami/UpNext.git
     cd UpNext
     ```
-2.  **Initialize Environment**:
+
+4.  **Initialize Environment**:
     ```bash
     python3.11 -m venv .venv
     source .venv/bin/activate
     pip install -r requirements.txt
     ```
-3.  **Run**:
+
+5.  **Run**:
     ```bash
-    python3.11 manage.py run
+    python manage.py run
     ```
 
-### Standalone Usage
-If you do not wish to set up a Python environment, you can build a standalone executable:
+#### 🐧 Linux (Fedora)
+1.  **Install Python & Dependencies**:
+    ```bash
+    sudo dnf install python3.11 python3.11-devel gobject-introspection-devel cairo-devel webkit2gtk4.1
+    ```
+2.  Follow steps 3-5 from Ubuntu instructions above.
+
+### Building Standalone Executable
+To create a standalone executable that doesn't require Python installed:
 ```bash
-# Activation required before building
+# Activate virtual environment first
+source .venv/bin/activate  # Linux
+# or
+.\.venv\Scripts\activate   # Windows
+
+# Build
 python manage.py build
 ```
-The resulting `UpNext.exe` (Windows) or `UpNext` (Linux) can be moved and run anywhere without Python installed.
+The resulting `UpNext.exe` (Windows) or `UpNext` (Linux) binary will be in the `dist/` folder.
 
 ## 🛠️ Project Management
 Available commands via `manage.py`:
