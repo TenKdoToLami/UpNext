@@ -14,8 +14,133 @@ import {
 	STATUS_COLOR_MAP,
 	ICON_MAP
 } from './constants.js';
-import { safeCreateIcons } from './dom_utils.js';
+import { safeCreateIcons, safeVal } from './dom_utils.js';
 import { showToast } from './toast.js';
+import { initImageEditor } from './image_editor.js';
+
+// Global Handlers for Drag & Drop
+// Global Handlers for Drag & Drop
+window.handleDragOver = (e) => {
+	e.preventDefault();
+	e.stopPropagation(); // Good practice
+	document.getElementById('dropZone').classList.add('border-indigo-500', 'bg-indigo-50', 'dark:bg-indigo-500/10');
+};
+
+window.handleDragLeave = (e) => {
+	e.preventDefault();
+	e.stopPropagation();
+	document.getElementById('dropZone').classList.remove('border-indigo-500', 'bg-indigo-50', 'dark:bg-indigo-500/10');
+};
+
+window.handleDrop = (e) => {
+	e.preventDefault();
+	e.stopPropagation();
+	document.getElementById('dropZone').classList.remove('border-indigo-500', 'bg-indigo-50', 'dark:bg-indigo-500/10');
+
+	// Try standard files property
+	let file = e.dataTransfer.files ? e.dataTransfer.files[0] : null;
+
+	// Fallback: Try items if files is empty (sometimes happens on certain OS/Browsers)
+	if (!file && e.dataTransfer.items) {
+		for (let i = 0; i < e.dataTransfer.items.length; i++) {
+			if (e.dataTransfer.items[i].kind === 'file') {
+				file = e.dataTransfer.items[i].getAsFile();
+				break;
+			}
+		}
+	}
+
+	if (file) {
+		processImageFile(file);
+	}
+};
+
+window.handleFileSelect = (input) => {
+	if (input.files && input.files[0]) {
+		processImageFile(input.files[0]);
+	}
+};
+
+// Global Paste Listener for Image Upload (Ctrl+V)
+window.addEventListener('paste', (e) => {
+	// Only handle if we are on Step 3 of the wizard
+	if (state.currentStep !== 3) return;
+
+	// 1. Try files directly (often populated for file copies)
+	if (e.clipboardData.files && e.clipboardData.files.length > 0) {
+		const file = e.clipboardData.files[0];
+		if (file.type.startsWith('image/')) {
+			e.preventDefault();
+			processImageFile(file);
+			return;
+		}
+	}
+
+	// 2. Scan items (for image data/screenshots)
+	const items = e.clipboardData?.items;
+	if (items) {
+		for (const item of items) {
+			if (item.type.startsWith('image/')) {
+				const file = item.getAsFile();
+				if (file) {
+					e.preventDefault();
+					processImageFile(file);
+					return;
+				}
+			}
+		}
+	}
+});
+
+/**
+ * Processes the selected image file.
+ * Initiates the Image Editor.
+ */
+function processImageFile(file) {
+	if (!file.type.startsWith('image/')) {
+		showToast('Invalid file type. Please upload an image.', 'error');
+		return;
+	}
+
+	// Start Editor
+	initImageEditor(file, (croppedBlob) => {
+		// Callback when crop is applied
+		handleCroppedImage(croppedBlob, file.name);
+	});
+}
+
+/**
+ * Handles the cropped image blob.
+ * Updates the file input and UI preview.
+ */
+function handleCroppedImage(blob, originalName) {
+	// Create a new File object
+	const file = new File([blob], originalName, { type: 'image/jpeg' });
+
+	// Update the Input
+	const dataTransfer = new DataTransfer();
+	dataTransfer.items.add(file);
+	const input = document.getElementById('coverImage');
+	if (input) input.files = dataTransfer.files;
+
+	// Update Preview UI
+	const prevImg = document.getElementById('previewImg');
+	const placeholder = document.getElementById('previewPlaceholder');
+	const nameEl = document.getElementById('currentCoverName');
+
+	if (prevImg) {
+		prevImg.src = URL.createObjectURL(blob);
+		prevImg.classList.remove('hidden');
+	}
+	if (placeholder) placeholder.classList.add('hidden');
+	if (nameEl) nameEl.innerText = file.name;
+
+	// Switch back to upload view (Handled by closeEditor, but good to ensure preview is visible)
+	const uploadArea = document.getElementById('imageUploadArea');
+	const editorArea = document.getElementById('imageEditorArea');
+	if (uploadArea) uploadArea.classList.remove('hidden');
+	if (editorArea) editorArea.classList.add('hidden');
+}
 
 // =============================================================================
 // STEP NAVIGATION

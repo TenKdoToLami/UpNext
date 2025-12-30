@@ -127,6 +127,11 @@ function resetFormState() {
 	const ph = document.getElementById('previewPlaceholder');
 	if (img) { img.src = ''; img.classList.add('hidden'); }
 	if (ph) ph.classList.remove('hidden');
+
+	// Reset Image Editor State
+	if (window.imageEditor && window.imageEditor.resetEditorState) {
+		window.imageEditor.resetEditorState();
+	}
 }
 
 /**
@@ -408,9 +413,29 @@ function restoreStepClasses() {
 // WIZARD NAVIGATION
 // =============================================================================
 
-/** Advances to the next valid wizard step. */
-export function nextStep() {
+/** 
+ * Advances to the next valid wizard step.
+ * If on Step 3 (Image Cover), it implicitly waits for the Image Editor to save the crop.
+ */
+export async function nextStep() {
 	if (!validateStep(state.currentStep)) return;
+
+	// Step 3 Special Logic: If Image Editor is visible, save crop before proceeding
+	if (state.currentStep === 3) {
+		const editorArea = document.getElementById('imageEditorArea');
+		if (editorArea && !editorArea.classList.contains('hidden')) {
+			// Await the crop save operation to ensure the file input is updated before moving on
+			try {
+				if (window.imageEditor && window.imageEditor.saveCropPromise) {
+					await window.imageEditor.saveCropPromise();
+				}
+			} catch (e) {
+				console.error("Crop save failed", e);
+				return; // Stop navigation on failure
+			}
+		}
+	}
+
 	const next = getNextValidStep(state.currentStep);
 	if (next > state.TOTAL_STEPS) return;
 	animateStepChange(state.currentStep, next, 'right');
