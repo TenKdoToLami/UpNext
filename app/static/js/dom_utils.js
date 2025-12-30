@@ -12,13 +12,19 @@
  * Safely initializes Lucide icons in the DOM.
  * Catches and logs any errors to prevent breaking the UI.
  */
-export function safeCreateIcons() {
-	if (window.lucide?.createIcons) {
-		try {
+export function safeCreateIcons(root) {
+	if (typeof window.lucide === 'undefined') return;
+
+	try {
+		// Use standard Lucide createIcons which handles kebab-case to PascalCase conversion
+		// and safeguards against missing icons automatically.
+		if (root) {
+			window.lucide.createIcons({ root });
+		} else {
 			window.lucide.createIcons();
-		} catch (e) {
-			console.warn('Lucide icon creation failed:', e);
 		}
+	} catch (e) {
+		console.warn('Lucide createIcons failed:', e);
 	}
 }
 

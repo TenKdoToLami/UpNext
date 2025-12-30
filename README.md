@@ -5,10 +5,11 @@ Local web application for tracking media consumption (Anime, Manga, Books, Movie
 ## ✨ Features
 
 -   **Multi-Type Tracking**: Seamlessly manage Anime, Manga, Books, Movies, and Series in one place.
+-   **Modern Wizard Entry**: Step-by-step wizard for adding media, tailoring questions to the media type.
 -   **Status Workflow**: Track progress from Planning -> Watching/Reading -> Completed (or Dropped).
 -   **Rich Metadata**: Store authors, studios, alternative titles, series ordering, and universes (e.g., MCU).
--   **Privacy & Review**: Mark items as "Hidden" and add personal reviews with a 4-point rating system.
--   **Modern UI**: Responsive design with dark mode, grid/list views, and vibrant aesthetics.
+-   **Privacy Mode**: Mark items as hidden and use "Privacy Mode" to conceal them from the main view (useful for sharing your screen).
+-   **Customizable Settings**: Control feature visibility (disable Calendar or Stats), toggle dark mode, and manage field visibility via a centralized settings modal.
 -   **Advanced Tracking**: Store `release_date`, `completed_at`, and `reread_count` for personal statistics.
 -   **Normalized Database**: 5-table SQLite architecture (`data/library.db`) for high-performance offline storage.
 -   **Export**: Generate JSON, CSV, XML, or HTML cards/lists.
@@ -37,7 +38,7 @@ Local web application for tracking media consumption (Anime, Manga, Books, Movie
     ```
 3.  **Initialize Environment**:
     ```powershell
-    python -m venv .venv
+    py -3.11 -m venv .venv
     .\.venv\Scripts\activate
     pip install -r requirements.txt
     ```

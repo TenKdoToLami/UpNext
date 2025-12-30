@@ -1,0 +1,81 @@
+<!-- SETTINGS MODAL -->
+<div id="settingsModal"
+	class="fixed inset-0 z-[95] flex items-center justify-center bg-zinc-500/30 dark:bg-black/90 backdrop-blur-md hidden opacity-0 transition-opacity duration-200"
+	onclick="if(event.target === this) closeSettingsModal()">
+	<div class="bg-white dark:bg-[#0c0c0e] border border-zinc-200 dark:border-zinc-800 rounded-3xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col shadow-2xl transform scale-95 transition-all duration-200 animate-enter"
+		id="settingsModalContent">
+
+		<!-- Header -->
+		<div
+			class="px-8 py-6 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center bg-white dark:bg-[#0c0c0e]">
+			<h2
+				class="text-xl font-heading font-bold text-zinc-900 dark:text-white tracking-wide flex items-center gap-2">
+				<i data-lucide="settings" class="w-5 h-5 text-indigo-500 dark:text-indigo-400"></i> Settings
+			</h2>
+			<button onclick="closeSettingsModal()"
+				class="text-zinc-400 hover:text-red-500 dark:hover:text-white transition-colors">
+				<i data-lucide="x" class="w-5 h-5"></i>
+			</button>
+		</div>
+
+		<!-- Custom Tabs -->
+		<div
+			class="flex items-center gap-4 px-8 pt-6 pb-2 bg-zinc-50 dark:bg-zinc-950/30 border-b border-zinc-200 dark:border-zinc-800 overflow-x-auto scrollbar-none">
+			<button onclick="switchSettingsTab('features')" id="tab-features"
+				class="settings-tab-btn active px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all bg-white dark:bg-zinc-900 shadow-sm border border-zinc-200 dark:border-zinc-800 text-indigo-500">
+				General
+			</button>
+			<button onclick="switchSettingsTab('content')" id="tab-content"
+				class="settings-tab-btn px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-white dark:hover:bg-zinc-900 border border-transparent hover:border-zinc-200 dark:hover:border-zinc-800">
+				Content
+			</button>
+		</div>
+
+		<!-- Body -->
+		<div class="p-8 overflow-y-auto custom-scrollbar flex-1 space-y-8 bg-zinc-50 dark:bg-zinc-950/30">
+
+			<!-- Features Settings (Merged Interface) -->
+			<div id="settings-features" class="settings-panel space-y-6">
+				<!-- Javascript populates this -->
+				<div id="settings-features-container" class="space-y-6"></div>
+			</div>
+
+			<!-- Content Settings -->
+			<div id="settings-content" class="settings-panel hidden space-y-6">
+				<div class="space-y-6">
+					<div>
+						<h3 class="text-sm font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 mb-4">
+							Active Media Types
+						</h3>
+						<div class="grid grid-cols-2 gap-3" id="typeVisibilityContainer">
+							<!-- Populated by JS -->
+						</div>
+					</div>
+
+					<div class="border-t border-zinc-200 dark:border-zinc-800 pt-6">
+						<h3 class="text-sm font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 mb-4">
+							Active Statuses
+						</h3>
+						<div class="grid grid-cols-2 gap-3" id="statusVisibilityContainer">
+							<!-- Populated by JS -->
+						</div>
+					</div>
+				</div>
+			</div>
+
+		</div>
+
+		<!-- Footer -->
+		<div
+			class="px-8 py-4 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#0c0c0e] flex justify-end gap-3">
+			<button onclick="closeSettingsModal()"
+				class="px-6 py-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 font-bold text-sm hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors">
+				Cancel
+			</button>
+			<button onclick="window.saveSettingsAndClose()"
+				class="px-6 py-2 rounded-lg bg-indigo-600 text-white font-bold text-sm hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-500/20">
+				Save Changes
+			</button>
+		</div>
+	</div>
+</div>

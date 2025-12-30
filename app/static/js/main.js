@@ -6,7 +6,7 @@
 
 import { state, setState, loadUIState } from './state.js';
 import { loadItems, deleteItem, saveItem, getDbStatus, selectDatabase } from './api_service.js';
-import { renderFilters, renderGrid, updateGridTruncation } from './render_utils.js';
+import { renderFilters, renderGrid } from './render_utils.js';
 import { safeCreateIcons, toggleExpand, debounce } from './dom_utils.js';
 import { RATING_LABELS, TEXT_COLORS } from './constants.js';
 import {
@@ -23,6 +23,11 @@ import {
     updateExportOptions, toggleVisualField,
     toggleExportTypeFilter, toggleExportStatusFilter, toggleExportRatingFilter
 } from './export_utils.js';
+import {
+    openSettingsModal, closeSettingsModal, saveSettingsAndClose,
+    switchSettingsTab, toggleFeature, toggleHiddenField,
+    toggleGroupCollapse, toggleMediaType, toggleStatus
+} from './settings_logic.js';
 
 // =============================================================================
 // GLOBAL WINDOW BINDINGS
@@ -61,7 +66,22 @@ function updateThemeIcon() {
     safeCreateIcons();
 }
 
-// Export & Modal management
+// =============================================================================
+// SETTINGS MODAL MANAGEMENT
+// =============================================================================
+
+window.openSettingsModal = openSettingsModal;
+window.closeSettingsModal = closeSettingsModal;
+window.saveSettingsAndClose = saveSettingsAndClose;
+window.switchSettingsTab = switchSettingsTab;
+window.toggleFeature = toggleFeature;
+window.toggleHiddenField = toggleHiddenField;
+window.toggleGroupCollapse = toggleGroupCollapse;
+window.toggleMediaType = toggleMediaType;
+window.toggleStatus = toggleStatus;
+
+
+
 /** Opens the export modal. */
 window.openExportModal = openExportModal;
 /** Closes the export modal. */
@@ -207,7 +227,10 @@ window.setFilterRating = (r) => {
 // SORT HANDLERS
 // =============================================================================
 
+/** Sets the field to sort by and refreshes the grid. */
 window.setSortBy = (field) => { setState('sortBy', field); renderFilters(); renderGrid(); };
+
+/** Sets the sort order (asc/desc) and refreshes the grid. */
 window.setSortOrder = (order) => { setState('sortOrder', order); renderFilters(); renderGrid(); };
 
 // =============================================================================
@@ -456,12 +479,14 @@ window.clearSearch = () => {
 // INFO MODAL
 // =============================================================================
 
+/** Opens the info/help modal with animation. */
 window.openInfoModal = () => {
     const modal = document.getElementById('infoModal');
     modal.classList.remove('hidden');
     setTimeout(() => modal.classList.remove('opacity-0'), 10);
 };
 
+/** Closes the info/help modal with animation. */
 window.closeInfoModal = () => {
     const modal = document.getElementById('infoModal');
     modal.classList.add('opacity-0');
@@ -737,6 +762,19 @@ function applyStateToUI() {
 
     // 4. Filters & Sorting (Sync dropdowns)
     renderFilters();
+
+    // 5. Feature Toggles
+    const calendarBtn = document.getElementById('calendarBtn');
+    if (calendarBtn) {
+        if (state.appSettings.disabledFeatures.includes('calendar')) calendarBtn.classList.add('hidden');
+        else calendarBtn.classList.remove('hidden');
+    }
+
+    const statsBtn = document.getElementById('statsBtn');
+    if (statsBtn) {
+        if (state.appSettings.disabledFeatures.includes('stats')) statsBtn.classList.add('hidden');
+        else statsBtn.classList.remove('hidden');
+    }
 }
 
 /**
@@ -861,6 +899,38 @@ async function initApp() {
             updateRatingVisuals(this.value);
         });
     }
+    // Global Shortcuts
+    document.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+        // Modal closing with ESC
+        if (e.key === 'Escape') {
+            if (document.getElementById('modal') && !document.getElementById('modal').classList.contains('hidden')) window.closeModal();
+            if (document.getElementById('detailModal') && !document.getElementById('detailModal').classList.contains('hidden')) window.closeDetail();
+            if (document.getElementById('infoModal') && !document.getElementById('infoModal').classList.contains('hidden')) window.closeInfoModal();
+            if (document.getElementById('statsModal') && !document.getElementById('statsModal').classList.contains('hidden')) window.closeStatsModal();
+            if (document.getElementById('exportModal') && !document.getElementById('exportModal').classList.contains('hidden')) window.closeExportModal();
+            if (document.getElementById('settingsModal') && !document.getElementById('settingsModal').classList.contains('hidden')) window.closeSettingsModal();
+            if (document.getElementById('calendarModal') && !document.getElementById('calendarModal').classList.contains('hidden')) window.closeCalendarModal?.();
+        }
+
+        // Shortcuts
+        if (e.key.toLowerCase() === 'n') window.openModal();
+        if (e.key.toLowerCase() === 's' && !state.appSettings?.disabledFeatures?.includes('stats')) window.openStatsModal();
+        if (e.key.toLowerCase() === 'c' && !state.appSettings?.disabledFeatures?.includes('calendar')) window.openCalendarModal?.();
+        if (e.key.toLowerCase() === 'f') {
+            e.preventDefault();
+            const searchBar = document.getElementById('searchBar'); // Desktop
+            const searchInput = document.getElementById('searchInput'); // Mobile/Responsive?
+            if (searchBar && !searchBar.classList.contains('hidden')) searchBar.focus();
+            else if (searchInput) {
+                // Open mobile search if hidden?
+                const container = document.getElementById('searchBarContainer');
+                if (container && container.classList.contains('hidden')) container.classList.remove('hidden');
+                searchInput.focus();
+            }
+        }
+    });
 }
 
 // Run initialization

@@ -4,11 +4,11 @@
  * @module main_helpers
  */
 
-import { state } from './state.js';
+import { state, isFieldVisible } from './state.js';
 import {
 	STEP_TITLES, LINK_SUGGESTIONS, TYPE_COLOR_MAP, STATUS_TYPES,
 	STATUS_ICON_MAP, STATUS_COLOR_MAP, ICON_MAP,
-	RATING_LABELS, RATING_COLORS, TEXT_COLORS, STAR_FILLS
+	RATING_LABELS, RATING_COLORS, TEXT_COLORS, STAR_FILLS, FEATURE_GROUPS
 } from './constants.js';
 import { safeCreateIcons, safeVal, safeText, safeHtml, safeCheck, checkOverflow } from './dom_utils.js';
 import {
@@ -830,6 +830,10 @@ export function removeAltTitle(val) {
 /**
  * Renders the children (seasons/volumes) list.
  */
+/**
+ * Renders the children (seasons/volumes) list to the DOM.
+ * Clears existing content and re-creates inputs for each child item.
+ */
 export function renderChildren() {
 	const container = document.getElementById('childrenContainer');
 	if (!container) return;
@@ -858,6 +862,10 @@ export function renderChildren() {
 }
 
 /** Adds a new child (season/volume). */
+/**
+ * Adds a new child item (e.g., Season or Volume) to the list.
+ * Automatically determines the title based on the media type (e.g., "Season X" or "Volume X").
+ */
 export function addChild() {
 	const type = document.getElementById('type').value;
 	const prefix = ['Book', 'Manga'].includes(type) ? 'Volume' : 'Season';
@@ -866,8 +874,25 @@ export function addChild() {
 	renderChildren();
 }
 
+/**
+ * Removes a child item at the specified index and re-renders the list.
+ * @param {number} idx - Index of the child to remove.
+ */
 export function removeChildIdx(idx) { state.currentChildren.splice(idx, 1); renderChildren(); }
+
+/**
+ * Updates a specific field of a child item.
+ * @param {number} idx - Index of the child.
+ * @param {string} field - Field to update (e.g., 'title').
+ * @param {string} val - New value.
+ */
 export function updateChild(idx, field, val) { state.currentChildren[idx][field] = val; }
+
+/**
+ * Updates the rating of a child item and re-renders to show the new stars.
+ * @param {number} idx - Index of the child.
+ * @param {number} rating - New rating value (1-4).
+ */
 export function updateChildRating(idx, rating) { state.currentChildren[idx].rating = rating; renderChildren(); }
 
 // =============================================================================
@@ -900,11 +925,34 @@ export function renderLinks() {
 	safeCreateIcons();
 }
 
+/** Adds a new empty external link object to the list and re-renders. */
 export function addLink() { state.currentLinks.push({ label: '', url: '' }); renderLinks(); }
+
+/**
+ * Adds a specific external link with a pre-defined label.
+ * @param {string} label - The label for the link (e.g., "Wikipedia").
+ */
 export function addSpecificLink(label) { state.currentLinks.push({ label, url: '' }); renderLinks(); }
+
+/**
+ * Removes an external link at the specified index.
+ * @param {number} idx - Index of the link to remove.
+ */
 export function removeLink(idx) { state.currentLinks.splice(idx, 1); renderLinks(); }
+
+/**
+ * Updates a specific field of an external link.
+ * @param {number} idx - Index of the link.
+ * @param {string} field - Field to update ('label' or 'url').
+ * @param {string} val - New value.
+ */
 export function updateLink(idx, field, val) { state.currentLinks[idx][field] = val; }
 
+/**
+ * Pastes text from the clipboard into the URL field of a specific link.
+ * Requires clipboard permission.
+ * @param {number} idx - Index of the link to update.
+ */
 export function pasteLink(idx) {
 	if (!navigator.clipboard) return;
 	navigator.clipboard.readText().then(text => {
@@ -965,23 +1013,23 @@ export function renderDetailView(item, content) {
             
             <div class="flex-1 overflow-y-auto custom-scrollbar h-full bg-white dark:bg-[#0c0c0e] relative">
                 <div class="p-10 pb-6 border-b border-zinc-100 dark:border-white/5 relative">
-                    ${linksHtml ? `<div class="absolute top-8 right-16 mr-6 flex gap-2 z-20">${linksHtml}</div>` : ''}
+                    ${isFieldVisible('external_links') && linksHtml ? `<div class="absolute top-8 right-16 mr-6 flex gap-2 z-20">${linksHtml}</div>` : ''}
                     <div class="flex flex-wrap gap-2 mb-4 mt-12">
                         <span class="media-badge px-4 py-1.5 rounded text-xs font-black uppercase tracking-widest flex items-center gap-1.5 transition-colors"><i data-lucide="${ICON_MAP[item.type]}" class="w-3.5 h-3.5"></i> ${item.type}</span>
                         <span class="${STATUS_COLOR_MAP[item.status]} px-4 py-1.5 rounded text-xs font-black uppercase tracking-widest border border-current/20 flex items-center gap-1.5"><i data-lucide="${STATUS_ICON_MAP[item.status]}" class="w-3.5 h-3.5"></i> ${item.status}</span>
-                        ${item.progress ? `<span class="px-4 py-1.5 rounded text-xs font-black font-mono uppercase tracking-widest border border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-500 flex items-center gap-1.5">Progress: ${item.progress}</span>` : ''}
+                        ${isFieldVisible('progress') && item.progress ? `<span class="px-4 py-1.5 rounded text-xs font-black font-mono uppercase tracking-widest border border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-500 flex items-center gap-1.5">Progress: ${item.progress}</span>` : ''}
                     </div>
                     <h1 class="text-5xl md:text-6xl font-heading font-black text-zinc-900 dark:text-[var(--theme-col)] leading-none tracking-tight mb-2 drop-shadow-sm">${item.title}</h1>
-                    ${item.alternateTitles && item.alternateTitles.length ? `<h2 class="text-xl text-zinc-500 dark:text-zinc-400 font-bold mb-4 font-heading">${item.alternateTitles.join(', ')}</h2>` : ''}
+                    ${isFieldVisible('alternate_titles') && item.alternateTitles && item.alternateTitles.length ? `<h2 class="text-xl text-zinc-500 dark:text-zinc-400 font-bold mb-4 font-heading">${item.alternateTitles.join(', ')}</h2>` : ''}
                     <div class="flex flex-wrap gap-6 text-base font-medium text-zinc-500 dark:text-zinc-400 mt-4">
-                        ${authors.length ? `<div class="flex items-center gap-2"><i data-lucide="pen-tool" class="w-5 h-5 text-zinc-400 dark:text-zinc-600"></i> ${authHtml}</div>` : ''}
-                        ${item.series ? `<div onclick="smartFilter(event, 'series', '${item.series}')" class="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 dark:hover:text-emerald-300 cursor-pointer transition-colors"><i data-lucide="library" class="w-5 h-5"></i> ${seriesText}</div>` : ''}
-                        ${item.universe ? `<div onclick="smartFilter(event, 'universe', '${item.universe}')" class="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 cursor-pointer transition-colors"><i data-lucide="globe" class="w-5 h-5"></i> ${item.universe}</div>` : ''}
+                        ${isFieldVisible('authors') && authors.length ? `<div class="flex items-center gap-2"><i data-lucide="pen-tool" class="w-5 h-5 text-zinc-400 dark:text-zinc-600"></i> ${authHtml}</div>` : ''}
+                        ${isFieldVisible('series') && item.series ? `<div onclick="smartFilter(event, 'series', '${item.series}')" class="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 dark:hover:text-emerald-300 cursor-pointer transition-colors"><i data-lucide="library" class="w-5 h-5"></i> ${seriesText}</div>` : ''}
+                        ${isFieldVisible('universe') && item.universe ? `<div onclick="smartFilter(event, 'universe', '${item.universe}')" class="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 cursor-pointer transition-colors"><i data-lucide="globe" class="w-5 h-5"></i> ${item.universe}</div>` : ''}
                     </div>
                 </div>
                 <div class="p-10 pt-6 space-y-8">
                     
-                    ${(item.review || item.rating) ? `
+                    ${(item.review || item.rating) && isFieldVisible('review') && !state.appSettings?.disabledFeatures?.includes('stats') ? `
                     <div class="bg-zinc-50 dark:bg-zinc-900/50 border border-[color:var(--theme-col)] rounded-2xl p-6 relative flow-root min-h-[160px]">
                          <h4 class="text-sm font-bold text-[var(--theme-col)] uppercase tracking-widest mb-4 opacity-100 flex items-center gap-2"><i data-lucide="message-square" class="w-4 h-4"></i> Review</h4>
                          ${item.rating ? `
@@ -1010,14 +1058,14 @@ export function renderDetailView(item, content) {
                          ${item.description.length > 0 ? `<button type="button" id="btn-detail-desc-${item.id}" onclick="event.stopPropagation(); window.toggleExpand('${item.id}', 'detail-desc')" class="text-xs text-[var(--theme-col)] font-bold mt-2 hover:underline relative z-20">Read More</button>` : ''}
                     </div>` : ''}
 
-                    ${item.notes ? `
+                    ${isFieldVisible('notes') && item.notes ? `
                     <div class="bg-zinc-50 dark:bg-zinc-900/5 border border-[color:var(--theme-col)] rounded-xl p-6 group/notes">
                         <h4 class="text-xs font-bold text-[var(--theme-col)] uppercase tracking-widest mb-3 flex items-center gap-2"><i data-lucide="sticky-note" class="w-4 h-4"></i> Notes</h4>
                         <div id="detail-notes-${item.id}" class="text-zinc-600 dark:text-zinc-400 leading-relaxed whitespace-pre-wrap font-mono text-sm line-clamp-6">${item.notes}</div>
                          ${item.notes.length > 0 ? `<button type="button" id="btn-detail-notes-${item.id}" onclick="event.stopPropagation(); window.toggleExpand('${item.id}', 'detail-notes')" class="text-xs text-[var(--theme-col)] font-bold mt-2 hover:underline relative z-20">Read More</button>` : ''}
                     </div>` : ''}
 
-                    ${(item.children && item.children.length) ? `
+                    ${isFieldVisible('series_number') && item.children && item.children.length ? `
                     <div class="bg-zinc-50 dark:bg-zinc-900/5 border border-[color:var(--theme-col)] rounded-xl p-6">
                         <h3 class="text-xl font-heading font-bold text-[var(--theme-col)] mb-6 flex items-center gap-3"><i data-lucide="layers" class="w-6 h-6"></i> ${childLabel}</h3>
                         <div class="flex flex-col gap-3">${childrenHtml}</div>
@@ -1032,8 +1080,10 @@ export function renderDetailView(item, content) {
 	// Check for overflow after render
 	setTimeout(() => {
 		updateDetailTruncation(item.id);
-		const eventsContainer = document.getElementById(`detail-events-${item.id}`);
-		loadItemEvents(item.id, eventsContainer);
+		if (!state.appSettings?.disabledFeatures?.includes('calendar')) {
+			const eventsContainer = document.getElementById(`detail-events-${item.id}`);
+			loadItemEvents(item.id, eventsContainer);
+		}
 	}, 50);
 }
 

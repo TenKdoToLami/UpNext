@@ -1,3 +1,4 @@
+// state.js
 /**
  * @fileoverview Global application state management for UpNext.
  * Contains the central state object and state mutation helpers.
@@ -7,8 +8,11 @@
  * @module state
  */
 
+import { FEATURE_GROUPS } from './constants.js';
+
 /**
  * Global application state object.
+
  * @type {Object}
  */
 export const state = {
@@ -54,7 +58,15 @@ export const state = {
 		ratingChart: 'doughnut',
 		growthChart: 'line'
 	},
-	calendarView: 'month'
+	calendarView: 'month',
+
+	// Global Application Settings (User Preference)
+	appSettings: {
+		hiddenFields: [],     // Fields to hide (e.g. 'rereadCount')
+		disabledFeatures: [], // Features to disable (e.g. 'calendar')
+		disabledTypes: [],    // Media Types to hide (e.g. 'Manga')
+		disabledStatuses: []  // Statuses to hide (e.g. 'Dropped')
+	}
 };
 
 /**
@@ -63,7 +75,7 @@ export const state = {
 const PERSISTED_KEYS = [
 	'viewMode', 'sortBy', 'sortOrder', 'showDetails',
 	'isHidden', 'isMultiSelect', 'filterHiddenOnly', 'theme',
-	'statsChartTypes', 'calendarView'
+	'statsChartTypes', 'calendarView', 'appSettings'
 ];
 
 /**
@@ -175,4 +187,41 @@ export function resetFormState() {
 // Expose to window for non-module scripts (like legacy calendar logic)
 window.state = state;
 window.setState = setState;
+
+/**
+ * Helper to update and persist app settings directly.
+ * Debounces the backend save to prevent rapid I/O from crashing the webview/backend.
+ * @param {Object} partialSettings - key/value pairs to merge into appSettings
+ */
+let saveSettingsTimeout = null;
+export function saveAppSettings(partialSettings) {
+	state.appSettings = { ...state.appSettings, ...partialSettings };
+
+	if (saveSettingsTimeout) clearTimeout(saveSettingsTimeout);
+	saveSettingsTimeout = setTimeout(() => {
+		saveUIState('appSettings', state.appSettings);
+	}, 1000);
+}
+
+/**
+ * Checks if a specific field should be visible.
+ * Considers both the field's hidden status AND its parent feature group's disabled status.
+ * @param {string} fieldId - The ID of the field to check
+ * @returns {boolean} True if visible/enabled, false if effectively disabled
+ */
+export function isFieldVisible(fieldId) {
+	// 1. Check if specific field is explicitly hidden
+	if (state.appSettings?.hiddenFields?.includes(fieldId)) return false;
+
+	// 2. Find parent feature group and check if it is disabled
+	const group = FEATURE_GROUPS.find(g => g.fields.some(f => f.id === fieldId) || g.id === fieldId);
+
+	// If no group found (standalone field?), assume enabled unless hidden above
+	if (!group) return true;
+
+	// If group disabled, field is NOT visible
+	if (state.appSettings?.disabledFeatures?.includes(group.id)) return false;
+
+	return true;
+}
 

@@ -4,7 +4,7 @@
  * @module wizard_logic
  */
 
-import { state } from './state.js';
+import { state, isFieldVisible } from './state.js';
 import {
 	STEP_TITLES,
 	LINK_SUGGESTIONS,
@@ -53,6 +53,11 @@ export function getSkippedSteps() {
 	// Skip privacy step (11) if not in hidden mode
 	if (!state.isHidden) {
 		skipped.push(11);
+	}
+
+	// Stats Feature Disable
+	if (state.appSettings?.disabledFeatures?.includes('stats')) {
+		skipped.push(8); // Review & Rating
 	}
 
 	return [...new Set(skipped)]; // Remove duplicates
@@ -295,19 +300,39 @@ export function updateFormUI() {
 		el.style.display = show ? 'block' : 'none';
 	};
 
-	// Step 7 (Progress): Hide for Planning/Completed
-	toggle('step-7', !(status === 'Planning' || status === 'Completed'));
+	// Step 7 (Progress): Hide for Planning/Completed OR if hidden in settings
+	const isProgressHidden = (status === 'Planning' || status === 'Completed') || !isFieldVisible('progress');
+	toggle('step-7', !isProgressHidden);
 
-	// Step 8 (Review): Hide for Planning and Reading/Watching
+	// Step 8 (Review): Hide for Planning and Reading/Watching OR if hidden in settings
 	// Visible for: Completed, On Hold, Dropped, Anticipating
-	toggle('step-8', !(status === 'Planning' || status === 'Reading/Watching'));
+	const isReviewHidden = (status === 'Planning' || status === 'Reading/Watching') || !isFieldVisible('review');
+	toggle('step-8', !isReviewHidden);
 
-	// Step 10 (Seasons/Volumes): Hide for Manga and Movie
+	// Step 10 (Seasons/Volumes): Hide for Manga and Movie OR if hidden in settings
 	// Visible for: Anime, Book, Series
-	toggle('step-10', !(['Manga', 'Movie'].includes(type)));
+	const isChildrenHidden = (['Manga', 'Movie'].includes(type) || !isFieldVisible('series_number'));
+	toggle('step-10', !isChildrenHidden);
+
+	// Step 9 (Notes): Hide if hidden in settings
+	toggle('step-9', isFieldVisible('notes'));
+
+	// Step 6 (External Links): Hide if hidden
+	toggle('step-6', isFieldVisible('external_links'));
+
+	// Step 5 (Description): Hide if hidden? (Description wasn't explicitly in request but maybe useful to hide?)
+	// No, description is core.
 
 	// Step 11 (Privacy): Only show in hidden mode
 	toggle('step-11', state.isHidden);
+
+	// Other inputs in Step 4
+	if (document.getElementById('seriesWrapper')) document.getElementById('seriesWrapper').classList.toggle('hidden', !isFieldVisible('series'));
+	if (document.getElementById('universe')) document.getElementById('universe').parentElement.classList.toggle('hidden', !isFieldVisible('universe'));
+	if (document.getElementById('authorTagsContainer')) document.getElementById('authorTagsContainer').parentElement.classList.toggle('hidden', !isFieldVisible('authors'));
+	if (document.getElementById('altTitleTagsContainer')) document.getElementById('altTitleTagsContainer').parentElement.classList.toggle('hidden', !isFieldVisible('alternate_titles'));
+	if (document.getElementById('disableAbbr')) document.getElementById('disableAbbr').closest('.space-y-2').classList.toggle('hidden', !isFieldVisible('abbreviations'));
+
 
 	if (window.updateSidebarVisibility) window.updateSidebarVisibility();
 }

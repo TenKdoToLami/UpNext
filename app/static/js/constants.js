@@ -22,6 +22,20 @@ export const STATUS_TYPES = [
 ];
 
 // ============================================================================
+// DATE & TIME
+// ============================================================================
+
+export const MONTH_NAMES = [
+	'January', 'February', 'March', 'April', 'May', 'June',
+	'July', 'August', 'September', 'October', 'November', 'December'
+];
+
+export const MONTH_NAMES_SHORT = [
+	'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+	'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+];
+
+// ============================================================================
 // RATING CONFIGURATION
 // ============================================================================
 
@@ -230,4 +244,86 @@ export const CARD_VIEW_ALLOWED_FIELDS = [
 	'series',
 	'universe',
 	'rating'
+];
+
+// ============================================================================
+// SETTINGS CONFIGURATION
+// ============================================================================
+
+/**
+ * Feature groups configuration for settings modal.
+ * Defines structure, icons, and fields.
+ */
+export const FEATURE_GROUPS = [
+	{
+		id: 'metadata',
+		label: 'Detailed Metadata',
+		desc: 'Extended information fields and organization details.',
+		icon: 'list',
+		color: 'emerald',
+		fields: [
+			{ id: 'authors', label: 'Authors/Studios', desc: 'Creators or production studios' },
+			{ id: 'series', label: 'Series Info', desc: 'Series name and position' },
+			{ id: 'series_number', label: 'Series Number', desc: 'Volume/Season number in a series' },
+			{ id: 'universe', label: 'Universe', desc: 'Shared universe or franchise' },
+			{ id: 'alternate_titles', label: 'Alternate Titles', desc: 'Native or alias titles' },
+			{ id: 'external_links', label: 'External Links', desc: 'Links to tracking sites or stores' },
+			{ id: 'abbreviations', label: 'Abbreviations', desc: 'Short codes for quick search' }
+		]
+	},
+	{
+		id: 'tracking',
+		label: 'Library Tracking',
+		desc: 'Core progress and status tracking features.',
+		icon: 'activity',
+		color: 'blue',
+		fields: [
+			{ id: 'progress', label: 'Progress/Status', desc: 'Current episode/chapter progress and status' },
+			{ id: 'reread_count', label: 'Reread Count', desc: 'Track number of times read/watched' },
+			{ id: 'length', label: 'Length/Duration', desc: 'Page count, episode count, or duration' },
+			{ id: 'avg_episode_length', label: 'Avg Episode Length', desc: 'Average duration per episode' }
+		]
+	},
+	{
+		id: 'reviews',
+		label: 'Reviews & Ratings',
+		desc: 'Personal thoughts, scoring, and critiques.',
+		icon: 'star',
+		color: 'amber',
+		fields: [
+			{ id: 'rating', label: 'Rating Score', desc: 'Numerical/Star rating of the entry' },
+			{ id: 'review', label: 'Review Text', desc: 'Written review body/essay' },
+			{ id: 'verdict', label: 'Verdict Badge', desc: 'Visual label (e.g. Masterpiece) on cards' }
+		]
+	},
+	{
+		id: 'calendar',
+		label: 'Release Calendar',
+		desc: 'Track upcoming season premieres and volume releases.',
+		icon: 'calendar',
+		color: 'fuchsia',
+		fields: [
+			{ id: 'calendar_upcoming', label: 'Upcoming Events', desc: 'Show upcoming releases in detail view' },
+			{ id: 'calendar_month', label: 'Monthly View', desc: 'Show visual calendar availability' },
+			{ id: 'calendar_notifications', label: 'Missed Release Alerts', desc: 'Notify for past releases not yet seen' }
+		]
+	},
+	{
+		id: 'stats',
+		label: 'Statistics Graphs',
+		desc: 'Visual breakdown of types, statuses, and ratings.',
+		icon: 'pie-chart',
+		color: 'indigo',
+		fields: []
+	},
+	{
+		id: 'general',
+		label: 'General Interface',
+		desc: 'Miscellaneous UI elements.',
+		icon: 'layout',
+		color: 'zinc',
+		fields: [
+			{ id: 'notes', label: 'Private Notes', desc: 'Your personal notes and thoughts' }
+		]
+	}
 ];

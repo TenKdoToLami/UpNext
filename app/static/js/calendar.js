@@ -4,6 +4,13 @@
  * @module calendar
  */
 
+import { safeCreateIcons } from './dom_utils.js';
+import { isFieldVisible } from './state.js';
+import {
+    ICON_MAP, TYPE_COLOR_MAP,
+    MONTH_NAMES, MONTH_NAMES_SHORT
+} from './constants.js';
+
 // =============================================================================
 // STATE
 // =============================================================================
@@ -25,15 +32,7 @@ let calendarState = {
     cellScrollState: {}, // Key: dateStr, Value: focusedIndex
 };
 
-const MONTH_NAMES = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-];
-
-const MONTH_NAMES_SHORT = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-];
+// Month names imported from constants.js
 
 // Media type colors (matching app theme)
 const TYPE_COLORS = {
@@ -53,13 +52,7 @@ const BORDER_COLORS = {
     'Series': 'border-amber-500'
 };
 
-const ICON_MAP = {
-    'Book': 'book',
-    'Anime': 'tv',
-    'Manga': 'file-text',
-    'Movie': 'film',
-    'Series': 'tv-2'
-};
+// ICON_MAP imported from constants.js
 
 const TEXT_COLORS_MAP = {
     'Anime': 'text-violet-500',
@@ -69,13 +62,7 @@ const TEXT_COLORS_MAP = {
     'Series': 'text-amber-500'
 };
 
-const TYPE_COLOR_MAP = {
-    'Anime': 'text-violet-600 dark:text-violet-400 border-violet-300 dark:border-violet-500/30 bg-violet-100 dark:bg-violet-500/10 hover:bg-violet-200 dark:hover:bg-violet-500/20 ring-violet-500',
-    'Manga': 'text-pink-600 dark:text-pink-400 border-pink-300 dark:border-pink-500/30 bg-pink-100 dark:bg-pink-500/10 hover:bg-pink-200 dark:hover:bg-pink-500/20 ring-pink-500',
-    'Book': 'text-blue-600 dark:text-blue-400 border-blue-300 dark:border-blue-500/30 bg-blue-100 dark:bg-blue-500/10 hover:bg-blue-200 dark:hover:bg-blue-500/20 ring-blue-500',
-    'Movie': 'text-red-600 dark:text-red-400 border-red-300 dark:border-red-500/30 bg-red-100 dark:bg-red-500/10 hover:bg-red-200 dark:hover:bg-red-500/20 ring-red-500',
-    'Series': 'text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-500/30 bg-amber-100 dark:bg-amber-500/10 hover:bg-amber-200 dark:hover:bg-amber-500/20 ring-amber-500'
-};
+// TYPE_COLOR_MAP imported from constants.js
 
 // =============================================================================
 // MODAL CONTROLS
@@ -119,9 +106,7 @@ function openCalendarModal() {
     });
 
     // Initialize lucide icons
-    if (typeof lucide !== 'undefined') {
-        lucide.createIcons();
-    }
+    safeCreateIcons();
 
     // Add global listener for sidebar
     setTimeout(() => {
@@ -211,6 +196,40 @@ function updateViewToggle() {
     const showFlex = (el) => { if (el) { el.style.display = 'flex'; el.classList.remove('hidden'); } };
     const hide = (el) => { if (el) { el.style.display = 'none'; el.classList.add('hidden'); } };
 
+    // 4. Handle Visibility of Toggle Buttons based on Settings
+    const isMonthHidden = !isFieldVisible('calendar_month');
+    const isUpcomingHidden = !isFieldVisible('calendar_upcoming');
+
+    if (isMonthHidden && isUpcomingHidden) {
+        // Both hidden? (Should be prevented by settings, but safety fallback)
+        hide(monthBtn);
+        hide(upcomingBtn);
+        hide(monthView);
+        hide(upcomingView);
+        return; // Nothing to show
+    }
+
+    if (isMonthHidden) {
+        hide(monthBtn);
+        // If current view is month but it's hidden, switch to upcoming
+        if (calendarState.currentView === 'month') {
+            calendarState.currentView = 'upcoming';
+            // Recursive call or manual update? Let's just fall through to the logic below which handles rendering
+        }
+    } else {
+        showFlex(monthBtn);
+    }
+
+    if (isUpcomingHidden) {
+        hide(upcomingBtn);
+        if (calendarState.currentView === 'upcoming') {
+            calendarState.currentView = 'month';
+        }
+    } else {
+        showFlex(upcomingBtn);
+    }
+
+    // Standard View Logic
     if (calendarState.currentView === 'month') {
         monthBtn?.classList.remove(...inactiveClass.split(' '));
         monthBtn?.classList.add(...activeClass.split(' '));
@@ -480,7 +499,7 @@ function searchMediaItems(query) {
                 </div>
             `}).join('');
             suggestions.classList.remove('hidden');
-            if (typeof lucide !== 'undefined') lucide.createIcons();
+            if (typeof lucide !== 'undefined') safeCreateIcons();
         } else {
             suggestions.classList.add('hidden');
         }
@@ -684,9 +703,7 @@ function openMonthYearPicker() {
     picker.classList.add('flex');
     renderMonthGrid();
 
-    if (typeof lucide !== 'undefined') {
-        lucide.createIcons();
-    }
+    safeCreateIcons();
 }
 
 /**
@@ -1158,7 +1175,7 @@ function renderUpcomingView() {
         });
 
         // Find the split point between overdue (past) and future
-        // Find the split point between overdue (past) and future
+
         // New requirement: "All stuff that is realease today... should all be moved into the pre today line"
         // Future = Date > Today
         const firstFutureIndex = sortedReleases.findIndex(r => {

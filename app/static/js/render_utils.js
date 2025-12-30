@@ -4,7 +4,7 @@
  * @module render_utils
  */
 
-import { state } from './state.js';
+import { state, isFieldVisible } from './state.js';
 import {
 	MEDIA_TYPES, STATUS_TYPES, ICON_MAP, STATUS_ICON_MAP, SORT_OPTIONS,
 	STATUS_COLOR_MAP, TYPE_COLOR_MAP,
@@ -14,10 +14,20 @@ import { safeCreateIcons, toggleExpand, checkOverflow } from './dom_utils.js';
 
 // --- Logic ---
 
+/**
+ * Calculates counts for types, statuses, and ratings based on current items.
+ * Used for updating filter badges and statistics.
+ * @returns {Object} item counts by category
+ */
 export function getCounts() {
 	const visibleItems = state.items.filter(item => {
 		if (state.filterHiddenOnly) return item.isHidden;
 		if (!state.isHidden && item.isHidden) return false;
+
+		// Settings Filters
+		if (state.appSettings?.disabledTypes?.includes(item.type)) return false;
+		if (state.appSettings?.disabledStatuses?.includes(item.status)) return false;
+
 		return true;
 	});
 
@@ -47,6 +57,12 @@ export function getCounts() {
 	return { typeCounts, statusCounts, ratingCounts };
 }
 
+/**
+ * Sorts an array of items based on the current state.sortBy and state.sortOrder.
+ * Handles custom sorting logic for 'series' (alphanumeric).
+ * @param {Array} arr - List of items to sort
+ * @returns {Array} Sorted list
+ */
 export function sortItems(arr) {
 	return arr.sort((a, b) => {
 		let valA = a[state.sortBy] || '';
@@ -162,10 +178,10 @@ export function renderFilters() {
 	};
 
 	const typeContainer = document.getElementById('typeFilters');
-	if (typeContainer) typeContainer.innerHTML = ['All', ...MEDIA_TYPES].map(t => renderTypeBtn(t, false)).join('');
+	if (typeContainer) typeContainer.innerHTML = ['All', ...MEDIA_TYPES.filter(t => !state.appSettings?.disabledTypes?.includes(t))].map(t => renderTypeBtn(t, false)).join('');
 
 	const typeContainerMobile = document.getElementById('typeFiltersMobile');
-	if (typeContainerMobile) typeContainerMobile.innerHTML = ['All', ...MEDIA_TYPES].map(t => renderTypeBtn(t, true)).join('');
+	if (typeContainerMobile) typeContainerMobile.innerHTML = ['All', ...MEDIA_TYPES.filter(t => !state.appSettings?.disabledTypes?.includes(t))].map(t => renderTypeBtn(t, true)).join('');
 
 	// --- 2. Status Filters ---
 	/**
@@ -216,10 +232,10 @@ export function renderFilters() {
 	};
 
 	const statusContainer = document.getElementById('statusFilters');
-	if (statusContainer) statusContainer.innerHTML = ['All', ...STATUS_TYPES].map(s => renderStatusBtn(s, false)).join('');
+	if (statusContainer) statusContainer.innerHTML = ['All', ...STATUS_TYPES.filter(s => !state.appSettings?.disabledStatuses?.includes(s))].map(s => renderStatusBtn(s, false)).join('');
 
 	const statusContainerMobile = document.getElementById('statusFiltersMobile');
-	if (statusContainerMobile) statusContainerMobile.innerHTML = ['All', ...STATUS_TYPES].map(s => renderStatusBtn(s, true)).join('');
+	if (statusContainerMobile) statusContainerMobile.innerHTML = ['All', ...STATUS_TYPES.filter(s => !state.appSettings?.disabledStatuses?.includes(s))].map(s => renderStatusBtn(s, true)).join('');
 
 	// --- 3. Sort Options ---
 	const sortFieldContainer = document.getElementById('sortFieldFilters');
@@ -304,6 +320,11 @@ export function renderFilters() {
 	safeCreateIcons();
 }
 
+/**
+ * Renders the main grid or list view of items.
+ * Applies all active filters (search, type, status, rating, hidden).
+ * Handles "No Items" state.
+ */
 export function renderGrid() {
 	const container = document.getElementById('gridContainer');
 	const searchInput = document.getElementById('searchInput');
@@ -318,6 +339,10 @@ export function renderGrid() {
 	searchVal.replace(/(universe|author|series|type)=("([^"]*)"|([^"\s]+))/gi, (m, k, qf, qi, s) => { searchFilters[k.toLowerCase()] = (qi || s).toLowerCase(); });
 
 	let filtered = state.items.filter(item => {
+		// Global Filters (Settings)
+		if (state.appSettings?.disabledTypes?.includes(item.type)) return false;
+		if (state.appSettings?.disabledStatuses?.includes(item.status)) return false;
+
 		if (!state.filterTypes.includes('All') && !state.filterTypes.includes(item.type)) return false;
 		if (!state.filterStatuses.includes('All') && !state.filterStatuses.includes(item.status)) return false;
 
@@ -404,7 +429,8 @@ function generateCardHtml(item) {
 
 	// Verdict Badge
 	let verdictHtml = '';
-	if (['Completed', 'Anticipating', 'Dropped', 'On Hold'].includes(item.status) && item.rating) {
+	// Use isFieldVisible('verdict') instead of checking disabledFeatures directly
+	if (['Completed', 'Anticipating', 'Dropped', 'On Hold'].includes(item.status) && item.rating && isFieldVisible('verdict')) {
 		verdictHtml = `<span class="text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-md backdrop-blur-md shadow-xl ${TEXT_COLORS[item.rating]}">${RATING_LABELS[item.rating]}</span>`;
 	}
 
@@ -462,9 +488,9 @@ function generateCardHtml(item) {
                  <div class="p-4 pt-5 bg-white dark:bg-zinc-900 border-t border-zinc-100 dark:border-white/5 flex flex-col relative z-20 pointer-events-auto h-[12rem] overflow-hidden">
                      <h3 class="font-heading font-bold text-2xl leading-[1.2] line-clamp-2 text-[var(--theme-col)] transition-colors mb-1.5 shrink-0">${item.title}</h3>
                      <div class="flex flex-col gap-0.5 text-xs font-medium text-zinc-500 dark:text-zinc-400 shrink-0">
-                          ${authors.length ? `<div class="text-zinc-600 dark:text-zinc-300 line-clamp-2 block"><i data-lucide="pen-tool" class="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500 inline-block mr-1.5 align-text-bottom pointer-events-none"></i>${authorsHtml}</div>` : ''}
-                          ${item.universe ? `<button type="button" onclick="smartFilter(event, 'universe', '${item.universe.replace(/'/g, "\\'")}')" class="bg-transparent border-none p-0 flex items-center gap-1.5 truncate text-indigo-500 dark:text-indigo-300 cursor-pointer hover:text-indigo-700 dark:hover:text-indigo-200 transition-colors z-30 max-w-full"><i data-lucide="globe" class="w-3.5 h-3.5 opacity-50 pointer-events-none shrink-0"></i> <span class="truncate">${item.universe}</span></button>` : ''}
-                          ${item.series ? `<button type="button" onclick="smartFilter(event, 'series', '${item.series.replace(/'/g, "\\'")}')" class="bg-transparent border-none p-0 flex items-center gap-1.5 truncate text-emerald-600 dark:text-emerald-300 cursor-pointer hover:text-emerald-700 dark:hover:text-emerald-200 transition-colors z-30 max-w-full"><i data-lucide="library" class="w-3.5 h-3.5 opacity-50 pointer-events-none shrink-0"></i> <span class="truncate">${seriesDisplayText}</span></button>` : ''}
+                          ${isFieldVisible('authors') && authors.length ? `<div class="text-zinc-600 dark:text-zinc-300 line-clamp-2 block"><i data-lucide="pen-tool" class="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500 inline-block mr-1.5 align-text-bottom pointer-events-none"></i>${authorsHtml}</div>` : ''}
+                          ${isFieldVisible('universe') && item.universe ? `<button type="button" onclick="smartFilter(event, 'universe', '${item.universe.replace(/'/g, "\\'")}')" class="bg-transparent border-none p-0 flex items-center gap-1.5 truncate text-indigo-500 dark:text-indigo-300 cursor-pointer hover:text-indigo-700 dark:hover:text-indigo-200 transition-colors z-30 max-w-full"><i data-lucide="globe" class="w-3.5 h-3.5 opacity-50 pointer-events-none shrink-0"></i> <span class="truncate">${item.universe}</span></button>` : ''}
+                          ${isFieldVisible('series') && item.series ? `<button type="button" onclick="smartFilter(event, 'series', '${item.series.replace(/'/g, "\\'")}')" class="bg-transparent border-none p-0 flex items-center gap-1.5 truncate text-emerald-600 dark:text-emerald-300 cursor-pointer hover:text-emerald-700 dark:hover:text-emerald-200 transition-colors z-30 max-w-full"><i data-lucide="library" class="w-3.5 h-3.5 opacity-50 pointer-events-none shrink-0"></i> <span class="truncate">${seriesDisplayText}</span></button>` : ''}
                      </div>
                      ${getSynopsisBlockHtml(item, authors)}
                  </div>`;
@@ -474,7 +500,7 @@ function generateCardHtml(item) {
              <div onclick="openDetail('${item.id}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openDetail('${item.id}');}" class="group relative h-auto rounded-xl overflow-hidden cursor-pointer media-card ${mediaClass} bg-white dark:bg-zinc-900 flex flex-col shadow-lg outline-none focus:ring-4 focus:ring-indigo-500/50">
                  <div class="relative w-full aspect-[2/3] overflow-hidden bg-zinc-100 dark:bg-zinc-950 pointer-events-none">
                      ${coverHtml}
-                     ${progressHtml}
+                     ${isFieldVisible('progress') ? progressHtml : ''}
                      <div class="absolute top-2.5 left-2.5 z-30 p-2 rounded-lg border shadow-xl ${iconColorClass} pointer-events-none">
                          <i data-lucide="${ICON_MAP[item.type] || 'book'}" class="w-5 h-5"></i>
                      </div>
@@ -486,7 +512,7 @@ function generateCardHtml(item) {
 		// LIST VIEW (Expanded or compact)
 		if (state.showDetails) {
 			let childrenListHtml = '';
-			if (item.children && item.children.length) {
+			if (isFieldVisible('series_number') && item.children && item.children.length) {
 				childrenListHtml = item.children.map(c => {
 					let stars = '';
 					for (let i = 1; i <= 4; i++) {
@@ -500,7 +526,7 @@ function generateCardHtml(item) {
 				childrenListHtml = `<div class="flex flex-col gap-2 w-full mt-2">${childrenListHtml}</div>`;
 			}
 
-			const detailedLinksHtml = (item.externalLinks && item.externalLinks.length)
+			const detailedLinksHtml = (isFieldVisible('external_links') && item.externalLinks && item.externalLinks.length)
 				? `<div class="flex flex-wrap gap-2 mt-3 justify-center">
                                  ${item.externalLinks.map(l => `<a href="${l.url}" target="_blank" onclick="event.stopPropagation()" class="px-3 py-1.5 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-xs text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 flex items-center gap-1 transition-colors"><i data-lucide="link" class="w-3 h-3"></i> ${l.label || 'Link'}</a>`).join('')}
                                 </div>`
@@ -526,37 +552,37 @@ function generateCardHtml(item) {
                                    </div>
                                     ${detailedLinksHtml}
                                </div>
-
+ 
                                <div class="flex-1 flex flex-col gap-5">
                                    <div class="flex flex-col gap-1 border-b border-zinc-200 dark:border-zinc-800 pb-4">
                                        <div class="flex justify-between items-start">
                                           <h3 class="text-3xl font-heading font-black text-zinc-800 dark:text-[var(--theme-col)] transition-colors">${item.title}</h3>
                                            <div class="flex gap-2">${statusBadge} ${hiddenBadge}</div>
                                        </div>
-
+ 
                                        <div class="flex flex-wrap gap-4 text-sm font-medium text-zinc-500 dark:text-zinc-400 mt-1">
-                                           ${authors.length ? `<span onclick="event.stopPropagation()" class="flex items-center gap-1.5 cursor-auto"><i data-lucide="pen-tool" class="w-4 h-4 text-zinc-400 dark:text-zinc-600"></i> ${authorsHtml}</span>` : ''}
-                                           ${item.series ? `<button type="button" onclick="smartFilter(event, 'series', '${item.series}')" class="bg-transparent border-none p-0 text-emerald-500 dark:text-emerald-400/90 flex items-center gap-1.5 cursor-pointer hover:underline"><i data-lucide="library" class="w-4 h-4"></i> ${seriesDisplayText}</button>` : ''}
-                                           ${item.universe ? `<button type="button" onclick="smartFilter(event, 'universe', '${item.universe}')" class="bg-transparent border-none p-0 text-indigo-500 dark:text-indigo-400/90 flex items-center gap-1.5 cursor-pointer hover:underline"><i data-lucide="globe" class="w-4 h-4"></i> ${item.universe}</button>` : ''}
+                                           ${isFieldVisible('authors') && authors.length ? `<span onclick="event.stopPropagation()" class="flex items-center gap-1.5 cursor-auto"><i data-lucide="pen-tool" class="w-4 h-4 text-zinc-400 dark:text-zinc-600"></i> ${authorsHtml}</span>` : ''}
+                                           ${isFieldVisible('series') && item.series ? `<button type="button" onclick="smartFilter(event, 'series', '${item.series}')" class="bg-transparent border-none p-0 text-emerald-500 dark:text-emerald-400/90 flex items-center gap-1.5 cursor-pointer hover:underline"><i data-lucide="library" class="w-4 h-4"></i> ${seriesDisplayText}</button>` : ''}
+                                           ${isFieldVisible('universe') && item.universe ? `<button type="button" onclick="smartFilter(event, 'universe', '${item.universe}')" class="bg-transparent border-none p-0 text-indigo-500 dark:text-indigo-400/90 flex items-center gap-1.5 cursor-pointer hover:underline"><i data-lucide="globe" class="w-4 h-4"></i> ${item.universe}</button>` : ''}
                                        </div>
-
+ 
                                        ${item.description ? `
                                        <div class="text-zinc-600 dark:text-zinc-400 text-sm mt-3 leading-relaxed group/desc relative" onclick="event.stopPropagation()">
                                             <div class="text-[10px] font-bold text-zinc-800 dark:text-[var(--theme-col)] uppercase tracking-wider mb-1 opacity-70">Synopsis</div>
                                            <div id="desc-${item.id}" class="line-clamp-3 whitespace-pre-wrap">${item.description}</div>
                                             <button type="button" id="btn-desc-${item.id}" onclick="event.stopPropagation(); toggleExpand('${item.id}', 'desc')" class="text-xs text-[var(--theme-col)] font-bold mt-1 hover:underline relative z-50 hidden">Read More</button>
                                        </div>` : ''}
-
-                                       ${item.notes ? `
+ 
+                                       ${isFieldVisible('notes') && item.notes ? `
                                        <div class="text-zinc-600 dark:text-zinc-400 text-sm mt-3 leading-relaxed group/notes relative" onclick="event.stopPropagation()">
                                            <div class="text-[10px] font-bold text-zinc-800 dark:text-[var(--theme-col)] uppercase tracking-wider mb-1 opacity-70">Notes</div>
                                             <div id="list-notes-${item.id}" class="line-clamp-3 whitespace-pre-wrap">${item.notes || ''}</div>
                                             <button type="button" id="btn-list-notes-${item.id}" onclick="event.stopPropagation(); toggleExpand('${item.id}', 'list-notes')" class="text-xs text-[var(--theme-col)] font-bold mt-1 hover:underline relative z-50 hidden">Read More</button>
                                         </div>` : ''}
-
+ 
                                    </div>
-
-                                   ${(hasRating || item.review) ? `
+ 
+                                   ${(hasRating || (isFieldVisible('review') && item.review)) ? `
                                     <div class="bg-zinc-100 dark:bg-black/20 border border-zinc-200 dark:border-white/5 rounded-xl p-5 clearfix">
                                        ${hasRating ? `
                                         <div class="float-left mr-6 mb-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl p-4 flex flex-col items-center gap-1 shadow-lg">
@@ -566,21 +592,21 @@ function generateCardHtml(item) {
                                                ${[1, 2, 3, 4].map(i => `<i data-lucide="star" class="w-4 h-4 ${item.rating >= i ? STAR_FILLS[item.rating] : 'text-zinc-300 dark:text-zinc-800'} fill-current"></i>`).join('')}
                                            </div>
                                         </div>` : ''}
-
-                                        ${item.review ? `
+ 
+                                        ${isFieldVisible('review') && item.review ? `
                                         <div class="text-zinc-700 dark:text-zinc-300 italic text-xs leading-relaxed relative" onclick="event.stopPropagation()">
                                            <div id="review-${item.id}" class="line-clamp-3 whitespace-pre-wrap"><i data-lucide="quote" class="inline w-3 h-3 text-zinc-400 dark:text-zinc-600 mr-1 align-top"></i>${item.review}</div>
                                             <button type="button" id="btn-review-${item.id}" onclick="event.stopPropagation(); toggleExpand('${item.id}', 'review')" class="text-xs text-[var(--theme-col)] font-bold ml-1 hover:underline relative z-50 hidden">Read More</button>
                                         </div>` : ''}
                                     </div>` : ''}
-
+ 
                                     ${childrenListHtml ? `
                                     <div onclick="event.stopPropagation()">
                                        <h4 class="text-xs font-bold text-zinc-800 dark:text-[var(--theme-col)] uppercase tracking-widest mb-3 flex items-center gap-2"><i data-lucide="layers" class="w-4 h-4"></i> ${['Book', 'Manga'].includes(item.type) ? 'Volumes' : 'Seasons'}</h4>
                                        ${childrenListHtml}
                                     </div>` : ''}
                                     
-                                     ${item.progress ? `<div class="mt-auto pt-2"><div class="text-xs font-mono text-amber-600 dark:text-amber-500 bg-amber-500/10 border border-amber-500/20 rounded px-2 py-1 inline-block">Progress: ${item.progress}</div></div>` : ''}
+                                     ${isFieldVisible('progress') && item.progress ? `<div class="mt-auto pt-2"><div class="text-xs font-mono text-amber-600 dark:text-amber-500 bg-amber-500/10 border border-amber-500/20 rounded px-2 py-1 inline-block">Progress: ${item.progress}</div></div>` : ''}
                                </div>
                           </div>
                      </div>
@@ -613,12 +639,12 @@ function generateCardHtml(item) {
     <span class="font-bold uppercase tracking-wide text-[9px]">${item.type}</span>
 </div>
                                 
-                                ${item.series ? `<div class="flex items-center gap-1 text-emerald-600 dark:text-emerald-400/90 hover:text-emerald-500 dark:hover:text-emerald-300 transition-colors cursor-pointer truncate" onclick="smartFilter(event, 'series', '${item.series}')"><i data-lucide="library" class="w-3.5 h-3.5 opacity-70"></i> <span class="truncate max-w-[150px] md:max-w-[200px]">${item.series} ${item.seriesNumber ? '#' + item.seriesNumber : ''}</span></div>` : ''}
-                                ${item.universe ? `<div class="flex items-center gap-1 text-indigo-600 dark:text-indigo-400/90 hover:text-indigo-500 dark:hover:text-indigo-300 transition-colors cursor-pointer truncate" onclick="smartFilter(event, 'universe', '${item.universe}')"><i data-lucide="globe" class="w-3.5 h-3.5 opacity-70"></i> <span class="truncate max-w-[150px]">${item.universe}</span></div>` : ''}
+                                ${isFieldVisible('series') && item.series ? `<div class="flex items-center gap-1 text-emerald-600 dark:text-emerald-400/90 hover:text-emerald-500 dark:hover:text-emerald-300 transition-colors cursor-pointer truncate" onclick="smartFilter(event, 'series', '${item.series}')"><i data-lucide="library" class="w-3.5 h-3.5 opacity-70"></i> <span class="truncate max-w-[150px] md:max-w-[200px]">${item.series} ${item.seriesNumber ? '#' + item.seriesNumber : ''}</span></div>` : ''}
+                                ${isFieldVisible('universe') && item.universe ? `<div class="flex items-center gap-1 text-indigo-600 dark:text-indigo-400/90 hover:text-indigo-500 dark:hover:text-indigo-300 transition-colors cursor-pointer truncate" onclick="smartFilter(event, 'universe', '${item.universe}')"><i data-lucide="globe" class="w-3.5 h-3.5 opacity-70"></i> <span class="truncate max-w-[150px]">${item.universe}</span></div>` : ''}
                             </div>
                             
                             <div class="flex flex-wrap items-center gap-2 text-xs font-medium text-zinc-500">
-                                ${authors.length ? `<span class="flex items-center gap-1 hover:text-zinc-800 dark:hover:text-zinc-300 transition-colors cursor-pointer" onclick="event.stopPropagation()"><i data-lucide="pen-tool" class="w-3 h-3 opacity-50"></i> ${authorsHtml}</span>` : '<span class="italic text-zinc-700">No Author/Studio</span>'}
+                                ${isFieldVisible('authors') ? (authors.length ? `<span class="flex items-center gap-1 hover:text-zinc-800 dark:hover:text-zinc-300 transition-colors cursor-pointer" onclick="event.stopPropagation()"><i data-lucide="pen-tool" class="w-3 h-3 opacity-50"></i> ${authorsHtml}</span>` : '<span class="italic text-zinc-700">No Author/Studio</span>') : ''}
                             </div>
                         </div>
                     </div>
@@ -639,7 +665,7 @@ function generateCardHtml(item) {
     <div class="hidden md:block w-20"></div>`}
 
                         <!-- Progress -->
-                        ${item.progress ? `
+                        ${isFieldVisible('progress') && item.progress ? `
                             <div class="flex items-center gap-1 justify-center">
                                 <span class="text-xs font-mono font-bold text-amber-600 dark:text-amber-500 whitespace-nowrap bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">${item.progress}</span>
                             </div>` : ''}
@@ -649,6 +675,7 @@ function generateCardHtml(item) {
 		}
 	}
 }
+
 
 /**
  * Displays a skeleton loading state in the grid container.
