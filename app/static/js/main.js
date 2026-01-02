@@ -536,6 +536,15 @@ window.saveEntry = async () => {
             safeCreateIcons();
         }
 
+        const editorArea = document.getElementById('imageEditorArea');
+        if (editorArea && !editorArea.classList.contains('hidden') && window.imageEditor && window.imageEditor.saveCropPromise) {
+            try {
+                await window.imageEditor.saveCropPromise();
+            } catch (err) {
+                console.warn("Failed to auto-save crop:", err);
+            }
+        }
+
         const formData = new FormData();
         const status = document.getElementById('status').value;
 

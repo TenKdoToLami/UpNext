@@ -1024,14 +1024,19 @@ export function renderDetailView(item, content) {
         <div class="media-${item.type} relative h-full flex flex-col lg:flex-row">
             <div class="relative w-full lg:w-[45%] h-64 lg:h-full shrink-0 bg-zinc-100 dark:bg-zinc-900 overflow-hidden group border-r border-zinc-200 dark:border-zinc-800">
                 ${coverUrl ? `<img src="${coverUrl}" loading="lazy" class="w-full h-full object-contain bg-zinc-50 dark:bg-zinc-950/50">` : '<div class="w-full h-full flex items-center justify-center text-zinc-400 dark:text-zinc-700 bg-zinc-100 dark:bg-zinc-900"><i data-lucide="image" class="w-24 h-24 opacity-20"></i></div>'}
-                <div class="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-60 pointer-events-none"></div>
                 
-                <div class="absolute bottom-6 left-6 right-6 flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <button onclick="window.editFromDetail('${item.id}')" class="flex-1 py-3 rounded-xl font-bold flex items-center justify-center gap-2 bg-white/90 text-black hover:bg-white shadow-xl backdrop-blur-md transform hover:scale-[1.02] transition-all">
-                        <i data-lucide="edit-2" class="w-4 h-4"></i> Edit
+                <!-- Split Overlay Actions -->
+                <div class="absolute inset-0 z-20 flex flex-col opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <!-- Top: Edit -->
+                    <button onclick="window.editFromDetail('${item.id}')" class="flex-1 w-full bg-black/60 backdrop-blur-sm hover:bg-black/80 transition-all flex flex-col items-center justify-center gap-2 text-white border-b border-white/10">
+                        <i data-lucide="edit-3" class="w-8 h-8 opacity-90"></i>
+                        <span class="text-xs font-black uppercase tracking-widest">Edit Entry</span>
                     </button>
-                    <button onclick="window.deleteFromDetail('${item.id}')" class="px-4 py-3 rounded-xl font-bold flex items-center justify-center gap-2 bg-red-500/80 text-white hover:bg-red-600 shadow-xl backdrop-blur-md transition-all">
-                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    
+                    <!-- Bottom: Delete -->
+                    <button onclick="window.deleteFromDetail('${item.id}')" class="flex-1 w-full bg-red-900/60 backdrop-blur-sm hover:bg-red-900/80 transition-all flex flex-col items-center justify-center gap-2 text-white border-t border-white/10">
+                        <i data-lucide="trash-2" class="w-8 h-8 opacity-90"></i>
+                        <span class="text-xs font-black uppercase tracking-widest">Delete</span>
                     </button>
                 </div>
             </div>
