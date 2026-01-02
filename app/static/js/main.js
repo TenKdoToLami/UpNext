@@ -6,17 +6,18 @@
 
 import { state, setState, loadUIState, saveAppSettings } from './state.js';
 import { loadItems, deleteItem, saveItem, getDbStatus, selectDatabase, createDatabase } from './api_service.js';
-import { renderFilters, renderGrid } from './render_utils.js';
+import { renderFilters, renderGrid, updateGridTruncation } from './render_utils.js';
 import { safeCreateIcons, toggleExpand, debounce } from './dom_utils.js';
 import { RATING_LABELS, TEXT_COLORS } from './constants.js';
 import {
-    openModal, closeModal, nextStep, prevStep, jumpToStep, selectType, selectStatus,
+    openModal, closeModal, nextStep, prevStep, jumpToStep,
     populateAutocomplete, addSpecificLink, addLink, removeLink, updateLink, pasteLink,
     removeAuthor, addChild, removeChildIdx, updateChild, updateChildRating,
     removeAltTitle, checkEnterKey, renderDetailView, updateDetailTruncation, updateRatingVisuals,
-    renderAbbrTags, removeAbbreviation, toggleAbbrField, generateAbbreviation
+    renderAbbrTags, removeAbbreviation, toggleAbbrField, generateAbbreviation, renderLinks
 } from './main_helpers.js';
-import { updateWizardUI } from './wizard_logic.js';
+import { updateWizardUI, selectType, selectStatus } from './wizard_logic.js';
+import { scrollToSection, updateSidebarVisibility } from './edit_mode.js';
 import {
     openExportModal, closeExportModal, triggerExport,
     selectExportCategory, backToExportCategories,
@@ -46,6 +47,9 @@ window.prevStep = prevStep;
 window.jumpToStep = jumpToStep;
 window.selectType = selectType;
 window.selectStatus = selectStatus;
+window.renderLinks = renderLinks;
+window.scrollToSection = scrollToSection;
+window.updateSidebarVisibility = updateSidebarVisibility;
 window.populateAutocomplete = populateAutocomplete;
 window.addSpecificLink = addSpecificLink;
 window.addLink = addLink;

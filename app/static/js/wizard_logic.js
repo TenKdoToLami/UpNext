@@ -14,11 +14,10 @@ import {
 	STATUS_COLOR_MAP,
 	ICON_MAP
 } from './constants.js';
-import { safeCreateIcons, safeVal } from './dom_utils.js';
+import { safeCreateIcons, safeVal, safeHtml, safeCheck } from './dom_utils.js';
 import { showToast } from './toast.js';
 import { initImageEditor } from './image_editor.js';
 
-// Global Handlers for Drag & Drop
 // Global Handlers for Drag & Drop
 window.handleDragOver = (e) => {
 	e.preventDefault();
@@ -602,4 +601,343 @@ function createStatusCardHtml(status) {
             <span class="font-bold uppercase tracking-wider text-[10px] sm:text-xs z-10 text-left text-${color}-600 dark:text-${color}-100 break-words leading-tight w-full pr-2">${status}</span>
         </button>
     `;
+}
+
+
+// =============================================================================
+// WIZARD INITIALIZATION
+// =============================================================================
+
+/**
+ * Initializes wizard mode for a new entry.
+ * @param {boolean} isEdit - Unused, kept for compatibility
+ */
+export function initWizard(isEdit) {
+	state.isEditMode = false;
+
+	// Reset Full Screen & Sidebar
+	document.getElementById('modalContent').classList.remove('full-screen-modal');
+	document.getElementById('entryForm').classList.remove('scroll-mode');
+
+	const sidebar = document.getElementById('editSidebar');
+	sidebar.classList.add('hidden');
+	sidebar.classList.remove('flex');
+	// Clear sidebar content to prevent stale links
+	const nav = document.getElementById('editSidebarNav');
+	if (nav) nav.innerHTML = '';
+
+	// ScrollSpy is local to edit_mode.js (mostly), but if we moved initWizard here, 
+	// we can't easily disconnect the observer from edit_mode.js unless we expose a disconnect method.
+	// But initEditMode creates a new observer every time.
+	// So we don't strictly need to disconnect it here, but it's good practice.
+	// We can ignore it for now or add window.disconnectScrollSpy?
+
+	renderTypeSelection();
+	renderStatusSelection();
+
+	document.querySelectorAll('.edit-only-header').forEach(el => el.classList.add('hidden'));
+	document.getElementById('entryForm').classList.remove('h-auto');
+	document.getElementById('entryForm').classList.add('h-full', 'overflow-hidden');
+
+	// Reset wizard step layout
+	document.querySelectorAll('.wizard-step').forEach(el => {
+		el.classList.add('absolute', 'inset-0', 'hidden');
+		el.classList.remove('relative', 'block', 'mb-6', 'w-full', 'max-w-4xl', 'mx-auto', 'flex', 'flex-col');
+		// Ensure style display block from edit mode is removed
+		el.style.display = 'none';
+	});
+
+	restoreStepClasses();
+
+	document.getElementById('wizardDots').classList.remove('hidden');
+	document.getElementById('prevBtn').classList.add('hidden');
+	document.getElementById('nextBtn').classList.remove('hidden');
+	document.getElementById('submitBtn').classList.add('hidden');
+	document.getElementById('submitBtn').innerText = 'Finish';
+	document.getElementById('modalTitle').innerText = 'New Entry';
+
+	if (window.renderChildren) window.renderChildren();
+	state.currentStep = 1;
+	state.maxReachedStep = 1;
+	showStep(1);
+}
+
+/**
+ * Restores CSS classes for each wizard step.
+ */
+function restoreStepClasses() {
+	const restore = (id, classes) => {
+		const el = document.getElementById(id);
+		if (el) el.classList.add(...classes);
+	};
+
+	const centerClasses = ['flex', 'flex-col', 'items-center', 'justify-center', 'text-center', 'overflow-y-auto', 'custom-scrollbar'];
+	const topClasses = ['flex', 'flex-col', 'overflow-y-auto', 'custom-scrollbar'];
+
+	restore('step-1', centerClasses);
+	restore('step-2', centerClasses);
+	restore('step-3', centerClasses); // Cover
+	restore('step-4', topClasses);    // Basic Info
+	restore('step-5', centerClasses); // Description (TextArea fits well in center)
+	restore('step-6', topClasses);
+	restore('step-7', centerClasses); // Progress (Small inputs)
+	restore('step-8', centerClasses); // Review (Stars + Text)
+	restore('step-9', centerClasses); // Notes
+	restore('step-10', topClasses);
+	restore('step-11', centerClasses);
+}
+
+/**
+ * Resets all wizard fields to defaults (used when changing media type).
+ */
+export function resetWizardFields() {
+	safeVal('progress', '');
+	safeVal('coverUrl', '');
+	safeHtml('coverPreview', '<div class="text-zinc-500 font-medium">No Image Selected</div>');
+	safeVal('coverImage', '');
+	safeVal('title', '');
+	safeVal('description', '');
+	safeVal('notes', '');
+	safeVal('review', '');
+	safeVal('rating', 2);
+
+	// Reset visuals
+	if (window.updateRatingVisuals) window.updateRatingVisuals(2);
+
+	state.currentAuthors = [];
+	state.currentAlternateTitles = [];
+	state.currentChildren = [];
+	state.currentLinks = [];
+
+	// Reset author input
+	safeHtml('authorTagsContainer', '<input id="authorInput" list="authorOptions" class="bg-transparent text-sm outline-none flex-1 min-w-[80px] text-zinc-700 dark:text-zinc-200 p-1 placeholder-zinc-400" placeholder="Type & Enter...">');
+	setTimeout(() => {
+		const authInput = document.getElementById('authorInput');
+		if (authInput && window.checkEnterKey) authInput.addEventListener('keydown', (e) => window.checkEnterKey(e, 'author'));
+	}, 0);
+
+	safeVal('universe', '');
+	safeVal('series', '');
+	safeVal('seriesNumber', '');
+	safeHtml('childrenContainer', '');
+	safeHtml('dynamicLinkButtons', '');
+	safeHtml('linksContainer', '');
+
+	// Reset alt-title input
+	setTimeout(() => {
+		const altInput = document.getElementById('altTitleInput');
+		if (altInput && window.checkEnterKey) altInput.addEventListener('keydown', (e) => window.checkEnterKey(e, 'altTitle'));
+	}, 0);
+
+	safeCheck('disableAbbr', true);
+	// Initialize UI state based on checked default
+	if (window.toggleAbbrField) window.toggleAbbrField(true);
+	safeHtml('abbrTagsContainer', '<input id="abbrInput" class="bg-transparent text-sm outline-none flex-1 min-w-[80px] text-zinc-700 dark:text-zinc-200 p-1 placeholder-zinc-400" placeholder="Auto-filled from title...">');
+	setTimeout(() => {
+		const abbrInput = document.getElementById('abbrInput');
+		if (abbrInput && window.checkEnterKey) abbrInput.addEventListener('keydown', (e) => window.checkEnterKey(e, 'abbr'));
+	}, 0);
+}
+
+// =============================================================================
+// SELECTION HANDLERS
+// =============================================================================
+
+/**
+ * Handles media type selection.
+ * @param {string} t - Selected type
+ */
+export function selectType(t) {
+	const current = document.getElementById('type').value;
+	if (current === t && state.isEditMode) return;
+
+	if (!state.isEditMode) {
+		resetWizardFields();
+		state.maxReachedStep = 1;
+		document.getElementById('status').value = '';
+
+		document.querySelectorAll('[id^="status-card-"]').forEach(el => {
+			el.classList.remove('ring-2', 'ring-white', 'bg-zinc-800');
+			el.classList.add('border-zinc-800');
+		});
+		renderStatusSelection();
+	}
+
+	document.getElementById('type').value = t;
+	if (!state.isEditMode) updateDynamicLinks(t);
+	selectTypeVisuals(t);
+	updateWizardUI();
+
+	if (state.isEditMode) {
+		updateFormUI();
+	} else {
+		state.maxReachedStep = 1;
+		updateDots(1);
+		animateStepChange(1, 2, 'right');
+		state.currentStep = 2;
+	}
+}
+
+/**
+ * Handles status selection.
+ * @param {string} s - Selected status
+ */
+export function selectStatus(s) {
+	const current = document.getElementById('status').value;
+	if (current === s && !state.isEditMode) {
+		animateStepChange(2, 3, 'right');
+		state.currentStep = 3;
+		return;
+	}
+
+	document.getElementById('status').value = s;
+	selectStatusVisuals(s);
+
+	if (state.isEditMode) {
+		updateFormUI();
+	} else {
+		if (state.currentStep === 2) state.maxReachedStep = 2;
+		animateStepChange(2, 3, 'right');
+		state.currentStep = 3;
+	}
+}
+
+/**
+ * Updates visual selection state for type cards.
+ * @param {string} t - Selected type
+ */
+export function selectTypeVisuals(t) {
+	const COLOR_MAP = {
+		'Anime': 'violet', 'Manga': 'pink', 'Book': 'blue',
+		'Movie': 'red', 'Series': 'amber'
+	};
+	const colorName = COLOR_MAP[t] || 'zinc';
+
+	document.querySelectorAll('[id^="type-card-"]').forEach(el => {
+		if (el.id !== `type-card-${t}`) restoreDefaultVisuals(el);
+	});
+
+	const card = document.getElementById(`type-card-${t}`);
+	if (!card) return;
+
+	Array.from(card.classList).forEach(cls => {
+		if (cls.startsWith('bg-') || cls.startsWith('dark:bg-') ||
+			cls.startsWith('hover:bg-') || cls.startsWith('dark:hover:bg-') ||
+			(cls.startsWith('border-') && cls !== 'border-2') ||
+			cls.startsWith('dark:border-')) {
+			card.classList.remove(cls);
+		}
+	});
+
+	card.classList.add('selected', 'scale-[1.02]', 'ring-4', 'ring-indigo-500/50', 'bg-black', 'dark:bg-white');
+
+	const innerText = card.querySelector('span');
+	if (innerText) {
+		Array.from(innerText.classList).forEach(cls => {
+			if (cls.startsWith('text-') || cls.startsWith('dark:text-')) innerText.classList.remove(cls);
+		});
+		innerText.classList.add(`text-${colorName}-400`, `dark:text-${colorName}-600`, 'font-bold');
+	}
+}
+
+/** Extracts the Tailwind color name from an element's ID. */
+export function elementColorName(el) {
+	const COLOR_MAP = {
+		'Anime': 'violet', 'Manga': 'pink', 'Book': 'blue', 'Movie': 'red', 'Series': 'amber',
+		'Planning': 'zinc', 'NumberOne': 'zinc', 'Reading': 'sky', 'Watching': 'sky',
+		'Dropped': 'red', 'On': 'orange', 'Hold': 'orange', 'Anticipating': 'fuchsia', 'Completed': 'emerald'
+	};
+	for (const key of Object.keys(COLOR_MAP)) {
+		if (el.id.includes(key)) return COLOR_MAP[key];
+	}
+	return 'zinc';
+}
+
+/** Restores a selection card to its default unselected visual state. */
+export function restoreDefaultVisuals(el) {
+	const c = elementColorName(el);
+
+	el.classList.remove('selected', 'ring-4', 'ring-indigo-500/50', 'scale-[1.02]');
+
+	Array.from(el.classList).forEach(cls => {
+		if (cls.startsWith('bg-') || cls.startsWith('dark:bg-') ||
+			cls.startsWith('hover:bg-') || cls.startsWith('dark:hover:bg-') ||
+			(cls.startsWith('border-') && cls !== 'border-2') ||
+			cls.startsWith('dark:border-')) {
+			el.classList.remove(cls);
+		}
+	});
+
+	if (c === 'zinc') {
+		el.classList.add('bg-zinc-100', 'dark:bg-zinc-800/80', 'border-zinc-300', 'dark:border-zinc-600');
+	} else {
+		el.classList.add(`bg-${c}-100`, `dark:bg-${c}-500/10`, `border-${c}-300`, `dark:border-${c}-500/30`);
+	}
+
+	const innerText = el.querySelector('span');
+	if (innerText) {
+		Array.from(innerText.classList).forEach(cls => {
+			if (cls.startsWith('text-') || cls.startsWith('dark:text-')) innerText.classList.remove(cls);
+		});
+		innerText.classList.remove('font-bold');
+		innerText.classList.add(`text-${c}-600`, `dark:text-${c}-400`);
+	}
+
+	const innerIcon = el.querySelector('i');
+	if (innerIcon) {
+		Array.from(innerIcon.classList).forEach(cls => {
+			if (cls.startsWith('text-') || cls.startsWith('dark:text-')) innerIcon.classList.remove(cls);
+		});
+		innerIcon.classList.add(`text-${c}-500`, `dark:text-${c}-400`);
+	}
+
+	const innerBg = el.querySelector('div.p-3');
+	if (innerBg) {
+		Array.from(innerBg.classList).forEach(cls => {
+			if (cls.startsWith('bg-') || cls.startsWith('dark:bg-') || cls.startsWith('group-hover:bg-')) {
+				innerBg.classList.remove(cls);
+			}
+		});
+		innerBg.classList.add('bg-white', 'dark:bg-zinc-900/50', 'group-hover:bg-zinc-100');
+	}
+}
+
+/**
+ * Updates visual selection state for status cards.
+ * @param {string} s - Selected status
+ */
+export function selectStatusVisuals(s) {
+	const idSafe = s.replace(/[^a-zA-Z]/g, '');
+	const COLOR_MAP = {
+		'Planning': 'zinc', 'Reading/Watching': 'sky', 'Dropped': 'red',
+		'On Hold': 'orange', 'Anticipating': 'fuchsia', 'Completed': 'emerald'
+	};
+	const colorName = Object.entries(COLOR_MAP).find(([k]) => s.includes(k) || k.includes(s))?.[1] || 'zinc';
+	const selectedCardId = `status-card-${idSafe}`;
+
+	document.querySelectorAll('[id^="status-card-"]').forEach(el => {
+		if (el.id !== selectedCardId) restoreDefaultVisuals(el);
+	});
+
+	const card = document.getElementById(selectedCardId);
+	if (!card) return;
+
+	Array.from(card.classList).forEach(cls => {
+		if (cls.startsWith('bg-') || cls.startsWith('dark:bg-') ||
+			cls.startsWith('hover:bg-') || cls.startsWith('dark:hover:bg-') ||
+			(cls.startsWith('border-') && cls !== 'border-2') ||
+			cls.startsWith('dark:border-')) {
+			card.classList.remove(cls);
+		}
+	});
+
+	card.classList.add('selected', 'scale-[1.02]', 'ring-4', 'ring-indigo-500/50', 'bg-black', 'dark:bg-white');
+
+	const innerText = card.querySelector('span');
+	if (innerText) {
+		Array.from(innerText.classList).forEach(cls => {
+			if (cls.startsWith('text-') || cls.startsWith('dark:text-')) innerText.classList.remove(cls);
+		});
+		innerText.classList.add(`text-${colorName}-400`, `dark:text-${colorName}-600`, 'font-bold');
+	}
 }

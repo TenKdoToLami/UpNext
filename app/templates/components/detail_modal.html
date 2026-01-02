@@ -1,0 +1,12 @@
+<!-- DETAIL MODAL -->
+<div id="detailModal"
+	class="fixed inset-0 z-[90] flex items-center justify-center bg-zinc-500/30 dark:bg-black/95 backdrop-blur-md hidden opacity-0 transition-all duration-300"
+	onclick="if(event.target === this) closeDetail()">
+	<div id="detailModalContent"
+		class="bg-white dark:bg-zinc-950 border-2 rounded-3xl w-full max-w-[95rem] h-[92vh] overflow-hidden flex flex-col shadow-2xl relative animate-enter transition-colors duration-300 border-zinc-200 dark:border-zinc-800">
+		<button onclick="closeDetail()"
+			class="absolute top-6 right-6 z-50 bg-black/10 dark:bg-black/40 hover:bg-zinc-200 dark:hover:bg-white text-zinc-900 dark:text-white hover:text-black p-2 rounded-full backdrop-blur-md transition-all border border-black/5 dark:border-white/10 hover:border-black/20 dark:hover:border-white shadow-lg"><i
+				data-lucide="x" class="w-5 h-5"></i></button>
+		<div id="detailContent" class="overflow-y-auto custom-scrollbar h-full relative"></div>
+	</div>
+</div>

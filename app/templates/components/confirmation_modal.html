@@ -1,0 +1,29 @@
+<!-- CONFIRMATION MODAL -->
+<div id="confirmationModal"
+	class="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm hidden opacity-0 transition-opacity duration-200"
+	onclick="if(event.target === this) closeConfirmationModal()">
+	<div
+		class="bg-white dark:bg-[#18181b] border border-zinc-200 dark:border-zinc-800 rounded-3xl w-full max-w-sm shadow-2xl p-6 transform scale-95 transition-all duration-200 flex flex-col items-center text-center">
+
+		<div id="confirmIconContainer"
+			class="w-16 h-16 rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center mb-4 text-zinc-900 dark:text-white mb-4">
+			<i id="confirmIcon" data-lucide="alert-circle" class="w-8 h-8"></i>
+		</div>
+
+		<h3 id="confirmTitle" class="text-xl font-bold text-zinc-900 dark:text-white mb-2">Are you sure?</h3>
+		<p id="confirmMessage" class="text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-6 leading-relaxed">
+			This action cannot be undone.
+		</p>
+
+		<div class="flex items-center gap-3 w-full">
+			<button id="btnCancelAction" onclick="closeConfirmationModal()"
+				class="flex-1 py-3 rounded-xl font-bold text-sm text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all">
+				Cancel
+			</button>
+			<button id="btnConfirmAction"
+				class="flex-1 py-3 rounded-xl font-bold text-sm bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-black shadow-lg hover:shadow-xl transition-all">
+				Confirm
+			</button>
+		</div>
+	</div>
+</div>
