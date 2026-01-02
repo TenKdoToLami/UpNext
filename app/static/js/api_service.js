@@ -44,6 +44,25 @@ export async function selectDatabase(dbName) {
 }
 
 /**
+ * Creates a new database.
+ * @param {string} dbName - The name of the new database.
+ * @returns {Promise<{status: string, message?: string, db_name?: string}>}
+ */
+export async function createDatabase(dbName) {
+	try {
+		const response = await fetch('/api/database/create', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ db_name: dbName })
+		});
+		return await response.json();
+	} catch (e) {
+		console.error('Failed to create DB:', e);
+		return { status: 'error', message: e.message };
+	}
+}
+
+/**
  * Fetches all library items from the API and updates the local state and UI.
  * This is the primary data loading function called on app initialization and refreshes.
  * @returns {Promise<void>}

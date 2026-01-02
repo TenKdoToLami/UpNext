@@ -11,10 +11,6 @@ import { showToast } from './toast.js';
 import { MEDIA_TYPES, STATUS_TYPES, STATUS_ICON_MAP, TYPE_COLOR_MAP, ICON_MAP, FEATURE_GROUPS } from './constants.js';
 
 // =============================================================================
-// CONSTANTS & CONFIG
-// =============================================================================
-
-// =============================================================================
 // STATE MANAGEMENT
 // =============================================================================
 
@@ -445,7 +441,22 @@ export function renderSettings() {
 		}).join('');
 	}
 
+	// 4. Database Settings
+	const autoLaunchCheckbox = document.getElementById('setting-autoLaunchDb');
+	if (autoLaunchCheckbox) {
+		autoLaunchCheckbox.checked = currentSettings.autoLaunchDb === true;
+	}
+
 	// Scope icon creation to the modal content to avoid global flicker/reflow
 	const modalContent = document.getElementById('settingsModalContent');
 	safeCreateIcons(modalContent);
+}
+
+/**
+ * Toggles the auto-launch preference from settings.
+ * @param {boolean} checked 
+ */
+export function toggleAutoLaunchSetting(checked) {
+	if (!pendingAppSettings) pendingAppSettings = JSON.parse(JSON.stringify(state.appSettings));
+	pendingAppSettings.autoLaunchDb = checked;
 }

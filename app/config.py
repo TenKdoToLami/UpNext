@@ -44,25 +44,31 @@ else:
 # Directories
 DATA_DIR = os.path.join(BASE_DIR, "data")
 # Database Configuration
-DB_CONFIG_FILE = os.path.join(DATA_DIR, "db_config.json")
+APP_CONFIG_FILE = os.path.join(DATA_DIR, "config.json")
 DEFAULT_DB_NAME = 'library.db'
 
 def get_sqlite_db_path(db_filename=None):
-    """Returns the absolute path to the specified or default database file."""
+    """
+    Returns the absolute path to the specified or default database file.
+    
+    If no filename is provided, it attempts to look up the 'last_db' 
+    from the persistent configuration.
+    """
     if db_filename:
         return os.path.join(DATA_DIR, db_filename)
     
-    # Check for persisted selection
-    if os.path.exists(DB_CONFIG_FILE):
+    # Check for persisted selection in config.json
+    if os.path.exists(APP_CONFIG_FILE):
         try:
             import json
-            with open(DB_CONFIG_FILE, 'r') as f:
+            with open(APP_CONFIG_FILE, 'r') as f:
                 config = json.load(f)
                 last_db = config.get('last_db')
                 if last_db and os.path.exists(os.path.join(DATA_DIR, last_db)):
                     return os.path.join(DATA_DIR, last_db)
         except Exception:
-            pass # Fallback to default on error
+            # Fallback to default on error (e.g. malformed JSON)
+            pass 
 
     return os.path.join(DATA_DIR, DEFAULT_DB_NAME)
 

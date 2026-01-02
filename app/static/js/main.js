@@ -4,8 +4,8 @@
  * @module main
  */
 
-import { state, setState, loadUIState } from './state.js';
-import { loadItems, deleteItem, saveItem, getDbStatus, selectDatabase } from './api_service.js';
+import { state, setState, loadUIState, saveAppSettings } from './state.js';
+import { loadItems, deleteItem, saveItem, getDbStatus, selectDatabase, createDatabase } from './api_service.js';
 import { renderFilters, renderGrid } from './render_utils.js';
 import { safeCreateIcons, toggleExpand, debounce } from './dom_utils.js';
 import { RATING_LABELS, TEXT_COLORS } from './constants.js';
@@ -26,7 +26,7 @@ import {
 import {
     openSettingsModal, closeSettingsModal, saveSettingsAndClose,
     switchSettingsTab, toggleFeature, toggleHiddenField,
-    toggleGroupCollapse, toggleMediaType, toggleStatus
+    toggleGroupCollapse, toggleMediaType, toggleStatus, toggleAutoLaunchSetting
 } from './settings_logic.js';
 
 // =============================================================================
@@ -37,6 +37,59 @@ import {
 window.state = state;
 window.toggleExpand = toggleExpand;
 window.loadItems = loadItems;
+
+// Helper Bindings
+window.openModal = openModal;
+window.closeModal = closeModal;
+window.nextStep = nextStep;
+window.prevStep = prevStep;
+window.jumpToStep = jumpToStep;
+window.selectType = selectType;
+window.selectStatus = selectStatus;
+window.populateAutocomplete = populateAutocomplete;
+window.addSpecificLink = addSpecificLink;
+window.addLink = addLink;
+window.removeLink = removeLink;
+window.updateLink = updateLink;
+window.pasteLink = pasteLink;
+window.removeAuthor = removeAuthor;
+window.addChild = addChild;
+window.removeChildIdx = removeChildIdx;
+window.updateChild = updateChild;
+window.updateChildRating = updateChildRating;
+window.removeAltTitle = removeAltTitle;
+window.checkEnterKey = checkEnterKey;
+window.renderDetailView = renderDetailView;
+window.updateDetailTruncation = updateDetailTruncation;
+window.updateRatingVisuals = updateRatingVisuals;
+window.renderAbbrTags = renderAbbrTags;
+window.removeAbbreviation = removeAbbreviation;
+window.toggleAbbrField = toggleAbbrField;
+window.generateAbbreviation = generateAbbreviation;
+
+// Export Utils Bindings
+window.openExportModal = openExportModal;
+window.closeExportModal = closeExportModal;
+window.triggerExport = triggerExport;
+window.selectExportCategory = selectExportCategory;
+window.backToExportCategories = backToExportCategories;
+window.updateExportOptions = updateExportOptions;
+window.toggleVisualField = toggleVisualField;
+window.toggleExportTypeFilter = toggleExportTypeFilter;
+window.toggleExportStatusFilter = toggleExportStatusFilter;
+window.toggleExportRatingFilter = toggleExportRatingFilter;
+
+// Settings Logic Bindings
+window.openSettingsModal = openSettingsModal;
+window.closeSettingsModal = closeSettingsModal;
+window.saveSettingsAndClose = saveSettingsAndClose;
+window.switchSettingsTab = switchSettingsTab;
+window.toggleFeature = toggleFeature;
+window.toggleHiddenField = toggleHiddenField;
+window.toggleGroupCollapse = toggleGroupCollapse;
+window.toggleMediaType = toggleMediaType;
+window.toggleStatus = toggleStatus;
+window.toggleAutoLaunchSetting = toggleAutoLaunchSetting;
 
 // =============================================================================
 // THEME MANAGEMENT
@@ -66,82 +119,186 @@ function updateThemeIcon() {
     safeCreateIcons();
 }
 
-// =============================================================================
-// SETTINGS MODAL MANAGEMENT
-// =============================================================================
+/**
+ * Checks if multiple databases exist and prompts user if needed.
+ * Updated to support Auto-Launch and Create New DB.
+ */
+/**
+ * Checks if multiple databases exist and prompts user if needed.
+ * Updated to support Auto-Launch, Create New DB, and Forced Restart.
+ */
+async function checkDatabaseSelection() {
+    try {
+        const { available, active, hasConfig } = await getDbStatus();
 
-window.openSettingsModal = openSettingsModal;
-window.closeSettingsModal = closeSettingsModal;
-window.saveSettingsAndClose = saveSettingsAndClose;
-window.switchSettingsTab = switchSettingsTab;
-window.toggleFeature = toggleFeature;
-window.toggleHiddenField = toggleHiddenField;
-window.toggleGroupCollapse = toggleGroupCollapse;
-window.toggleMediaType = toggleMediaType;
-window.toggleStatus = toggleStatus;
+        // Check if restart was forced
+        const forcedRestart = sessionStorage.getItem('forceDbSelect');
+        if (forcedRestart) {
+            sessionStorage.removeItem('forceDbSelect');
+            console.log("Forced DB selection restart detected.");
+        }
 
+        // Check Auto-Launch Preference
+        const autoLaunch = state.appSettings?.autoLaunchDb ?? false;
 
+        // Condition to skip modal:
+        // 1. Not forced restart.
+        // 2. AND (Auto-launch is ON AND active DB is valid OR only one DB exists).
+        const shouldSkip = !forcedRestart && ((available.length <= 1) || (autoLaunch && active && available.includes(active)));
 
-/** Opens the export modal. */
-window.openExportModal = openExportModal;
-/** Closes the export modal. */
-window.closeExportModal = closeExportModal;
-/** Triggers the export process. */
-window.triggerExport = triggerExport;
-/** Selects an export category. */
-window.selectExportCategory = selectExportCategory;
-/** Navigates back to export categories. */
-window.backToExportCategories = backToExportCategories;
-/** Updates export options. */
-window.updateExportOptions = updateExportOptions;
-/** Toggles a visual field for export. */
-window.toggleVisualField = toggleVisualField;
-/** Toggles the export type filter. */
-window.toggleExportTypeFilter = toggleExportTypeFilter;
-/** Toggles the export status filter. */
-window.toggleExportStatusFilter = toggleExportStatusFilter;
-/** Toggles the export rating filter. */
-window.toggleExportRatingFilter = toggleExportRatingFilter;
+        if (shouldSkip) {
+            console.log("Auto-launching or default database:", active || available[0]);
+            loadItems();
+            return;
+        }
 
-/** Opens a generic modal. */
-window.openModal = openModal;
-/** Closes a generic modal. */
-window.closeModal = closeModal;
-/** Advances to the next step in a wizard. */
-window.nextStep = nextStep;
-/** Goes back to the previous step in a wizard. */
-window.prevStep = prevStep;
-/** Jumps to a specific step in a wizard. */
-window.jumpToStep = jumpToStep;
-/** Selects an item type in a form. */
-window.selectType = selectType;
-/** Selects an item status in a form. */
-window.selectStatus = selectStatus;
+        // Show Modal
+        const modal = document.getElementById('dbSelectModal');
+        const container = document.getElementById('dbLinksContainer');
 
-// Form & Tag helpers
-/** Adds a specific link to an item. */
-window.addSpecificLink = addSpecificLink;
-/** Adds a generic link to an item. */
-window.addLink = addLink;
-/** Removes a link from an item. */
-window.removeLink = removeLink;
-/** Updates an existing link. */
-window.updateLink = updateLink;
-/** Pastes a link from clipboard. */
-window.pasteLink = pasteLink;
-/** Removes an author from an item. */
-window.removeAuthor = removeAuthor;
-window.addChild = addChild;
-window.removeChildIdx = removeChildIdx;
-window.updateChild = updateChild;
-window.updateChildRating = updateChildRating;
-window.removeAltTitle = removeAltTitle;
-window.removeAbbreviation = removeAbbreviation;
-window.toggleAbbrField = toggleAbbrField;
+        let footer = document.getElementById('dbSelectFooter');
+        if (!footer) {
+            const contentDiv = container.parentElement;
+            footer = document.createElement('div');
+            footer.id = 'dbSelectFooter';
+            footer.className = 'w-full pt-6 mt-4 border-t border-zinc-100 dark:border-zinc-800 flex flex-col gap-3';
+            contentDiv.appendChild(footer);
+        }
 
-// =============================================================================
-// FILTER HANDLERS
-// =============================================================================
+        if (modal && container) {
+            container.innerHTML = available.map(db => `
+                <button onclick="window.handleDbSelect('${db}')" 
+                    class="w-full text-left px-5 py-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800/50 hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:border-indigo-500 dark:hover:border-indigo-500 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 group flex items-center justify-between relative overflow-hidden">
+                    
+                    <div class="flex items-center gap-4 relative z-10 w-full">
+                         <div class="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-900 flex-shrink-0 flex items-center justify-center text-zinc-400 group-hover:text-indigo-500 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-500/10 transition-colors">
+                            <i data-lucide="database" class="w-5 h-5"></i>
+                         </div>
+                         <div class="flex flex-col flex-grow min-w-0">
+                            <span class="font-bold text-zinc-700 dark:text-zinc-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors text-lg truncate">${db.replace('.db', '')}</span>
+                            <span class="text-xs text-zinc-400 font-mono truncate">${db}</span>
+                         </div>
+                         ${db === active ? `
+                            <span class="flex-shrink-0 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-500/10 px-3 py-1.5 rounded-full border border-emerald-200 dark:border-emerald-500/20">
+                                <i data-lucide="check" class="w-3 h-3"></i> Last Active
+                            </span>
+                        ` : `
+                            <i data-lucide="chevron-right" class="w-5 h-5 text-zinc-300 dark:text-zinc-700 group-hover:text-indigo-400 group-hover:translate-x-1 transition-all"></i>
+                        `}
+                    </div>
+                </button>
+            `).join('');
+
+            footer.innerHTML = `
+                <button onclick="window.handleCreateDb()" 
+                    class="w-full py-4 rounded-2xl border-2 border-dashed border-zinc-300 dark:border-zinc-700 text-zinc-400 dark:text-zinc-500 font-bold hover:border-indigo-500 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-all flex items-center justify-center gap-2 group">
+                    <div class="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center group-hover:bg-indigo-100 dark:group-hover:bg-indigo-500/20 transition-colors">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                    </div>
+                    <span>Create New Library</span>
+                </button>
+                
+                <label class="flex items-center justify-center gap-2.5 cursor-pointer group opacity-60 hover:opacity-100 transition-all py-2">
+                        <input type="checkbox" id="autoLaunchCheckbox" 
+                        onchange="window.toggleAutoLaunch(this.checked)"
+                        ${state.appSettings?.autoLaunchDb ? 'checked' : ''}
+                        class="w-4 h-4 rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer">
+                        <span class="text-xs font-medium text-zinc-500 group-hover:text-zinc-800 dark:group-hover:text-zinc-200 transition-colors select-none">
+                        Do not show on launch (Auto-load)
+                        </span>
+                </label>
+            `;
+
+            modal.classList.remove('hidden');
+            void modal.offsetWidth;
+            modal.classList.remove('opacity-0');
+            modal.querySelector('div').classList.remove('scale-95');
+            safeCreateIcons();
+        }
+
+    } catch (e) {
+        console.error('DB Status Check Failed:', e);
+        loadItems(); // Fallback
+    }
+}
+
+/** 
+ * Forces a restart that opens the DB selection screen. 
+ * Invoked by restart button in settings.
+ */
+window.restartToDbSelect = () => {
+    sessionStorage.setItem('forceDbSelect', 'true');
+    window.location.reload();
+};
+
+/** Handles database selection click. */
+window.handleDbSelect = async (dbName) => {
+    const res = await selectDatabase(dbName);
+    if (res.status === 'success') {
+        const modal = document.getElementById('dbSelectModal');
+        // Close modal and load items (No Reload!)
+        modal.classList.add('opacity-0');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+
+        loadItems();
+        showRichToast({
+            title: 'Library Loaded',
+            message: `Switched to ${dbName}`,
+            type: 'success'
+        });
+    } else {
+        alert('Failed to switch database: ' + res.message);
+    }
+};
+
+/** Handles creating a new database. */
+window.handleCreateDb = async () => {
+    const name = prompt("Enter a name for the new library (alphanumeric only, no extension needed):");
+    if (!name) return;
+
+    const res = await createDatabase(name);
+    if (res.status === 'success') {
+        const switchRes = await selectDatabase(res.db_name);
+        if (switchRes.status === 'success') {
+            // Close modal and load (No reload)
+            const modal = document.getElementById('dbSelectModal');
+            modal.classList.add('opacity-0');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+
+            loadItems();
+            showRichToast({
+                title: 'Library Created',
+                message: `Created and switched to ${res.db_name}`,
+                type: 'success'
+            });
+        } else {
+            alert('Database created but failed to switch: ' + switchRes.message);
+        }
+    } else {
+        alert('Failed to create database: ' + res.message);
+    }
+};
+
+/** Toggles auto-launch setting. */
+/** Toggles auto-launch setting. */
+window.toggleAutoLaunch = async (checked) => {
+    if (!state.appSettings) state.appSettings = {};
+
+    // Update state and persist using the centralized state manager
+    // This ensures LocalStorage / Native Config is updated
+    saveAppSettings({ autoLaunchDb: checked });
+
+    // Also try to save to backend file for redundancy/backend-awareness
+    try {
+        await fetch('/api/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(state.appSettings)
+        });
+    } catch (e) {
+        console.error("Failed to save auto-launch pref to backend:", e);
+    }
+};
 
 /**
  * Sets the media type filter.
@@ -675,72 +832,7 @@ window.deleteFromDetail = async (id) => {
 // =============================================================================
 
 
-/**
- * Checks if multiple databases are available and prompts for selection if needed.
- */
-async function checkDatabaseSelection() {
-    const status = await getDbStatus();
-    if (status.needsSelection) {
-        const modal = document.getElementById('dbSelectModal');
-        const container = document.getElementById('dbLinksContainer');
-        container.innerHTML = '';
 
-        const closeDbModal = () => {
-            modal.classList.add('opacity-0');
-            setTimeout(() => modal.classList.add('hidden'), 300);
-        };
-
-        // Populate database options
-        status.available.forEach(dbName => {
-            const isActive = dbName === status.active;
-            const btn = document.createElement('button');
-
-            // Base classes
-            let classes = 'w-full px-6 py-4 rounded-2xl border text-left transition-all group flex justify-between items-center relative overflow-hidden ';
-
-            if (isActive) {
-                classes += 'bg-indigo-50 dark:bg-indigo-500/10 border-indigo-500 shadow-md shadow-indigo-500/10';
-            } else {
-                classes += 'bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-indigo-500 dark:hover:border-indigo-500';
-            }
-            btn.className = classes;
-
-            btn.innerHTML = `
-                <div class="flex flex-col relative z-10">
-                    <span class="text-zinc-900 dark:text-white font-bold text-lg flex items-center gap-2">
-                        ${dbName}
-                        ${isActive ? '<span class="px-2 py-0.5 rounded-full bg-indigo-500 text-white text-[10px] font-bold uppercase tracking-wider">Last Used</span>' : ''}
-                    </span>
-                    <span class="text-xs text-zinc-500 uppercase tracking-wider mt-1 font-medium">${isActive ? 'Click to resume' : 'Click to switch'}</span>
-                </div>
-                ${isActive
-                    ? '<div class="absolute inset-0 bg-indigo-500/5 dark:bg-indigo-500/10"></div><i data-lucide="check-circle-2" class="w-6 h-6 text-indigo-500 relative z-10"></i>'
-                    : '<i data-lucide="chevron-right" class="w-5 h-5 text-zinc-300 group-hover:text-indigo-500 transition-colors relative z-10"></i>'
-                }
-            `;
-
-            btn.onclick = async () => {
-                // Force backend sync
-                const result = await selectDatabase(dbName);
-                if (result.status === 'success') {
-                    closeDbModal();
-                    loadItems();
-                    showToast(`Switched to ${dbName}`, 'success');
-                } else {
-                    showToast(result.message || 'Failed to switch database', 'error');
-                }
-            };
-            container.appendChild(btn);
-        });
-
-        modal.classList.remove('hidden');
-        setTimeout(() => {
-            modal.classList.remove('opacity-0');
-            modal.children[0].classList.remove('scale-95');
-            safeCreateIcons();
-        }, 10);
-    }
-}
 
 /**
  * Applies current state to UI elements.
@@ -824,8 +916,7 @@ async function checkOverdueReleases() {
  */
 async function initApp() {
     await loadUIState();
-    checkDatabaseSelection();
-    loadItems();
+    await checkDatabaseSelection();
     populateAutocomplete();
     applyStateToUI();
 

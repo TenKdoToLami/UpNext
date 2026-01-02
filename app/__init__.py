@@ -42,7 +42,15 @@ def create_app():
     app.config['AVAILABLE_DBS'] = sorted(dbs)
     app.config['ACTIVE_DB'] = os.path.basename(app.config['SQLALCHEMY_DATABASE_URI'].replace('sqlite:///', ''))
     
-    app.config['NEEDS_DB_SELECTION'] = len(dbs) > 1
+    # Determine if selection is needed
+    # If the main configuration contains a 'last_db' entry, we assume the user has 
+    # previously selected a database and thus do not need to prompt them again.
+    # Otherwise, if multiple databases are present, we flag for selection.
+    from app.utils.config_manager import load_config
+    config_data = load_config()
+    has_choice = 'last_db' in config_data
+    
+    app.config['NEEDS_DB_SELECTION'] = (len(dbs) > 1 and not has_choice)
 
     # Ensure data directory exists for the SQLite database
     if not os.path.exists(DATA_DIR):
@@ -50,7 +58,7 @@ def create_app():
 
     # Automatically create missing tables within application context
     with app.app_context():
-        # Only create all if we have an active DB or if it's the first run
+        # Initializes schema if connected to a valid DB
         db.create_all()
 
     logger.info("Application initialized successfully.")

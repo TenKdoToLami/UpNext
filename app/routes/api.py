@@ -39,10 +39,21 @@ def get_items():
 @bp.route("/database/status", methods=["GET"])
 def get_db_status():
     """Returns the current database status and available options."""
+    from app.config import list_available_databases, APP_CONFIG_FILE
+    from app.utils.config_manager import load_config
+    
+    available = list_available_databases()
+    # Update cache if needed
+    current_app.config["AVAILABLE_DBS"] = available
+    
+    # Check if a config file actually exists with a selection
+    config = load_config()
+    has_config = 'last_db' in config or 'active_db' in config # Check explicit keys
+    
     return jsonify({
         "active": current_app.config.get("ACTIVE_DB"),
-        "available": current_app.config.get("AVAILABLE_DBS", []),
-        "needsSelection": current_app.config.get("NEEDS_DB_SELECTION", False)
+        "available": available,
+        "hasConfig": has_config
     })
 
 
@@ -52,7 +63,12 @@ def select_database():
     data = request.get_json()
     db_name = data.get("db_name")
     
-    if not db_name or db_name not in current_app.config.get("AVAILABLE_DBS", []):
+    from app.config import list_available_databases
+    from app.utils.config_manager import save_config
+    
+    available = list_available_databases()
+    
+    if not db_name or db_name not in available:
         return jsonify({"status": "error", "message": "Invalid database selection"}), 400
     
     try:
@@ -74,11 +90,9 @@ def select_database():
         
         current_app.config["ACTIVE_DB"] = db_name
 
-        # Persist selection
+        # Persist selection to main config.json
         try:
-            from app.config import DB_CONFIG_FILE
-            with open(DB_CONFIG_FILE, 'w') as f:
-                json.dump({'last_db': db_name}, f)
+            save_config({'last_db': db_name})
         except Exception as e:
             logger.warning(f"Failed to persist DB selection: {e}")
         
@@ -90,9 +104,61 @@ def select_database():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
+@bp.route("/database/create", methods=["POST"])
+def create_database():
+    """Creates a new empty database."""
+    data = request.get_json()
+    db_name = data.get("db_name")
+
+    if not db_name:
+        return jsonify({"status": "error", "message": "Database name is required"}), 400
+
+    # Sanitize inputs (basic alphanumeric check)
+    if not db_name.replace('_', '').replace('-', '').isalnum():
+        return jsonify({"status": "error", "message": "Invalid characters in database name"}), 400
+    
+    if not db_name.lower().endswith(".db"):
+        db_name += ".db"
+
+    try:
+        new_path = get_sqlite_db_path(db_name)
+        if os.path.exists(new_path):
+             return jsonify({"status": "error", "message": "Database already exists"}), 409
+
+        # Create empty file
+        open(new_path, 'a').close()
+        
+        logger.info(f"Created new database: {db_name}")
+        return jsonify({"status": "success", "message": f"Created {db_name}", "db_name": db_name})
+
+    except Exception as e:
+        logger.error(f"Failed to create database: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
 # =============================================================================
-# MEDIA ITEM ENDPOINTS
+# SETTINGS ENDPOINTS
 # =============================================================================
+
+@bp.route("/settings", methods=["GET"])
+def get_settings():
+    """Retrieves application settings."""
+    from app.utils.config_manager import load_config
+    config = load_config()
+    return jsonify(config.get('appSettings', {}))
+
+@bp.route("/settings", methods=["POST"])
+def save_settings():
+    """Saves application settings."""
+    try:
+        new_settings = request.get_json()
+        from app.utils.config_manager import save_config
+        save_config({'appSettings': new_settings})
+        return jsonify({"status": "success", "message": "Settings saved"})
+    except Exception as e:
+        logger.error(f"Failed to save settings: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 
 
 @bp.route("/items", methods=["POST"])
