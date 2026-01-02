@@ -55,6 +55,13 @@ export function initEditMode(id) {
 		el.style.display = ''; // Clear inline display from wizard mode
 	});
 
+	// Hide privacy step (11) if not in hidden mode - this is edit mode specific
+	const privacyStep = document.getElementById('step-11');
+	if (privacyStep && !state.isHidden) {
+		privacyStep.classList.add('hidden');
+		privacyStep.style.display = 'none';
+	}
+
 	// Titles
 	const item = state.items.find(i => i.id === id);
 	document.getElementById('modalTitle').innerText = item ? `Edit ${item.title}` : 'Edit Entry';

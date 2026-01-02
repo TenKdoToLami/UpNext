@@ -335,18 +335,49 @@ export function renderSettings() {
 				'amber': { text: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-500/10', ring: 'ring-amber-500/20' },
 				'zinc': { text: 'text-zinc-500', bg: 'bg-zinc-100 dark:bg-zinc-800', ring: 'ring-zinc-500/20' },
 				'blue': { text: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-500/10', ring: 'ring-blue-500/20' },
-				'fuchsia': { text: 'text-fuchsia-500', bg: 'bg-fuchsia-50 dark:bg-fuchsia-500/10', ring: 'ring-fuchsia-500/20' }
+				'fuchsia': { text: 'text-fuchsia-500', bg: 'bg-fuchsia-50 dark:bg-fuchsia-500/10', ring: 'ring-fuchsia-500/20' },
+				'violet': { text: 'text-violet-500', bg: 'bg-violet-50 dark:bg-violet-500/10', ring: 'ring-violet-500/20' },
+				'cyan': { text: 'text-cyan-500', bg: 'bg-cyan-50 dark:bg-cyan-500/10', ring: 'ring-cyan-500/20' },
+				'teal': { text: 'text-teal-500', bg: 'bg-teal-50 dark:bg-teal-500/10', ring: 'ring-teal-500/20' }
 			};
 			const theme = colorMap[group.color] || colorMap['zinc'];
 
 			const fieldsHtml = group.fields.map(field => {
 				const isFieldHidden = currentSettings.hiddenFields.includes(field.id);
+				const isLocked = field.locked === true;
+
+				// Locked fields: always checked, disabled, with lock icon
+				if (isLocked) {
+					const affectsBadges = (field.affects || []).map(a =>
+						`<span class="px-1.5 py-0.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-400 text-[9px] font-bold rounded uppercase">${a}</span>`
+					).join('');
+
+					return `
+                    <div class="flex items-center justify-between p-3 ml-4 rounded-xl border border-zinc-100 dark:border-zinc-800/50 bg-zinc-50 dark:bg-zinc-900/30 transition-all opacity-75">
+                        <div class="flex flex-col flex-1 mr-4 gap-1">
+                            <span class="text-xs font-bold text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5">
+                                <i data-lucide="lock" class="w-3 h-3 text-zinc-400"></i>
+                                ${field.label}
+                            </span>
+                            <span class="text-xs text-zinc-400 font-medium">${field.desc}</span>
+                            ${affectsBadges ? `<div class="flex flex-wrap gap-1 mt-0.5">${affectsBadges}</div>` : ''}
+                        </div>
+                        <div class="text-[10px] font-bold text-zinc-400 uppercase tracking-wide">Required</div>
+                    </div>
+                `;
+				}
+
+				// Badges showing where this field appears
+				const affectsBadges = (field.affects || []).map(a =>
+					`<span class="px-1.5 py-0.5 bg-${group.color}-50 dark:bg-${group.color}-500/10 text-${group.color}-600 dark:text-${group.color}-400 text-[9px] font-bold rounded uppercase">${a}</span>`
+				).join('');
 
 				return `
                     <div class="flex items-center justify-between p-3 ml-4 rounded-xl border border-zinc-100 dark:border-zinc-800/50 bg-white dark:bg-zinc-900/50 transition-all hover:border-zinc-300 dark:hover:border-zinc-700">
-                        <div class="flex flex-col flex-1 mr-4">
+                        <div class="flex flex-col flex-1 mr-4 gap-1">
                             <span class="text-xs font-bold text-zinc-700 dark:text-zinc-300">${field.label}</span>
                             <span class="text-xs text-zinc-400 font-medium">${field.desc}</span>
+                            ${affectsBadges ? `<div class="flex flex-wrap gap-1 mt-0.5">${affectsBadges}</div>` : ''}
                         </div>
                         <label class="relative inline-flex items-center cursor-pointer">
                             <input type="checkbox" class="sr-only peer"

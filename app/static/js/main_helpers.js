@@ -400,11 +400,7 @@ export function decrementRereadCount() {
 // =============================================================================
 
 /**
- * Renders the children (seasons/volumes) list.
- */
-/**
  * Renders the children (seasons/volumes) list to the DOM.
- * Clears existing content and re-creates inputs for each child item.
  * Includes episode count and duration for Anime/Series, or chapters and word count for Books/Manga.
  */
 export function renderChildren() {
@@ -425,7 +421,7 @@ export function renderChildren() {
 			return `<button type="button" onclick="window.updateChildRating(${idx}, ${i})" class="focus:outline-none star-btn transition-transform"><i data-lucide="star" class="w-3.5 h-3.5 ${fillClass} fill-current"></i></button>`;
 		}).join('');
 
-		const hasDetails = child.hasDetails !== false; // Default true if not set
+		const hasDetails = child.hasDetails === true; // Default false if not set
 		const detailsDisabledClass = hasDetails ? '' : 'opacity-40 pointer-events-none';
 
 		// Metadata row - different fields based on type
@@ -479,7 +475,7 @@ export function renderChildren() {
 		}
 
 		return `
-            <div class="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 space-y-1">
+            <div class="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 space-y-2">
 				<div class="flex items-center gap-3">
 					<input value="${child.title}" oninput="window.updateChild(${idx}, 'title', this.value)" 
 						class="bg-transparent border-b border-zinc-300 dark:border-zinc-700 outline-none text-sm pb-1 text-zinc-700 dark:text-zinc-200 flex-1 font-bold placeholder-zinc-400">
@@ -492,19 +488,18 @@ export function renderChildren() {
 					</label>
 					<button type="button" onclick="window.removeChildIdx(${idx})" class="text-zinc-400 hover:text-red-400 transition-colors p-1"><i data-lucide="x" class="w-4 h-4"></i></button>
 				</div>
-				${metaHtml}
+				${hasDetails ? metaHtml : ''}
             </div>
         `;
 	}).join('');
 
 	safeCreateIcons();
+	updateChildrenTotals();
 }
 
-/** Adds a new child (season/volume). */
 /**
- * Adds a new child item (e.g., Season or Volume) to the list.
- * Automatically determines the title based on the media type (e.g., "Season X" or "Volume X").
- * Pre-fills default values for episodes/duration or chapters/words.
+ * Adds a new child item (Season or Volume) to the list.
+ * Determines title based on media type and pre-fills default values.
  */
 export function addChild() {
 	const type = document.getElementById('type').value;
@@ -515,10 +510,11 @@ export function addChild() {
 	const childData = {
 		id: crypto.randomUUID(),
 		title: `${prefix} ${next}`,
-		rating: 0
+		rating: 0,
+		hasDetails: false // Disabled by default
 	};
 
-	// Set default values based on type
+	// Set default values based on type (will be used when hasDetails is enabled)
 	if (isBookType) {
 		childData.chapters = null;
 		childData.avgWords = 2000;
@@ -584,6 +580,112 @@ export function decrementChildField(idx, field, step = 1) {
 	const current = state.currentChildren[idx][field] || 0;
 	state.currentChildren[idx][field] = Math.max(0, current - step);
 	renderChildren();
+}
+
+/**
+ * Calculates totals from children and updates the totals inputs.
+ * Called after any children change.
+ */
+export function updateChildrenTotals() {
+	const type = document.getElementById('type')?.value || '';
+	const isBookType = ['Book', 'Manga'].includes(type);
+	const overrideCheckbox = document.getElementById('overrideTotals');
+
+	if (overrideCheckbox?.checked) return; // Don't auto-update if manual override
+
+	const children = state.currentChildren.filter(c => c.hasDetails);
+
+	// Volume count is always the number of children
+	const volumeCount = document.getElementById('volumeCount');
+	if (volumeCount) volumeCount.value = state.currentChildren.length || '';
+
+	if (isBookType) {
+		// Sum chapters and calculate pages from avgWords
+		const totalChapters = children.reduce((sum, c) => sum + (c.chapters || 0), 0);
+		const totalWords = children.reduce((sum, c) => sum + ((c.chapters || 0) * (c.avgWords || 0)), 0);
+		const avgPagesPerWord = 250; // ~250 words per page
+		const totalPages = Math.round(totalWords / avgPagesPerWord);
+
+		const chapterInput = document.getElementById('chapterCount');
+		const pageInput = document.getElementById('pageCount');
+		if (chapterInput) chapterInput.value = totalChapters || '';
+		if (pageInput) pageInput.value = totalPages || '';
+	} else {
+		// Sum episodes and calculate total duration
+		const totalEpisodes = children.reduce((sum, c) => sum + (c.episodes || 0), 0);
+		const totalDuration = children.reduce((sum, c) => sum + ((c.episodes || 0) * (c.duration || 0)), 0);
+
+		const episodeInput = document.getElementById('episodeCount');
+		const durationInput = document.getElementById('avgDurationMinutes');
+		if (episodeInput) episodeInput.value = totalEpisodes || '';
+		if (durationInput) durationInput.value = totalDuration || '';
+	}
+}
+
+/**
+ * Toggles manual override mode for totals inputs.
+ * @param {boolean} enabled - Whether override is enabled
+ */
+export function toggleTotalsOverride(enabled) {
+	const inputs = document.querySelectorAll('#totalsGrid input');
+	inputs.forEach(input => {
+		input.readOnly = !enabled;
+		if (enabled) {
+			input.classList.remove('bg-zinc-100', 'dark:bg-zinc-800', 'text-zinc-500', 'dark:text-zinc-400');
+			input.classList.add('bg-white', 'dark:bg-zinc-900', 'text-zinc-700', 'dark:text-zinc-200');
+		} else {
+			input.classList.add('bg-zinc-100', 'dark:bg-zinc-800', 'text-zinc-500', 'dark:text-zinc-400');
+			input.classList.remove('bg-white', 'dark:bg-zinc-900', 'text-zinc-700', 'dark:text-zinc-200');
+			updateChildrenTotals(); // Recalculate when switching back to auto
+		}
+	});
+}
+
+/**
+ * Updates the totals UI based on media type (show anime vs book fields).
+ */
+export function updateTotalsUIForType() {
+	const type = document.getElementById('type')?.value || '';
+	const isBookType = ['Book', 'Manga'].includes(type);
+	const isTotalsOnly = ['Manga', 'Movie'].includes(type);
+
+	document.querySelectorAll('.anime-total').forEach(el => {
+		el.classList.toggle('hidden', isBookType);
+	});
+	document.querySelectorAll('.book-total').forEach(el => {
+		el.classList.toggle('hidden', !isBookType);
+	});
+
+	// Update volume count label based on type
+	const volumeLabel = document.getElementById('volumeCountLabel');
+	if (volumeLabel) {
+		if (isTotalsOnly) {
+			volumeLabel.parentElement?.classList.add('hidden');
+		} else {
+			volumeLabel.parentElement?.classList.remove('hidden');
+			volumeLabel.textContent = isBookType ? 'Total Volumes' : 'Total Seasons';
+		}
+	}
+
+	// Update step header based on type
+	const childLabel = document.getElementById('childLabel');
+	if (childLabel) {
+		if (type === 'Movie') {
+			childLabel.textContent = 'Movie Stats';
+		} else if (type === 'Manga') {
+			childLabel.textContent = 'Manga Stats';
+		} else if (isBookType) {
+			childLabel.textContent = 'Volumes & Stats';
+		} else {
+			childLabel.textContent = 'Seasons & Stats';
+		}
+	}
+
+	// Hide Add button for Manga/Movie (but keep the wrapper visible)
+	const addBtn = document.getElementById('addChildBtn');
+	const wrapperEl = document.getElementById('childrenWrapper');
+	if (addBtn) addBtn.style.display = isTotalsOnly ? 'none' : '';
+	if (wrapperEl) wrapperEl.style.display = isTotalsOnly ? 'none' : '';
 }
 
 // =============================================================================

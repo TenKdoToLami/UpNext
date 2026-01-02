@@ -16,7 +16,8 @@ import {
     removeAltTitle, checkEnterKey, renderDetailView, updateDetailTruncation, updateRatingVisuals,
     renderAbbrTags, removeAbbreviation, toggleAbbrField, generateAbbreviation, renderLinks,
     renderGenericTags, removeTag, incrementRereadCount, decrementRereadCount,
-    toggleChildDetails, incrementChildField, decrementChildField
+    toggleChildDetails, incrementChildField, decrementChildField,
+    toggleTotalsOverride, updateTotalsUIForType
 } from './main_helpers.js';
 import { updateWizardUI, selectType, selectStatus } from './wizard_logic.js';
 import { scrollToSection, updateSidebarVisibility } from './edit_mode.js';
@@ -80,6 +81,8 @@ window.decrementRereadCount = decrementRereadCount;
 window.toggleChildDetails = toggleChildDetails;
 window.incrementChildField = incrementChildField;
 window.decrementChildField = decrementChildField;
+window.toggleTotalsOverride = toggleTotalsOverride;
+window.updateTotalsUIForType = updateTotalsUIForType;
 
 // Export Utils Bindings
 window.openExportModal = openExportModal;

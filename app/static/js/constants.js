@@ -252,92 +252,114 @@ export const CARD_VIEW_ALLOWED_FIELDS = [
 
 /**
  * Feature groups configuration for settings modal.
- * Defines structure, icons, and fields.
+ * Defines structure, icons, fields, and locked status.
+ * Fields marked `locked: true` cannot be disabled.
+ * Fields marked `defaultHidden: true` are hidden by default on first use.
+ * The `affects` array shows which UI components are impacted by each field.
  */
 export const FEATURE_GROUPS = [
 	{
 		id: 'core_assets',
-		label: 'Core Assets',
-		desc: 'Essential media identification fields.',
-		icon: 'image',
+		label: 'What You\'re Tracking',
+		desc: 'The basics: what is this thing? These fields identify each entry in your library.',
+		icon: 'fingerprint',
 		color: 'fuchsia',
 		fields: [
-			{ id: 'title', label: 'Title', desc: 'Main title of the entry' },
-			{ id: 'cover_image', label: 'Cover Image', desc: 'Visual poster or cover art' },
-			{ id: 'description', label: 'Description', desc: 'Synopsis or summary' },
-			{ id: 'tags', label: 'Tags', desc: 'Descriptive tags/genres' }
+			{ id: 'title', label: 'Title', desc: 'The name of the anime, book, movie, etc.', locked: true, affects: ['Wizard', 'Edit', 'Details', 'Cards'] },
+			{ id: 'cover_image', label: 'Cover Image', desc: 'The poster/cover art that shows in your library', locked: true, affects: ['Wizard', 'Edit', 'Details', 'Cards'] },
+			{ id: 'description', label: 'Description', desc: 'A summary or synopsis of the content', affects: ['Wizard', 'Edit', 'Details'] }
 		]
 	},
 	{
-		id: 'metadata',
-		label: 'Detailed Metadata',
-		desc: 'Extended information fields and organization details.',
-		icon: 'list',
-		color: 'emerald',
+		id: 'categorization',
+		label: 'Organization',
+		desc: 'How do you want to organize and find things? Tags help you filter and search.',
+		icon: 'tag',
+		color: 'cyan',
 		fields: [
-			{ id: 'authors', label: 'Authors/Studios', desc: 'Creators or production studios' },
-			{ id: 'series', label: 'Series Info', desc: 'Series name and position' },
-			{ id: 'series_number', label: 'Series Number', desc: 'Volume/Season number in a series' },
-			{ id: 'universe', label: 'Universe', desc: 'Shared universe or franchise' },
-			{ id: 'alternate_titles', label: 'Alternate Titles', desc: 'Native or alias titles' },
-			{ id: 'external_links', label: 'External Links', desc: 'Links to tracking sites or stores' },
-			{ id: 'abbreviations', label: 'Abbreviations', desc: 'Short codes for quick search' },
-			{ id: 'release_date', label: 'Release Date', desc: 'Original release/premiere date' },
-			{ id: 'technical_stats', label: 'Technical Stats', desc: 'Episode/Page/Volume counts & Duration' }
+			{ id: 'tags', label: 'Tags', desc: 'Add labels like "Action", "Favorite", "Summer 2024" to group entries', affects: ['Wizard', 'Edit', 'Details', 'Filter'] },
+			{ id: 'authors', label: 'Authors/Studios', desc: 'Track who made it (author, studio, director)', affects: ['Wizard', 'Edit', 'Details', 'Cards'] },
+			{ id: 'universe', label: 'Universe', desc: 'Group entries in the same fictional world (MCU, Cosmere, etc.)', affects: ['Wizard', 'Edit', 'Details'] }
 		]
 	},
 	{
 		id: 'tracking',
-		label: 'Library Tracking',
-		desc: 'Core progress and status tracking features.',
+		label: 'Your Progress',
+		desc: 'Keep track of where you are. Never lose your place again!',
 		icon: 'activity',
 		color: 'blue',
 		fields: [
-			{ id: 'progress', label: 'Progress/Status', desc: 'Current episode/chapter progress and status' },
-			{ id: 'reread_count', label: 'Reread Count', desc: 'Track number of times read/watched' },
-			{ id: 'completed_at', label: 'Completion Date', desc: 'Date when the entry was completed' }
+			{ id: 'progress', label: 'Current Progress', desc: 'Which episode/chapter are you on?', affects: ['Wizard', 'Edit', 'Details', 'Cards'] },
+			{ id: 'reread_count', label: 'Reread Count', desc: 'How many times have you re-watched/re-read this?', defaultHidden: true, affects: ['Wizard', 'Edit', 'Details'] },
+			{ id: 'completed_at', label: 'Completion Date', desc: 'When did you finish it?', defaultHidden: true, affects: ['Wizard', 'Edit', 'Details'] }
 		]
 	},
 	{
 		id: 'reviews',
-		label: 'Reviews & Ratings',
-		desc: 'Personal thoughts, scoring, and critiques.',
+		label: 'Your Opinions',
+		desc: 'Rate it, review it, remember what you thought. Your personal judgments.',
 		icon: 'star',
 		color: 'amber',
 		fields: [
-			{ id: 'rating', label: 'Rating Score', desc: 'Numerical/Star rating of the entry' },
-			{ id: 'review', label: 'Review Text', desc: 'Written review body/essay' },
-			{ id: 'verdict', label: 'Verdict Badge', desc: 'Visual label (e.g. Masterpiece) on cards' }
+			{ id: 'rating', label: 'Rating', desc: 'Give it a star rating (1-4 stars)', affects: ['Wizard', 'Edit', 'Details', 'Cards'] },
+			{ id: 'review', label: 'Review', desc: 'Write down your thoughts and opinions', affects: ['Wizard', 'Edit', 'Details'] },
+			{ id: 'verdict', label: 'Verdict Badge', desc: 'Show a label like "Masterpiece" on library cards', defaultHidden: true, affects: ['Cards'] }
+		]
+	},
+	{
+		id: 'series_info',
+		label: 'Seasons & Volumes',
+		desc: 'Break down longer content. Track individual seasons of a show or volumes of a book series.',
+		icon: 'layers',
+		color: 'teal',
+		fields: [
+			{ id: 'series', label: 'Series Info', desc: 'Is this part of a larger series? (Book 1 of 5, etc.)', affects: ['Wizard', 'Edit', 'Details', 'Cards'] },
+			{ id: 'series_number', label: 'Breakdown', desc: 'Add individual seasons/volumes with their own ratings', affects: ['Wizard', 'Edit', 'Details'] }
+		]
+	},
+	{
+		id: 'metadata',
+		label: 'Extra Details',
+		desc: 'Optional extra information. Nice to have but not essential.',
+		icon: 'list',
+		color: 'emerald',
+		fields: [
+			{ id: 'alternate_titles', label: 'Alternate Titles', desc: 'Other names (Japanese title, English title, etc.)', defaultHidden: true, affects: ['Wizard', 'Edit', 'Details'] },
+			{ id: 'abbreviations', label: 'Abbreviations', desc: 'Short codes for quick search (AOT, FMAB)', defaultHidden: true, affects: ['Wizard', 'Edit', 'Search'] },
+			{ id: 'release_date', label: 'Release Date', desc: 'When was this first released?', affects: ['Wizard', 'Edit', 'Details'] },
+			{ id: 'technical_stats', label: 'Technical Stats', desc: 'Episode counts, page counts, durations', defaultHidden: true, affects: ['Wizard', 'Edit', 'Details'] },
+			{ id: 'external_links', label: 'External Links', desc: 'Links to MAL, IMDB, Amazon, etc.', affects: ['Wizard', 'Edit', 'Details'] }
+		]
+	},
+	{
+		id: 'personal',
+		label: 'Personal Notes',
+		desc: 'Your private space. Only you see these.',
+		icon: 'file-text',
+		color: 'zinc',
+		fields: [
+			{ id: 'notes', label: 'Notes', desc: 'Jot down anything you want to remember', affects: ['Wizard', 'Edit', 'Details'] }
 		]
 	},
 	{
 		id: 'calendar',
 		label: 'Release Calendar',
-		desc: 'Track upcoming season premieres and volume releases.',
+		desc: 'Coming soon! Track when new episodes/volumes release.',
 		icon: 'calendar',
 		color: 'violet',
 		fields: [
-			{ id: 'calendar_upcoming', label: 'Upcoming Events', desc: 'Show upcoming releases in detail view' },
-			{ id: 'calendar_month', label: 'Monthly View', desc: 'Show visual calendar availability' },
-			{ id: 'calendar_notifications', label: 'Missed Release Alerts', desc: 'Notify for past releases not yet seen' }
+			{ id: 'calendar_upcoming', label: 'Upcoming Releases', desc: 'See what\'s coming out soon', affects: ['Details'] },
+			{ id: 'calendar_month', label: 'Calendar View', desc: 'Visual monthly calendar of releases', affects: ['Calendar'] },
+			{ id: 'calendar_notifications', label: 'Notifications', desc: 'Get alerts for new releases', affects: ['System'] }
 		]
 	},
 	{
 		id: 'stats',
-		label: 'Statistics Graphs',
-		desc: 'Visual breakdown of types, statuses, and ratings.',
+		label: 'Statistics',
+		desc: 'See analytics about your library. How much have you watched/read?',
 		icon: 'pie-chart',
 		color: 'indigo',
 		fields: []
-	},
-	{
-		id: 'general',
-		label: 'General Interface',
-		desc: 'Miscellaneous UI elements.',
-		icon: 'layout',
-		color: 'zinc',
-		fields: [
-			{ id: 'notes', label: 'Private Notes', desc: 'Your personal notes and thoughts' }
-		]
 	}
 ];
+

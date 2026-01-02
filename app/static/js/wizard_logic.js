@@ -146,7 +146,8 @@ function handleCroppedImage(blob, originalName) {
 // =============================================================================
 
 /**
- * Determines which steps should be skipped based on current form values.
+ * Determines which steps should be skipped based on current form values and settings.
+ * A step is skipped if all its constituent fields are hidden in settings.
  * @returns {number[]} Array of step numbers to skip
  */
 export function getSkippedSteps() {
@@ -155,39 +156,52 @@ export function getSkippedSteps() {
 
 	const skipped = [];
 
-	// Logic for skipping steps:
-	// - Progress (7): Skipped for 'Planning' and 'Completed'
-	// - Rating (8): Skipped ONLY for 'Planning' (Allowed for Anticipating/Reading/Dropped)
-	// - Seasons/Volumes (10): Skipped for Manga/Movie
-	// - Privacy (11): Skipped if globally visible
-
-	if (status === 'Planning' || status === 'Reading/Watching') {
-		if (status === 'Planning') {
-			skipped.push(7);
-			skipped.push(8);
-		}
-	} else {
-		if (status === 'Completed') {
-			skipped.push(7);
-		}
+	// Step 3 (Cover Image): Skip if cover_image is hidden
+	if (!isFieldVisible('cover_image')) {
+		skipped.push(3);
 	}
-	if (['Manga', 'Movie'].includes(type)) {
+
+	// Step 4 (Basic Info): Skip if ALL fields are hidden
+	const step4Fields = ['title', 'authors', 'tags', 'universe', 'release_date', 'technical_stats', 'alternate_titles', 'abbreviations', 'series'];
+	const step4Visible = step4Fields.some(f => isFieldVisible(f));
+	if (!step4Visible) skipped.push(4);
+
+	// Step 5 (Description): Skip if description is hidden
+	if (!isFieldVisible('description')) {
+		skipped.push(5);
+	}
+
+	// Step 6 (External Links): Skip if external_links is hidden
+	if (!isFieldVisible('external_links')) {
+		skipped.push(6);
+	}
+
+	// Step 7 (Progress): Skip for Planning/Completed statuses OR if progress is hidden
+	if (status === 'Planning' || status === 'Completed' || !isFieldVisible('progress')) {
+		skipped.push(7);
+	}
+
+	// Step 8 (Review & Rating): Skip for Planning status OR if both rating and review are hidden
+	const reviewFields = ['rating', 'review', 'reread_count', 'completed_at'];
+	const step8Visible = reviewFields.some(f => isFieldVisible(f));
+	if (status === 'Planning' || !step8Visible) {
+		skipped.push(8);
+	}
+
+	// Step 9 (Notes): Skip if notes is hidden
+	if (!isFieldVisible('notes')) {
+		skipped.push(9);
+	}
+
+	// Step 10 (Seasons/Volumes): Skip for Manga/Movie OR if series_number is hidden
+	if (['Manga', 'Movie'].includes(type) || !isFieldVisible('series_number')) {
 		skipped.push(10);
 	}
-	// Skip privacy step (11) if not in hidden mode
+
+	// Step 11 (Privacy): Skip if not in hidden mode
 	if (!state.isHidden) {
 		skipped.push(11);
 	}
-
-	// Stats Feature Disable
-	if (state.appSettings?.disabledFeatures?.includes('stats')) {
-		skipped.push(8); // Review & Rating
-	}
-
-	// Step 4 Skip Logic: If ALL fields in Step 4 are hidden
-	const step4Fields = ['title', 'authors', 'tags', 'universe', 'release_date', 'technical_stats'];
-	const step4Visible = step4Fields.some(f => isFieldVisible(f));
-	if (!step4Visible) skipped.push(4);
 
 	return [...new Set(skipped)]; // Remove duplicates
 }
@@ -415,81 +429,82 @@ export function validateStep(step) {
 // =============================================================================
 
 /**
- * Updates form sections visibility based on form values.
- * Ensures field visibility matches the step skipping logic.
+ * Updates form field visibility based on app settings.
+ * Marks steps as skippable and toggles individual field visibility.
  */
 export function updateFormUI() {
 	const type = document.getElementById('type').value;
 	const status = document.getElementById('status').value;
 
-	const toggle = (id, show) => {
-		const el = document.getElementById(id);
+	const toggleField = (el, show) => {
 		if (!el) return;
 		el.classList.toggle('hidden', !show);
-		el.style.display = show ? 'block' : 'none';
 	};
 
-	// Step 7 (Progress): Hide for Planning/Completed OR if hidden in settings
-	const isProgressHidden = (status === 'Planning' || status === 'Completed') || !isFieldVisible('progress');
-	toggle('step-7', !isProgressHidden);
+	const markStepSkipped = (id, shouldSkip) => {
+		const el = document.getElementById(id);
+		if (el) el.dataset.settingsSkipped = shouldSkip ? 'true' : 'false';
+	};
 
-	// Step 8 (Review): Hide for Planning and Reading/Watching OR if hidden in settings
-	// Visible for: Completed, On Hold, Dropped, Anticipating
-	const isReviewHidden = (status === 'Planning' || status === 'Reading/Watching') || !isFieldVisible('review');
-	toggle('step-8', !isReviewHidden);
+	// Mark steps as skippable based on settings
+	markStepSkipped('step-3', !isFieldVisible('cover_image'));
+	markStepSkipped('step-5', !isFieldVisible('description'));
+	markStepSkipped('step-6', !isFieldVisible('external_links'));
 
-	// Step 10 (Seasons/Volumes): Hide for Manga and Movie OR if hidden in settings
-	// Visible for: Anime, Book, Series
-	const isChildrenHidden = (['Manga', 'Movie'].includes(type) || !isFieldVisible('series_number'));
-	toggle('step-10', !isChildrenHidden);
+	const showProgress = isFieldVisible('progress') && status !== 'Planning' && status !== 'Completed';
+	markStepSkipped('step-7', !showProgress);
 
-	// Step 9 (Notes): Hide if hidden in settings
-	toggle('step-9', isFieldVisible('notes'));
+	const reviewFields = ['rating', 'review', 'reread_count', 'completed_at'];
+	const hasAnyReviewField = reviewFields.some(f => isFieldVisible(f));
+	const showReview = hasAnyReviewField && status !== 'Planning';
+	markStepSkipped('step-8', !showReview);
 
-	// Step 6 (External Links): Hide if hidden
-	toggle('step-6', isFieldVisible('external_links'));
+	markStepSkipped('step-9', !isFieldVisible('notes'));
 
-	// Step 5 (Description): Hide if hidden? (Description wasn't explicitly in request but maybe useful to hide?)
-	// No, description is core.
+	const showChildren = isFieldVisible('series_number') && !['Manga', 'Movie'].includes(type);
+	markStepSkipped('step-10', !showChildren);
 
-	// Step 11 (Privacy): Only show in hidden mode
-	toggle('step-11', state.isHidden);
+	markStepSkipped('step-11', !state.isHidden);
 
-	// Other inputs in Step 4
-	if (document.getElementById('seriesWrapper')) document.getElementById('seriesWrapper').classList.toggle('hidden', !isFieldVisible('series'));
-	if (document.getElementById('universe')) document.getElementById('universe').parentElement.classList.toggle('hidden', !isFieldVisible('universe'));
-	if (document.getElementById('authorTagsContainer')) document.getElementById('authorTagsContainer').parentElement.classList.toggle('hidden', !isFieldVisible('authors'));
+	// Toggle individual field visibility within steps
 
-	// New Fields Visibility
+	// Step 4 Fields
 	const titleContainer = document.getElementById('titleContainer');
 	if (titleContainer) titleContainer.classList.toggle('hidden', !isFieldVisible('title'));
 
-	const tagContainer = document.getElementById('tagTagsContainer');
-	if (tagContainer) tagContainer.parentElement.classList.toggle('hidden', !isFieldVisible('tags'));
+	const authorContainer = document.getElementById('authorTagsContainer')?.parentElement;
+	if (authorContainer) authorContainer.classList.toggle('hidden', !isFieldVisible('authors'));
+
+	const universeField = document.getElementById('universe')?.parentElement;
+	if (universeField) universeField.classList.toggle('hidden', !isFieldVisible('universe'));
+
+	const tagContainer = document.getElementById('tagTagsContainer')?.parentElement;
+	if (tagContainer) tagContainer.classList.toggle('hidden', !isFieldVisible('tags'));
 
 	const releaseDateContainer = document.getElementById('releaseDateContainer');
 	if (releaseDateContainer) releaseDateContainer.classList.toggle('hidden', !isFieldVisible('release_date'));
 
-	const techStatsContainer = document.getElementById('technicalStatsContainer');
-	if (techStatsContainer) {
-		techStatsContainer.classList.toggle('hidden', !isFieldVisible('technical_stats'));
-		if (!isFieldVisible('technical_stats')) {
-			techStatsContainer.classList.remove('hidden'); // Logic fix: toggle handles hidden class. remove hidden? No, if !visible, add hidden. toggle(force)
-			// Actually toggle works: classList.toggle('hidden', true) adds hidden.
-			// Re-verify toggle signature: element.classList.toggle(token, force)
-		}
-	}
+	const seriesWrapper = document.getElementById('seriesWrapper');
+	if (seriesWrapper) seriesWrapper.classList.toggle('hidden', !isFieldVisible('series'));
 
+	const altTitleContainer = document.getElementById('altTitleTagsContainer')?.parentElement;
+	if (altTitleContainer) altTitleContainer.classList.toggle('hidden', !isFieldVisible('alternate_titles'));
+
+	const abbrContainer = document.getElementById('disableAbbr')?.closest('.space-y-2');
+	if (abbrContainer) abbrContainer.classList.toggle('hidden', !isFieldVisible('abbreviations'));
+
+	// Step 8 Fields
 	const rereadContainer = document.getElementById('rereadCountContainer');
 	if (rereadContainer) rereadContainer.classList.toggle('hidden', !isFieldVisible('reread_count'));
 
 	const completedAtContainer = document.getElementById('completedAtContainer');
 	if (completedAtContainer) completedAtContainer.classList.toggle('hidden', !isFieldVisible('completed_at'));
 
+	const ratingWrapper = document.getElementById('rating')?.closest('.relative');
+	if (ratingWrapper) ratingWrapper.parentElement?.classList.toggle('hidden', !isFieldVisible('rating'));
 
-	if (document.getElementById('altTitleTagsContainer')) document.getElementById('altTitleTagsContainer').parentElement.classList.toggle('hidden', !isFieldVisible('alternate_titles'));
-	if (document.getElementById('disableAbbr')) document.getElementById('disableAbbr').closest('.space-y-2').classList.toggle('hidden', !isFieldVisible('abbreviations'));
-
+	const reviewWrapper = document.getElementById('reviewWrapper');
+	if (reviewWrapper) reviewWrapper.classList.toggle('hidden', !isFieldVisible('review'));
 
 	if (window.updateSidebarVisibility) window.updateSidebarVisibility();
 }
@@ -511,6 +526,9 @@ export function updateWizardUI() {
 	if (childLabel) {
 		childLabel.innerText = ['Book', 'Manga'].includes(type) ? 'Volumes' : 'Seasons';
 	}
+
+	// Update totals UI for correct type (anime vs book fields)
+	if (window.updateTotalsUIForType) window.updateTotalsUIForType();
 
 	updateDynamicLinks();
 }
@@ -692,6 +710,10 @@ export function initWizard(isEdit) {
 	if (window.renderChildren) window.renderChildren();
 	state.currentStep = 1;
 	state.maxReachedStep = 1;
+
+	// Apply field visibility from settings
+	updateFormUI();
+
 	showStep(1);
 }
 
@@ -816,9 +838,10 @@ export function selectType(t) {
 	if (!state.isEditMode) updateDynamicLinks(t);
 	selectTypeVisuals(t);
 	updateWizardUI();
+	updateFormUI(); // Apply field visibility
 
 	if (state.isEditMode) {
-		updateFormUI();
+		// Already called updateFormUI above
 	} else {
 		state.maxReachedStep = 1;
 		updateDots(1);
@@ -851,9 +874,9 @@ export function selectStatus(s) {
 		}
 	}
 
-	if (state.isEditMode) {
-		updateFormUI();
-	} else {
+	updateFormUI(); // Apply field visibility for all modes
+
+	if (!state.isEditMode) {
 		if (state.currentStep === 2) state.maxReachedStep = 2;
 		animateStepChange(2, 3, 'right');
 		state.currentStep = 3;
