@@ -184,6 +184,11 @@ export function getSkippedSteps() {
 		skipped.push(8); // Review & Rating
 	}
 
+	// Step 4 Skip Logic: If ALL fields in Step 4 are hidden
+	const step4Fields = ['title', 'authors', 'tags', 'universe', 'release_date', 'technical_stats'];
+	const step4Visible = step4Fields.some(f => isFieldVisible(f));
+	if (!step4Visible) skipped.push(4);
+
 	return [...new Set(skipped)]; // Remove duplicates
 }
 
@@ -396,7 +401,7 @@ export function validateStep(step) {
 			}
 			break;
 		case 4: // Basic Info
-			if (!document.getElementById('title').value.trim()) {
+			if (isFieldVisible('title') && !document.getElementById('title').value.trim()) {
 				showToast('Title is required to proceed.', 'warning');
 				return false;
 			}
@@ -454,6 +459,34 @@ export function updateFormUI() {
 	if (document.getElementById('seriesWrapper')) document.getElementById('seriesWrapper').classList.toggle('hidden', !isFieldVisible('series'));
 	if (document.getElementById('universe')) document.getElementById('universe').parentElement.classList.toggle('hidden', !isFieldVisible('universe'));
 	if (document.getElementById('authorTagsContainer')) document.getElementById('authorTagsContainer').parentElement.classList.toggle('hidden', !isFieldVisible('authors'));
+
+	// New Fields Visibility
+	const titleContainer = document.getElementById('titleContainer');
+	if (titleContainer) titleContainer.classList.toggle('hidden', !isFieldVisible('title'));
+
+	const tagContainer = document.getElementById('tagTagsContainer');
+	if (tagContainer) tagContainer.parentElement.classList.toggle('hidden', !isFieldVisible('tags'));
+
+	const releaseDateContainer = document.getElementById('releaseDateContainer');
+	if (releaseDateContainer) releaseDateContainer.classList.toggle('hidden', !isFieldVisible('release_date'));
+
+	const techStatsContainer = document.getElementById('technicalStatsContainer');
+	if (techStatsContainer) {
+		techStatsContainer.classList.toggle('hidden', !isFieldVisible('technical_stats'));
+		if (!isFieldVisible('technical_stats')) {
+			techStatsContainer.classList.remove('hidden'); // Logic fix: toggle handles hidden class. remove hidden? No, if !visible, add hidden. toggle(force)
+			// Actually toggle works: classList.toggle('hidden', true) adds hidden.
+			// Re-verify toggle signature: element.classList.toggle(token, force)
+		}
+	}
+
+	const rereadContainer = document.getElementById('rereadCountContainer');
+	if (rereadContainer) rereadContainer.classList.toggle('hidden', !isFieldVisible('reread_count'));
+
+	const completedAtContainer = document.getElementById('completedAtContainer');
+	if (completedAtContainer) completedAtContainer.classList.toggle('hidden', !isFieldVisible('completed_at'));
+
+
 	if (document.getElementById('altTitleTagsContainer')) document.getElementById('altTitleTagsContainer').parentElement.classList.toggle('hidden', !isFieldVisible('alternate_titles'));
 	if (document.getElementById('disableAbbr')) document.getElementById('disableAbbr').closest('.space-y-2').classList.toggle('hidden', !isFieldVisible('abbreviations'));
 
@@ -737,6 +770,22 @@ export function resetWizardFields() {
 		const abbrInput = document.getElementById('abbrInput');
 		if (abbrInput && window.checkEnterKey) abbrInput.addEventListener('keydown', (e) => window.checkEnterKey(e, 'abbr'));
 	}, 0);
+
+	// Reset New Fields
+	state.currentTags = [];
+	safeVal('releaseDate', '');
+	safeVal('episodeCount', '');
+	safeVal('volumeCount', '');
+	safeVal('pageCount', '');
+	safeVal('avgDurationMinutes', '');
+	safeVal('rereadCount', '');
+	safeVal('completedAt', '');
+
+	safeHtml('tagTagsContainer', '<input id="tagInput" list="tagOptions" class="bg-transparent text-sm outline-none flex-1 min-w-[80px] text-zinc-700 dark:text-zinc-200 p-1 placeholder-zinc-400" placeholder="Add Tags...">');
+	setTimeout(() => {
+		const tagInput = document.getElementById('tagInput');
+		if (tagInput && window.checkEnterKey) tagInput.addEventListener('keydown', (e) => window.checkEnterKey(e, 'tag'));
+	}, 0);
 }
 
 // =============================================================================
@@ -792,6 +841,15 @@ export function selectStatus(s) {
 
 	document.getElementById('status').value = s;
 	selectStatusVisuals(s);
+
+	// Prefill completedAt with today's date when 'Completed' is selected
+	if (s === 'Completed' && !state.isEditMode) {
+		const completedAtInput = document.getElementById('completedAt');
+		if (completedAtInput && !completedAtInput.value) {
+			const today = new Date().toISOString().split('T')[0];
+			completedAtInput.value = today;
+		}
+	}
 
 	if (state.isEditMode) {
 		updateFormUI();

@@ -213,9 +213,11 @@ export function populateAutocomplete() {
 	const authors = new Set();
 	const universes = new Set();
 	const seriesList = new Set();
+	const tags = new Set();
 
 	state.items.forEach(item => {
 		if (Array.isArray(item.authors)) item.authors.forEach(a => authors.add(a));
+		if (Array.isArray(item.tags)) item.tags.forEach(t => tags.add(t));
 		if (item.universe) universes.add(item.universe);
 		if (item.series) seriesList.add(item.series);
 	});
@@ -226,6 +228,7 @@ export function populateAutocomplete() {
 	};
 
 	fill('authorOptions', authors);
+	fill('tagOptions', tags);
 	fill('universeOptions', universes);
 	fill('seriesOptions', seriesList);
 }
@@ -257,6 +260,38 @@ export function updateModalTags() {
 export function removeAuthor(val) {
 	state.currentAuthors = state.currentAuthors.filter(a => a !== val);
 	updateModalTags();
+}
+
+/**
+ * Updates the generic tags display in the modal.
+ */
+export function renderGenericTags() {
+	const container = document.getElementById('tagTagsContainer');
+	const input = document.getElementById('tagInput');
+	if (!container) return; // Might be hidden/not rendered
+
+	Array.from(container.children).forEach(c => {
+		if (c.tagName === 'SPAN') c.remove();
+	});
+
+	state.currentTags.forEach(tag => {
+		const tagEl = document.createElement('span');
+		tagEl.className = 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 text-xs px-2 py-1 rounded flex items-center gap-1 font-medium';
+		const safeTag = tag.replace(/'/g, "\\'");
+		tagEl.innerHTML = `${tag} <button type="button" onclick="window.removeTag('${safeTag}')" class="hover:text-red-400 flex items-center"><i data-lucide="x" class="w-3 h-3"></i></button>`;
+		container.insertBefore(tagEl, input);
+	});
+
+	if (window.lucide) window.lucide.createIcons();
+}
+
+/**
+ * Removes a generic tag.
+ * @param {string} val 
+ */
+export function removeTag(val) {
+	state.currentTags = state.currentTags.filter(t => t !== val);
+	renderGenericTags();
 }
 
 /**
@@ -295,6 +330,13 @@ export function checkEnterKey(e, type) {
 				renderAbbrTags();
 			}
 			break;
+		case 'tag':
+			if (!state.currentTags.includes(val)) {
+				state.currentTags.push(val);
+				e.target.value = '';
+				renderGenericTags();
+			}
+			break;
 	}
 }
 
@@ -331,6 +373,29 @@ export function removeAltTitle(val) {
 }
 
 // =============================================================================
+// REREAD COUNT HELPERS
+// =============================================================================
+
+/**
+ * Increments the reread count input by 1.
+ */
+export function incrementRereadCount() {
+	const input = document.getElementById('rereadCount');
+	if (input) input.value = parseInt(input.value || 0) + 1;
+}
+
+/**
+ * Decrements the reread count input by 1 (minimum 0).
+ */
+export function decrementRereadCount() {
+	const input = document.getElementById('rereadCount');
+	if (input) {
+		const val = parseInt(input.value || 0);
+		input.value = Math.max(0, val - 1);
+	}
+}
+
+// =============================================================================
 // CHILDREN / SEASONS
 // =============================================================================
 
@@ -340,10 +405,14 @@ export function removeAltTitle(val) {
 /**
  * Renders the children (seasons/volumes) list to the DOM.
  * Clears existing content and re-creates inputs for each child item.
+ * Includes episode count and duration for Anime/Series, or chapters and word count for Books/Manga.
  */
 export function renderChildren() {
 	const container = document.getElementById('childrenContainer');
 	if (!container) return;
+
+	const type = document.getElementById('type')?.value || '';
+	const isBookType = ['Book', 'Manga'].includes(type);
 
 	if (state.currentChildren.length === 0) {
 		container.innerHTML = '<div class="text-center text-zinc-400 dark:text-zinc-600 italic text-xs py-3">No items added yet</div>';
@@ -356,11 +425,74 @@ export function renderChildren() {
 			return `<button type="button" onclick="window.updateChildRating(${idx}, ${i})" class="focus:outline-none star-btn transition-transform"><i data-lucide="star" class="w-3.5 h-3.5 ${fillClass} fill-current"></i></button>`;
 		}).join('');
 
+		const hasDetails = child.hasDetails !== false; // Default true if not set
+		const detailsDisabledClass = hasDetails ? '' : 'opacity-40 pointer-events-none';
+
+		// Metadata row - different fields based on type
+		let metaHtml = '';
+		if (isBookType) {
+			metaHtml = `
+				<div class="flex items-center justify-center gap-4 mt-2 pt-2 border-t border-zinc-200 dark:border-zinc-800 ${detailsDisabledClass}">
+					<div class="flex items-center gap-1">
+						<span class="text-[10px] text-zinc-400 font-medium uppercase">Ch</span>
+						<button type="button" onclick="window.decrementChildField(${idx}, 'chapters')" class="w-5 h-5 flex items-center justify-center bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 rounded text-zinc-600 dark:text-zinc-300 text-xs font-bold transition-colors">−</button>
+						<input type="number" value="${child.chapters || ''}" min="0" 
+							oninput="window.updateChild(${idx}, 'chapters', parseInt(this.value) || null)"
+							placeholder="0"
+							class="w-12 bg-zinc-100 dark:bg-zinc-800 border-none rounded px-1 py-0.5 text-xs text-zinc-700 dark:text-zinc-300 outline-none focus:ring-1 focus:ring-indigo-500 text-center font-bold">
+						<button type="button" onclick="window.incrementChildField(${idx}, 'chapters')" class="w-5 h-5 flex items-center justify-center bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 rounded text-zinc-600 dark:text-zinc-300 text-xs font-bold transition-colors">+</button>
+					</div>
+					<div class="flex items-center gap-1">
+						<span class="text-[10px] text-zinc-400 font-medium uppercase">Words</span>
+						<button type="button" onclick="window.decrementChildField(${idx}, 'avgWords', 100)" class="w-5 h-5 flex items-center justify-center bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 rounded text-zinc-600 dark:text-zinc-300 text-xs font-bold transition-colors">−</button>
+						<input type="number" value="${child.avgWords || ''}" min="0" step="100"
+							oninput="window.updateChild(${idx}, 'avgWords', parseInt(this.value) || null)"
+							placeholder="2k"
+							class="w-14 bg-zinc-100 dark:bg-zinc-800 border-none rounded px-1 py-0.5 text-xs text-zinc-700 dark:text-zinc-300 outline-none focus:ring-1 focus:ring-indigo-500 text-center font-bold">
+						<button type="button" onclick="window.incrementChildField(${idx}, 'avgWords', 100)" class="w-5 h-5 flex items-center justify-center bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 rounded text-zinc-600 dark:text-zinc-300 text-xs font-bold transition-colors">+</button>
+					</div>
+				</div>
+			`;
+		} else {
+			metaHtml = `
+				<div class="flex items-center justify-center gap-4 mt-2 pt-2 border-t border-zinc-200 dark:border-zinc-800 ${detailsDisabledClass}">
+					<div class="flex items-center gap-1">
+						<span class="text-[10px] text-zinc-400 font-medium uppercase">Ep</span>
+						<button type="button" onclick="window.decrementChildField(${idx}, 'episodes')" class="w-5 h-5 flex items-center justify-center bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 rounded text-zinc-600 dark:text-zinc-300 text-xs font-bold transition-colors">−</button>
+						<input type="number" value="${child.episodes || ''}" min="0"
+							oninput="window.updateChild(${idx}, 'episodes', parseInt(this.value) || null)"
+							placeholder="12"
+							class="w-12 bg-zinc-100 dark:bg-zinc-800 border-none rounded px-1 py-0.5 text-xs text-zinc-700 dark:text-zinc-300 outline-none focus:ring-1 focus:ring-indigo-500 text-center font-bold">
+						<button type="button" onclick="window.incrementChildField(${idx}, 'episodes')" class="w-5 h-5 flex items-center justify-center bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 rounded text-zinc-600 dark:text-zinc-300 text-xs font-bold transition-colors">+</button>
+					</div>
+					<div class="flex items-center gap-1">
+						<span class="text-[10px] text-zinc-400 font-medium uppercase">Min</span>
+						<button type="button" onclick="window.decrementChildField(${idx}, 'duration')" class="w-5 h-5 flex items-center justify-center bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 rounded text-zinc-600 dark:text-zinc-300 text-xs font-bold transition-colors">−</button>
+						<input type="number" value="${child.duration || ''}" min="0"
+							oninput="window.updateChild(${idx}, 'duration', parseInt(this.value) || null)"
+							placeholder="20"
+							class="w-12 bg-zinc-100 dark:bg-zinc-800 border-none rounded px-1 py-0.5 text-xs text-zinc-700 dark:text-zinc-300 outline-none focus:ring-1 focus:ring-indigo-500 text-center font-bold">
+						<button type="button" onclick="window.incrementChildField(${idx}, 'duration')" class="w-5 h-5 flex items-center justify-center bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 rounded text-zinc-600 dark:text-zinc-300 text-xs font-bold transition-colors">+</button>
+					</div>
+				</div>
+			`;
+		}
+
 		return `
-            <div class="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-2.5 flex items-center gap-3">
-                <input value="${child.title}" oninput="window.updateChild(${idx}, 'title', this.value)" class="bg-transparent border-b border-zinc-300 dark:border-zinc-700 outline-none text-xs pb-1 text-zinc-700 dark:text-zinc-200 flex-1 font-medium placeholder-zinc-400">
-                <div class="flex gap-1">${starsHtml}</div>
-                <button type="button" onclick="window.removeChildIdx(${idx})" class="text-zinc-400 hover:text-red-400 transition-colors"><i data-lucide="x" class="w-4 h-4"></i></button>
+            <div class="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 space-y-1">
+				<div class="flex items-center gap-3">
+					<input value="${child.title}" oninput="window.updateChild(${idx}, 'title', this.value)" 
+						class="bg-transparent border-b border-zinc-300 dark:border-zinc-700 outline-none text-sm pb-1 text-zinc-700 dark:text-zinc-200 flex-1 font-bold placeholder-zinc-400">
+					<div class="flex gap-0.5">${starsHtml}</div>
+					<label class="flex items-center gap-1 cursor-pointer group" title="Toggle details">
+						<input type="checkbox" ${hasDetails ? 'checked' : ''} 
+							onchange="window.toggleChildDetails(${idx}, this.checked)"
+							class="w-3.5 h-3.5 rounded border-zinc-300 text-indigo-500 focus:ring-indigo-500">
+						<i data-lucide="settings-2" class="w-3.5 h-3.5 text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300"></i>
+					</label>
+					<button type="button" onclick="window.removeChildIdx(${idx})" class="text-zinc-400 hover:text-red-400 transition-colors p-1"><i data-lucide="x" class="w-4 h-4"></i></button>
+				</div>
+				${metaHtml}
             </div>
         `;
 	}).join('');
@@ -372,12 +504,30 @@ export function renderChildren() {
 /**
  * Adds a new child item (e.g., Season or Volume) to the list.
  * Automatically determines the title based on the media type (e.g., "Season X" or "Volume X").
+ * Pre-fills default values for episodes/duration or chapters/words.
  */
 export function addChild() {
 	const type = document.getElementById('type').value;
-	const prefix = ['Book', 'Manga'].includes(type) ? 'Volume' : 'Season';
+	const isBookType = ['Book', 'Manga'].includes(type);
+	const prefix = isBookType ? 'Volume' : 'Season';
 	const next = state.currentChildren.length + 1;
-	state.currentChildren.push({ id: crypto.randomUUID(), title: `${prefix} ${next}`, rating: 0 });
+
+	const childData = {
+		id: crypto.randomUUID(),
+		title: `${prefix} ${next}`,
+		rating: 0
+	};
+
+	// Set default values based on type
+	if (isBookType) {
+		childData.chapters = null;
+		childData.avgWords = 2000;
+	} else {
+		childData.episodes = 12;
+		childData.duration = 20;
+	}
+
+	state.currentChildren.push(childData);
 	renderChildren();
 }
 
@@ -390,8 +540,8 @@ export function removeChildIdx(idx) { state.currentChildren.splice(idx, 1); rend
 /**
  * Updates a specific field of a child item.
  * @param {number} idx - Index of the child.
- * @param {string} field - Field to update (e.g., 'title').
- * @param {string} val - New value.
+ * @param {string} field - Field to update (e.g., 'title', 'episodes', 'duration').
+ * @param {string|number} val - New value.
  */
 export function updateChild(idx, field, val) { state.currentChildren[idx][field] = val; }
 
@@ -401,6 +551,40 @@ export function updateChild(idx, field, val) { state.currentChildren[idx][field]
  * @param {number} rating - New rating value (1-4).
  */
 export function updateChildRating(idx, rating) { state.currentChildren[idx].rating = rating; renderChildren(); }
+
+/**
+ * Toggles the hasDetails flag on a child item to show/hide metadata fields.
+ * @param {number} idx - Index of the child.
+ * @param {boolean} enabled - Whether details should be shown.
+ */
+export function toggleChildDetails(idx, enabled) {
+	state.currentChildren[idx].hasDetails = enabled;
+	renderChildren();
+}
+
+/**
+ * Increments a numeric field on a child item.
+ * @param {number} idx - Index of the child.
+ * @param {string} field - Field name (e.g., 'episodes', 'chapters').
+ * @param {number} [step=1] - Amount to increment by.
+ */
+export function incrementChildField(idx, field, step = 1) {
+	const current = state.currentChildren[idx][field] || 0;
+	state.currentChildren[idx][field] = current + step;
+	renderChildren();
+}
+
+/**
+ * Decrements a numeric field on a child item (minimum 0).
+ * @param {number} idx - Index of the child.
+ * @param {string} field - Field name (e.g., 'episodes', 'chapters').
+ * @param {number} [step=1] - Amount to decrement by.
+ */
+export function decrementChildField(idx, field, step = 1) {
+	const current = state.currentChildren[idx][field] || 0;
+	state.currentChildren[idx][field] = Math.max(0, current - step);
+	renderChildren();
+}
 
 // =============================================================================
 // EXTERNAL LINKS

@@ -1,8 +1,8 @@
 /**
- * @fileoverview Application constants and configuration.
- * Contains all static data like media types, status types, color maps, and export configurations.
- * @module constants
- */
+* @fileoverview Application constants and configuration.
+* Contains all static data like media types, status types, color maps, and export configurations.
+* @module constants
+*/
 
 // ============================================================================
 // MEDIA & STATUS TYPES
@@ -256,6 +256,19 @@ export const CARD_VIEW_ALLOWED_FIELDS = [
  */
 export const FEATURE_GROUPS = [
 	{
+		id: 'core_assets',
+		label: 'Core Assets',
+		desc: 'Essential media identification fields.',
+		icon: 'image',
+		color: 'fuchsia',
+		fields: [
+			{ id: 'title', label: 'Title', desc: 'Main title of the entry' },
+			{ id: 'cover_image', label: 'Cover Image', desc: 'Visual poster or cover art' },
+			{ id: 'description', label: 'Description', desc: 'Synopsis or summary' },
+			{ id: 'tags', label: 'Tags', desc: 'Descriptive tags/genres' }
+		]
+	},
+	{
 		id: 'metadata',
 		label: 'Detailed Metadata',
 		desc: 'Extended information fields and organization details.',
@@ -268,7 +281,9 @@ export const FEATURE_GROUPS = [
 			{ id: 'universe', label: 'Universe', desc: 'Shared universe or franchise' },
 			{ id: 'alternate_titles', label: 'Alternate Titles', desc: 'Native or alias titles' },
 			{ id: 'external_links', label: 'External Links', desc: 'Links to tracking sites or stores' },
-			{ id: 'abbreviations', label: 'Abbreviations', desc: 'Short codes for quick search' }
+			{ id: 'abbreviations', label: 'Abbreviations', desc: 'Short codes for quick search' },
+			{ id: 'release_date', label: 'Release Date', desc: 'Original release/premiere date' },
+			{ id: 'technical_stats', label: 'Technical Stats', desc: 'Episode/Page/Volume counts & Duration' }
 		]
 	},
 	{
@@ -280,8 +295,7 @@ export const FEATURE_GROUPS = [
 		fields: [
 			{ id: 'progress', label: 'Progress/Status', desc: 'Current episode/chapter progress and status' },
 			{ id: 'reread_count', label: 'Reread Count', desc: 'Track number of times read/watched' },
-			{ id: 'length', label: 'Length/Duration', desc: 'Page count, episode count, or duration' },
-			{ id: 'avg_episode_length', label: 'Avg Episode Length', desc: 'Average duration per episode' }
+			{ id: 'completed_at', label: 'Completion Date', desc: 'Date when the entry was completed' }
 		]
 	},
 	{
@@ -301,7 +315,7 @@ export const FEATURE_GROUPS = [
 		label: 'Release Calendar',
 		desc: 'Track upcoming season premieres and volume releases.',
 		icon: 'calendar',
-		color: 'fuchsia',
+		color: 'violet',
 		fields: [
 			{ id: 'calendar_upcoming', label: 'Upcoming Events', desc: 'Show upcoming releases in detail view' },
 			{ id: 'calendar_month', label: 'Monthly View', desc: 'Show visual calendar availability' },

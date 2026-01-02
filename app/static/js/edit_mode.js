@@ -182,10 +182,20 @@ export function populateFormFromItem(id) {
 	safeVal('universe', item.universe || '');
 	safeVal('series', item.series || '');
 	safeVal('seriesNumber', item.seriesNumber || '');
+	safeVal('releaseDate', item.releaseDate ? item.releaseDate.split('T')[0] : ''); // Handle ISO format
 	safeVal('description', item.description || '');
 	safeVal('notes', item.notes || '');
 	safeVal('review', item.review || '');
 	safeVal('progress', item.progress || '');
+	safeVal('rereadCount', item.rereadCount || 0);
+	safeVal('completedAt', item.completedAt ? item.completedAt.split('T')[0] : '');
+
+	// Stats
+	safeVal('episodeCount', item.episodeCount || '');
+	safeVal('volumeCount', item.volumeCount || '');
+	safeVal('pageCount', item.pageCount || '');
+	safeVal('avgDurationMinutes', item.avgDurationMinutes || '');
+
 	const rVal = item.rating || 2;
 	safeVal('rating', rVal);
 	// Manually trigger label update
@@ -201,9 +211,12 @@ export function populateFormFromItem(id) {
 
 	safeCheck('isHidden', item.isHidden || false);
 	state.currentAuthors = item.authors || (item.author ? [item.author] : []);
+	state.currentTags = item.tags || [];
 	state.currentAlternateTitles = item.alternateTitles || [];
 	state.currentChildren = item.children || [];
 	state.currentLinks = item.externalLinks || [];
 	state.currentAbbreviations = item.abbreviations || [];
+
+	if (window.renderGenericTags) window.renderGenericTags();
 	if (window.renderAbbrTags) window.renderAbbrTags();
 }

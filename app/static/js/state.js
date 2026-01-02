@@ -25,6 +25,7 @@ export const state = {
 	currentAlternateTitles: [],
 	currentChildren: [],
 	currentLinks: [],
+	currentTags: [],
 
 	// Filter state
 	filterTypes: ['All'],

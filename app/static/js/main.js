@@ -14,7 +14,9 @@ import {
     populateAutocomplete, addSpecificLink, addLink, removeLink, updateLink, pasteLink,
     removeAuthor, addChild, removeChildIdx, updateChild, updateChildRating,
     removeAltTitle, checkEnterKey, renderDetailView, updateDetailTruncation, updateRatingVisuals,
-    renderAbbrTags, removeAbbreviation, toggleAbbrField, generateAbbreviation, renderLinks
+    renderAbbrTags, removeAbbreviation, toggleAbbrField, generateAbbreviation, renderLinks,
+    renderGenericTags, removeTag, incrementRereadCount, decrementRereadCount,
+    toggleChildDetails, incrementChildField, decrementChildField
 } from './main_helpers.js';
 import { updateWizardUI, selectType, selectStatus } from './wizard_logic.js';
 import { scrollToSection, updateSidebarVisibility } from './edit_mode.js';
@@ -69,7 +71,15 @@ window.updateRatingVisuals = updateRatingVisuals;
 window.renderAbbrTags = renderAbbrTags;
 window.removeAbbreviation = removeAbbreviation;
 window.toggleAbbrField = toggleAbbrField;
+window.toggleAbbrField = toggleAbbrField;
 window.generateAbbreviation = generateAbbreviation;
+window.renderGenericTags = renderGenericTags;
+window.removeTag = removeTag;
+window.incrementRereadCount = incrementRereadCount;
+window.decrementRereadCount = decrementRereadCount;
+window.toggleChildDetails = toggleChildDetails;
+window.incrementChildField = incrementChildField;
+window.decrementChildField = decrementChildField;
 
 // Export Utils Bindings
 window.openExportModal = openExportModal;
@@ -713,7 +723,7 @@ window.saveEntry = async () => {
             id: document.getElementById('itemId').value,
             type: document.getElementById('type').value,
             status: status,
-            title: document.getElementById('title').value,
+            title: document.getElementById('title').value || 'Untitled',
             authors: state.currentAuthors,
             alternateTitles: state.currentAlternateTitles,
             universe: document.getElementById('universe').value,
@@ -730,12 +740,25 @@ window.saveEntry = async () => {
             children: state.currentChildren,
             externalLinks: state.currentLinks,
             isHidden: document.getElementById('isHidden').checked,
-            abbreviations: state.currentAbbreviations
+            abbreviations: state.currentAbbreviations,
+
+            // New Fields
+            tags: state.currentTags,
+            releaseDate: document.getElementById('releaseDate').value || null,
+            episodeCount: parseInt(document.getElementById('episodeCount').value) || null,
+            volumeCount: parseInt(document.getElementById('volumeCount').value) || null,
+            pageCount: parseInt(document.getElementById('pageCount').value) || null,
+            avgDurationMinutes: parseInt(document.getElementById('avgDurationMinutes').value) || null,
+            rereadCount: parseInt(document.getElementById('rereadCount').value) || 0,
+            completedAt: document.getElementById('completedAt').value || null
         };
 
         // Add pending inputs
         const pendingAuth = document.getElementById('authorInput').value.trim();
         if (pendingAuth && !data.authors.includes(pendingAuth)) data.authors.push(pendingAuth);
+
+        const pendingTag = document.getElementById('tagInput').value.trim();
+        if (pendingTag && !data.tags.includes(pendingTag)) data.tags.push(pendingTag);
 
         const pendingAltTitle = document.getElementById('altTitleInput').value.trim();
         if (pendingAltTitle && !data.alternateTitles.includes(pendingAltTitle)) data.alternateTitles.push(pendingAltTitle);
@@ -945,6 +968,7 @@ async function initApp() {
 
     // Tag inputs
     addListener('authorInput', 'keydown', (e) => checkEnterKey(e, 'author'));
+    addListener('tagInput', 'keydown', (e) => checkEnterKey(e, 'tag'));
     addListener('altTitleInput', 'keydown', (e) => checkEnterKey(e, 'altTitle'));
 
     // Global resize listener for dynamic truncation
