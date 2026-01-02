@@ -1,0 +1,157 @@
+body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+	background: #0c0c0e;
+	padding: 40px;
+	color: #e4e4e7;
+}
+
+h1 {
+	text-align: center;
+	margin-bottom: 40px;
+	color: #fff;
+	font-weight: 800;
+	letter-spacing: -1px;
+}
+
+.grid-container {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+	gap: 24px;
+	max-width: 1600px;
+	margin: 0 auto;
+}
+
+.card {
+	background: #18181b;
+	border-radius: 12px;
+	overflow: hidden;
+	box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+	border: 1px solid #27272a;
+	display: flex;
+	flex-direction: column;
+	position: relative;
+	transition: transform 0.2s;
+}
+
+.cover-container {
+	width: 100%;
+	aspect-ratio: 2/3;
+	background: #27272a;
+	position: relative;
+}
+
+.cover {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.no-cover {
+	width: 100%;
+	height: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: #52525b;
+	font-size: 14px;
+	text-align: center;
+	background: #18181b;
+}
+
+.content {
+	padding: 16px;
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+}
+
+.title {
+	font-weight: 700;
+	font-size: 16px;
+	margin-bottom: 6px;
+	line-height: 1.3;
+	color: #fff;
+}
+
+.meta {
+	font-size: 12px;
+	color: #a1a1aa;
+	margin-bottom: 12px;
+}
+
+.badge-group {
+	position: absolute;
+	top: 10px;
+	left: 10px;
+	right: 10px;
+	display: flex;
+	justify-content: space-between;
+	gap: 4px;
+	z-index: 10;
+}
+
+.badge {
+	padding: 4px 8px;
+	border-radius: 6px;
+	font-size: 10px;
+	font-weight: 800;
+	text-transform: uppercase;
+	background: rgba(0, 0, 0, 0.8);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	max-width: 50%;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	color: #fff;
+	backdrop-filter: blur(4px);
+}
+
+.progress-badge {
+	background: transparent;
+	color: #fbbf24;
+	border: 1px solid rgba(251, 191, 36, 0.3);
+	backdrop-filter: blur(4px);
+}
+
+.footer {
+	margin-top: auto;
+	padding-top: 12px;
+	border-top: 1px solid #27272a;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	font-size: 11px;
+	font-weight: bold;
+}
+
+.status-text {
+	text-transform: uppercase;
+	color: #a1a1aa;
+	letter-spacing: 0.05em;
+}
+
+.rating-text {
+	color: #f59e0b;
+	font-size: 12px;
+}
+
+/* Media Colors for Title and Border */
+.media-Anime {
+	border-top: 4px solid #8b5cf6;
+}
+
+.media-Manga {
+	border-top: 4px solid #ec4899;
+}
+
+.media-Book {
+	border-top: 4px solid #3b82f6;
+}
+
+.media-Movie {
+	border-top: 4px solid #ef4444;
+}
+
+.media-Series {
+	border-top: 4px solid #f59e0b;
+}

@@ -315,9 +315,27 @@ def export_html(items, fields, format_param, images):
         STATUS_TEXT_MAP=STATUS_TEXT_MAP
     )
     
+    css_file_map = {
+        'html_card': 'export_card.css',
+        'html_accordion': 'export_accordion.css'
+    }
+    css_file_name = css_file_map.get(format_param, 'export_list.css')
+    
+    # Read CSS content
+    try:
+        from app.config import STATIC_DIR
+        css_path = os.path.join(STATIC_DIR, 'css', css_file_name)
+        with open(css_path, 'r') as f:
+            css_content = f.read()
+    except Exception as e:
+        logger.warning(f"Failed to include exported CSS: {e}")
+        css_content = ""
+
     memory_file = io.BytesIO()
     with zipfile.ZipFile(memory_file, 'w') as zf:
         zf.writestr('upnext_library.html', html_content)
+        if css_content:
+            zf.writestr(f'css/{css_file_name}', css_content)
         add_images_to_zip(zf, images)
     
     return create_zip_response(generate_zip_filename('upnext_export'), memory_file)
