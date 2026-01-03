@@ -913,9 +913,10 @@ export function renderDetailView(item, content) {
 	const childLabel = ['Book', 'Manga'].includes(item.type) ? 'Volumes' : 'Seasons';
 
 	const isBookType = ['Book', 'Manga'].includes(item.type);
+	const showChildStats = isFieldVisible('technical_stats');
 	const childrenHtml = (item.children || []).map(c => {
 		let statsText = '';
-		if (c.hasDetails) {
+		if (c.hasDetails && showChildStats) {
 			if (isBookType && c.chapters) {
 				const totalWords = c.chapters * (c.avgWords || 0);
 				statsText = `${c.chapters} ch`;
@@ -979,6 +980,7 @@ export function renderDetailView(item, content) {
                         ${isFieldVisible('authors') && authors.length ? `<div class="flex items-center gap-2"><i data-lucide="pen-tool" class="w-5 h-5 text-zinc-400 dark:text-zinc-600"></i> ${authHtml}</div>` : ''}
                         ${isFieldVisible('series') && item.series ? `<div onclick="smartFilter(event, 'series', '${item.series}')" class="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 dark:hover:text-emerald-300 cursor-pointer transition-colors"><i data-lucide="library" class="w-5 h-5"></i> ${seriesText}</div>` : ''}
                         ${isFieldVisible('universe') && item.universe ? `<div onclick="smartFilter(event, 'universe', '${item.universe}')" class="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 cursor-pointer transition-colors"><i data-lucide="globe" class="w-5 h-5"></i> ${item.universe}</div>` : ''}
+                        ${isFieldVisible('release_date') && item.releaseDate ? `<div class="flex items-center gap-2 text-zinc-400"><i data-lucide="calendar" class="w-5 h-5"></i> ${new Date(item.releaseDate).toLocaleDateString()}</div>` : ''}
                     </div>
                     ${isFieldVisible('technical_stats') ? renderTechStatsBar(item) : ''}
                 </div>
@@ -994,8 +996,10 @@ export function renderDetailView(item, content) {
                             <div class="flex gap-1 mt-1">
                                 ${[1, 2, 3, 4].map(i => `<i data-lucide="star" class="w-4 h-4 ${item.rating >= i ? STAR_FILLS[item.rating] : 'text-zinc-300 dark:text-zinc-800'} fill-current"></i>`).join('')}
                             </div>
+                            ${isFieldVisible('reread_count') && item.rereadCount ? `<span class="text-[10px] text-zinc-500 mt-1">${['Book', 'Manga'].includes(item.type) ? 'Reread' : 'Rewatched'} ${item.rereadCount}x</span>` : ''}
                          </div>` : ''}
                          
+                         ${isFieldVisible('completed_at') && item.completedAt ? `<div class="text-sm text-zinc-500 mb-3 flex items-center gap-1.5"><i data-lucide="calendar-check" class="w-4 h-4"></i> Completed ${new Date(item.completedAt).toLocaleDateString()}</div>` : ''}
                          ${item.review ? `
                          <div class="relative z-10 group/rev">
                             <span id="detail-review-${item.id}" class="text-zinc-700 dark:text-zinc-300 leading-relaxed italic text-lg whitespace-pre-wrap font-serif line-clamp-6">${item.review}</span>

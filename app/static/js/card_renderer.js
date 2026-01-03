@@ -157,6 +157,7 @@ export function generateCardHtml(item) {
                           ${isFieldVisible('universe') && item.universe ? `<button type="button" onclick="smartFilter(event, 'universe', '${item.universe.replace(/'/g, "\\'")}')" class="bg-transparent border-none p-0 flex items-center gap-1.5 truncate text-indigo-500 dark:text-indigo-300 cursor-pointer hover:text-indigo-700 dark:hover:text-indigo-200 transition-colors z-30 max-w-full"><i data-lucide="globe" class="w-3.5 h-3.5 opacity-50 pointer-events-none shrink-0"></i> <span class="truncate">${item.universe}</span></button>` : ''}
                           ${isFieldVisible('series') && item.series ? `<button type="button" onclick="smartFilter(event, 'series', '${item.series.replace(/'/g, "\\'")}')" class="bg-transparent border-none p-0 flex items-center gap-1.5 truncate text-emerald-600 dark:text-emerald-300 cursor-pointer hover:text-emerald-700 dark:hover:text-emerald-200 transition-colors z-30 max-w-full"><i data-lucide="library" class="w-3.5 h-3.5 opacity-50 pointer-events-none shrink-0"></i> <span class="truncate">${seriesDisplayText}</span></button>` : ''}
                      </div>
+                     ${getTechStatsHtml(item)}
                      ${getSynopsisBlockHtml(item, authors)}
                  </div>`;
         }
@@ -187,7 +188,7 @@ export function generateCardHtml(item) {
 
                     // Build stats text
                     let statsText = '';
-                    if (c.hasDetails) {
+                    if (c.hasDetails && isFieldVisible('technical_stats')) {
                         if (isBookType && c.chapters) {
                             const totalWords = c.chapters * (c.avgWords || 0);
                             statsText = `${c.chapters} ch`;
@@ -250,6 +251,7 @@ export function generateCardHtml(item) {
                                            ${isFieldVisible('authors') && authors.length ? `<span onclick="event.stopPropagation()" class="flex items-center gap-1.5 cursor-auto"><i data-lucide="pen-tool" class="w-4 h-4 text-zinc-400 dark:text-zinc-600"></i> ${authorsHtml}</span>` : ''}
                                            ${isFieldVisible('series') && item.series ? `<button type="button" onclick="smartFilter(event, 'series', '${item.series}')" class="bg-transparent border-none p-0 text-emerald-500 dark:text-emerald-400/90 flex items-center gap-1.5 cursor-pointer hover:underline"><i data-lucide="library" class="w-4 h-4"></i> ${seriesDisplayText}</button>` : ''}
                                            ${isFieldVisible('universe') && item.universe ? `<button type="button" onclick="smartFilter(event, 'universe', '${item.universe}')" class="bg-transparent border-none p-0 text-indigo-500 dark:text-indigo-400/90 flex items-center gap-1.5 cursor-pointer hover:underline"><i data-lucide="globe" class="w-4 h-4"></i> ${item.universe}</button>` : ''}
+                                           ${isFieldVisible('release_date') && item.releaseDate ? `<span class="flex items-center gap-1.5 text-zinc-400"><i data-lucide="calendar" class="w-4 h-4"></i> ${new Date(item.releaseDate).toLocaleDateString()}</span>` : ''}
                                        </div>
                                        ${getTechStatsHtml(item)}
  
@@ -278,8 +280,10 @@ export function generateCardHtml(item) {
                                            <div class="flex gap-1 mt-1">
                                                ${[1, 2, 3, 4].map(i => `<i data-lucide="star" class="w-4 h-4 ${item.rating >= i ? STAR_FILLS[item.rating] : 'text-zinc-300 dark:text-zinc-800'} fill-current"></i>`).join('')}
                                            </div>
+                                           ${isFieldVisible('reread_count') && item.rereadCount ? `<div class="text-[10px] text-zinc-500 mt-1">${['Book', 'Manga'].includes(item.type) ? 'Reread' : 'Rewatched'} ${item.rereadCount}x</div>` : ''}
                                         </div>` : ''}
  
+                                        ${isFieldVisible('completed_at') && item.completedAt ? `<div class="text-xs text-zinc-500 mb-2 flex items-center gap-1"><i data-lucide="calendar-check" class="w-3.5 h-3.5"></i> Completed ${new Date(item.completedAt).toLocaleDateString()}</div>` : ''}
                                         ${isFieldVisible('review') && item.review ? `
                                         <div class="text-zinc-700 dark:text-zinc-300 italic text-xs leading-relaxed relative" onclick="event.stopPropagation()">
                                            <div id="review-${item.id}" class="line-clamp-3 whitespace-pre-wrap"><i data-lucide="quote" class="inline w-3 h-3 text-zinc-400 dark:text-zinc-600 mr-1 align-top"></i>${item.review}</div>
