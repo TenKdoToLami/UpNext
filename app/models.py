@@ -279,4 +279,21 @@ class MediaRelease(db.Model):
     is_tracked: Mapped[bool] = mapped_column(Boolean, default=True)
     notification_sent: Mapped[bool] = mapped_column(Boolean, default=False)
     
-    item: Mapped["MediaItem"] = relationship("MediaItem", back_populates="releases")
+    item: Mapped[Optional["MediaItem"]] = relationship("MediaItem", back_populates="releases")
+
+class TagMeta(db.Model):
+    """
+    Stores metadata for tags including persistent colors and descriptions.
+    """
+    __tablename__ = "tag_meta"
+
+    name: Mapped[str] = mapped_column(String(100), primary_key=True)
+    color: Mapped[str] = mapped_column(String(7), nullable=False)  # Hex color like #FF5733
+    description: Mapped[str] = mapped_column(String(255), default="")  # Optional description
+    
+    def to_dict(self) -> dict:
+        return {
+            "name": self.name,
+            "color": self.color,
+            "description": self.description
+        }

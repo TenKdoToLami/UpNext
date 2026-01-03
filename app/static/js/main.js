@@ -30,7 +30,8 @@ import {
 import {
     openSettingsModal, closeSettingsModal, saveSettingsAndClose,
     switchSettingsTab, toggleFeature, toggleHiddenField,
-    toggleGroupCollapse, toggleMediaType, toggleStatus, toggleAutoLaunchSetting
+    toggleGroupCollapse, toggleMediaType, toggleStatus, toggleAutoLaunchSetting,
+    saveTagColor, saveTagDesc, addNewTagHandler, renameTagHandler, deleteTagHandler
 } from './settings_logic.js';
 
 // =============================================================================
@@ -106,6 +107,11 @@ window.toggleGroupCollapse = toggleGroupCollapse;
 window.toggleMediaType = toggleMediaType;
 window.toggleStatus = toggleStatus;
 window.toggleAutoLaunchSetting = toggleAutoLaunchSetting;
+window.saveTagColor = saveTagColor;
+window.saveTagDesc = saveTagDesc;
+window.addNewTagHandler = addNewTagHandler;
+window.renameTagHandler = renameTagHandler;
+window.deleteTagHandler = deleteTagHandler;
 
 // =============================================================================
 // THEME MANAGEMENT

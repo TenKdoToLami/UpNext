@@ -33,6 +33,10 @@
 				class="settings-tab-btn px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-white dark:hover:bg-zinc-900 border border-transparent hover:border-zinc-200 dark:hover:border-zinc-800">
 				Database
 			</button>
+			<button onclick="switchSettingsTab('tags')" id="tab-tags"
+				class="settings-tab-btn px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-white dark:hover:bg-zinc-900 border border-transparent hover:border-zinc-200 dark:hover:border-zinc-800">
+				Tags
+			</button>
 		</div>
 
 		<!-- Body -->
@@ -100,6 +104,19 @@
 							class="text-xs font-bold text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300">
 							Restart Application
 						</button>
+					</div>
+				</div>
+			</div>
+
+			<!-- Tags Settings -->
+			<div id="settings-tags" class="settings-panel hidden space-y-6">
+				<div class="space-y-4">
+					<div class="flex items-center justify-between">
+						<h3 class="text-sm font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Manage
+							Tags</h3>
+					</div>
+					<div id="settings-tags-container" class="space-y-3">
+						<!-- Populated by JS -->
 					</div>
 				</div>
 			</div>

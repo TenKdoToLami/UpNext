@@ -1704,8 +1704,9 @@ function closeDayDetail() {
  * @param {Function} onConfirm - Callback function to execute on confirm
  * @param {string} type - 'warning' (formatted as delete/destructive) or 'info' (default)
  * @param {Function} [onCancel] - Optional callback for cancellation
+ * @param {string} [confirmText] - Optional text for confirm button
  */
-function showConfirmationModal(title, message, onConfirm, type = 'info', onCancel = null) {
+function showConfirmationModal(title, message, onConfirm, type = 'info', onCancel = null, confirmText = 'Confirm') {
     const modal = document.getElementById('confirmationModal');
     if (!modal) {
         if (confirm(`${title}\n\n${message}`)) {
@@ -1719,6 +1720,7 @@ function showConfirmationModal(title, message, onConfirm, type = 'info', onCance
     // Set Content
     document.getElementById('confirmTitle').textContent = title;
     document.getElementById('confirmMessage').textContent = message;
+    document.getElementById('btnConfirmAction').textContent = confirmText;
 
     // Type Styling
     const iconContainer = document.getElementById('confirmIconContainer');

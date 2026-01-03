@@ -70,10 +70,19 @@ export async function createDatabase(dbName) {
 export async function loadItems() {
 	try {
 		showGridLoading();
-		const response = await fetch('/api/items');
-		if (!response.ok) throw new Error('Failed to fetch items');
 
-		state.items = await response.json();
+		// 1. Fetch Items (Critical)
+		const itemsRes = await fetch('/api/items');
+		if (!itemsRes.ok) throw new Error('Failed to fetch items');
+		state.items = await itemsRes.json();
+
+		// 2. Fetch Tags (Optional)
+		try {
+			const tagsRes = await fetch('/api/tags');
+			if (tagsRes.ok) state.allTags = await tagsRes.json();
+		} catch (e) {
+			console.warn('Failed to fetch tags:', e);
+		}
 
 		// Refresh UI
 		renderFilters();
@@ -145,6 +154,96 @@ export async function saveItem(formData) {
 	}
 
 	return response.json();
+}
+
+/**
+ * Saves a tag's metadata to the backend and updates local state.
+ * @param {string} name 
+ * @param {string} color 
+ * @param {string} description 
+ */
+export async function saveTag(name, color, description = "") {
+	try {
+		const res = await fetch('/api/tags', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ name, color, description })
+		});
+		if (res.ok) {
+			const tagData = await res.json();
+			state.allTags[name] = tagData;
+			return tagData;
+		}
+	} catch (e) {
+		console.error('Failed to save tag:', e);
+		throw e;
+	}
+}
+
+
+/**
+ * Renames a tag and updates items.
+ * @param {string} oldName 
+ * @param {string} newName 
+ */
+export async function renameTag(oldName, newName) {
+	if (oldName === newName) return;
+	try {
+		const res = await fetch('/api/tags/rename', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ oldName, newName })
+		});
+		if (res.ok) {
+			const newTagData = await res.json();
+			// Update State
+			if (state.allTags[oldName]) delete state.allTags[oldName];
+			state.allTags[newName] = newTagData;
+
+			// Update Items
+			state.items.forEach(item => {
+				if (item.tags && item.tags.includes(oldName)) {
+					// Replace logic
+					const idx = item.tags.indexOf(oldName);
+					if (idx !== -1) {
+						if (item.tags.includes(newName)) {
+							item.tags.splice(idx, 1); // Remove old, new exists
+						} else {
+							item.tags[idx] = newName;
+						}
+					}
+				}
+			});
+			return newTagData;
+		}
+	} catch (e) {
+		console.error('Failed to rename tag:', e);
+		throw e;
+	}
+}
+
+/**
+ * Deletes a tag and removes it from items.
+ * @param {string} name 
+ */
+export async function deleteTag(name) {
+	try {
+		const res = await fetch(`/api/tags/${encodeURIComponent(name)}`, {
+			method: 'DELETE'
+		});
+		if (res.ok) {
+			if (state.allTags[name]) delete state.allTags[name];
+			// Update Items
+			state.items.forEach(item => {
+				if (item.tags) {
+					item.tags = item.tags.filter(t => t !== name);
+				}
+			});
+		}
+	} catch (e) {
+		console.error('Failed to delete tag:', e);
+		throw e;
+	}
 }
 
 

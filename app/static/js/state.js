@@ -26,6 +26,7 @@ export const state = {
 	currentChildren: [],
 	currentLinks: [],
 	currentTags: [],
+	allTags: {}, // Map of name -> {color, description}
 
 	// Filter state
 	filterTypes: ['All'],

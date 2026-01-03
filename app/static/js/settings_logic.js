@@ -9,6 +9,7 @@ import { safeCreateIcons } from './dom_utils.js';
 import { renderGrid, renderFilters } from './render_utils.js';
 import { showToast } from './toast.js';
 import { MEDIA_TYPES, STATUS_TYPES, STATUS_ICON_MAP, TYPE_COLOR_MAP, ICON_MAP, FEATURE_GROUPS } from './constants.js';
+import { saveTag, renameTag, deleteTag } from './api_service.js';
 
 // =============================================================================
 // STATE MANAGEMENT
@@ -478,6 +479,58 @@ export function renderSettings() {
 		autoLaunchCheckbox.checked = currentSettings.autoLaunchDb === true;
 	}
 
+	// 5. Tags Settings
+	const tagsContainer = document.getElementById('settings-tags-container');
+	if (tagsContainer) {
+		const sortedTags = Object.values(state.allTags || {}).sort((a, b) => a.name.localeCompare(b.name));
+
+		const createHtml = `
+		<div class="flex items-center gap-3 p-4 bg-indigo-50 dark:bg-indigo-500/5 rounded-xl border border-indigo-100 dark:border-indigo-500/20">
+			<div class="p-2 rounded-lg bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400">
+				<i data-lucide="plus" class="w-5 h-5"></i>
+			</div>
+			<input type="text" id="newTagName" placeholder="Create new tag..." 
+				class="flex-1 bg-transparent border-0 border-b border-indigo-200 dark:border-indigo-500/30 text-sm focus:ring-0 focus:border-indigo-500 p-0 pb-1 text-zinc-800 dark:text-zinc-200 placeholder:text-indigo-300 dark:placeholder:text-indigo-500/50"
+				onkeydown="if(event.key === 'Enter') window.addNewTagHandler(this.value)">
+			<button onclick="window.addNewTagHandler(document.getElementById('newTagName').value)" 
+				class="text-xs font-bold uppercase tracking-wide px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors shadow-sm shadow-indigo-500/20">Add</button>
+		</div>`;
+
+		const listHtml = sortedTags.map(tag => `
+			<div class="flex items-center gap-4 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors group">
+				<div class="relative w-10 h-10 shrink-0">
+					<input type="color" 
+						value="${tag.color}" 
+						class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+						title="Change Color"
+						onchange="window.saveTagColor('${tag.name.replace(/'/g, "\\'")}', this.value)">
+					<div class="w-full h-full rounded-full border-2 border-white dark:border-zinc-700 shadow-sm transition-transform group-hover:scale-105" style="background-color: ${tag.color}"></div>
+				</div>
+					
+				<div class="flex-1 min-w-0">
+					<input type="text" 
+						value="${tag.name.replace(/"/g, '&quot;')}"
+						class="w-full bg-transparent font-bold text-zinc-800 dark:text-zinc-200 text-sm mb-1 border-0 border-b border-transparent focus:border-indigo-500 hover:border-zinc-300 dark:hover:border-zinc-700 transition-all p-0 pb-0.5 focus:ring-0 truncate"
+						title="Rename Tag"
+						onchange="window.renameTagHandler('${tag.name.replace(/'/g, "\\'")}', this.value)">
+
+					<input type="text"
+						value="${(tag.description || '').replace(/"/g, '&quot;')}"
+						placeholder="Add description..."
+						class="w-full bg-transparent border-0 border-b border-transparent group-hover:border-zinc-200 dark:group-hover:border-zinc-700 hover:border-zinc-300 transition-all text-xs text-zinc-500 dark:text-zinc-400 focus:ring-0 focus:border-indigo-500 p-0 pb-0.5 placeholder:text-zinc-300 dark:placeholder:text-zinc-700"
+						onchange="window.saveTagDesc('${tag.name.replace(/'/g, "\\'")}', this.value)">
+				</div>
+
+				<button onclick="window.deleteTagHandler('${tag.name.replace(/'/g, "\\'")}')" 
+					class="p-2 text-zinc-400 hover:text-red-600 dark:hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100" title="Delete Tag">
+					<i data-lucide="trash-2" class="w-4 h-4"></i>
+				</button>
+			</div>
+		`).join('');
+
+		tagsContainer.innerHTML = createHtml + (listHtml || '<div class="text-zinc-400 dark:text-zinc-600 italic text-sm text-center py-8 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl mt-4">No tags found. Create one above.</div>');
+	}
+
 	// Scope icon creation to the modal content to avoid global flicker/reflow
 	const modalContent = document.getElementById('settingsModalContent');
 	safeCreateIcons(modalContent);
@@ -490,4 +543,134 @@ export function renderSettings() {
 export function toggleAutoLaunchSetting(checked) {
 	if (!pendingAppSettings) pendingAppSettings = JSON.parse(JSON.stringify(state.appSettings));
 	pendingAppSettings.autoLaunchDb = checked;
+}
+
+/**
+ * Saves a tag color change.
+ * @param {string} name 
+ * @param {string} color 
+ */
+export function saveTagColor(name, color) {
+	const t = state.allTags[name];
+	if (t) {
+		saveTag(name, color, t.description).then(() => {
+			renderSettings();
+			renderGrid();
+			if (window.renderGenericTags) window.renderGenericTags();
+		});
+	}
+}
+
+/**
+ * Saves a tag description change.
+ * @param {string} name 
+ * @param {string} desc 
+ */
+export function saveTagDesc(name, desc) {
+	const t = state.allTags[name];
+	if (t) {
+		saveTag(name, t.color, desc);
+	}
+}
+
+// Tag Management Handlers
+export function addNewTagHandler(name) {
+	if (!name || !name.trim()) return;
+	const cleanName = name.trim();
+	if (state.allTags && state.allTags[cleanName]) {
+		showToast('Tag already exists', 'error');
+		return;
+	}
+	const color = hslToHex(Math.floor(Math.random() * 360), 70, 85);
+	saveTag(cleanName, color, "").then(() => {
+		showToast('Tag created');
+		renderSettings();
+	});
+}
+
+export async function renameTagHandler(oldName, newName) {
+	if (!newName || !newName.trim()) {
+		renderSettings(); // Revert
+		return;
+	}
+	const cleanName = newName.trim();
+	if (oldName === cleanName) return;
+
+	if (state.allTags && state.allTags[cleanName]) {
+		const confirmed = await showConfirm(
+			'Merge Tags?',
+			`Tag "${cleanName}" already exists. Do you want to merge "${oldName}" into it? This will update all items using the old tag.`,
+			'Merge',
+			'info'
+		);
+		if (!confirmed) {
+			renderSettings(); // Revert
+			return;
+		}
+	}
+
+	renameTag(oldName, cleanName).then(() => {
+		showToast('Tag renamed');
+		renderSettings();
+		renderGrid();
+	}).catch(() => {
+		showToast('Rename failed', 'error');
+		renderSettings();
+	});
+}
+
+export async function deleteTagHandler(name) {
+	const confirmed = await showConfirm(
+		'Delete Tag',
+		`Are you sure you want to delete tag "${name}"? It will be removed from all items.`,
+		'Delete',
+		'danger'
+	);
+
+	if (confirmed) {
+		deleteTag(name).then(() => {
+			showToast('Tag deleted');
+			renderSettings();
+			renderGrid();
+		});
+	}
+}
+
+/**
+ * Shows a confirmation modal using the global application modal.
+ * @param {string} title 
+ * @param {string} message 
+ * @param {string} confirmText 
+ * @param {'danger'|'info'} type 
+ * @returns {Promise<boolean>}
+ */
+function showConfirm(title, message, confirmText = 'Confirm', type = 'danger') {
+	return new Promise((resolve) => {
+		if (window.showConfirmationModal) {
+			// Map 'danger' to 'warning' for the calendar modal style
+			const modalType = type === 'danger' ? 'warning' : 'info';
+			window.showConfirmationModal(
+				title,
+				message,
+				() => resolve(true),
+				modalType,
+				() => resolve(false),
+				confirmText
+			);
+		} else {
+			// Fallback
+			resolve(confirm(`${title}\n${message}`));
+		}
+	});
+}
+
+function hslToHex(h, s, l) {
+	l /= 100;
+	const a = s * Math.min(l, 1 - l) / 100;
+	const f = n => {
+		const k = (n + h / 30) % 12;
+		const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+		return Math.round(255 * color).toString(16).padStart(2, '0');
+	};
+	return `#${f(0)}${f(8)}${f(4)}`;
 }

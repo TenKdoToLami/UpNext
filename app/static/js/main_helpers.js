@@ -16,6 +16,7 @@ import {
 } from './wizard_logic.js';
 import { initEditMode, populateFormFromItem } from './edit_mode.js';
 import { loadItemEvents } from './events_carousel.js';
+import { saveTag } from './api_service.js';
 
 // =============================================================================
 // MODAL OPERATIONS
@@ -264,12 +265,93 @@ export function removeAuthor(val) {
 }
 
 /**
- * Updates the generic tags display in the modal.
+ * Converts HSL to Hex.
+ */
+function hslToHex(h, s, l) {
+	l /= 100;
+	const a = s * Math.min(l, 1 - l) / 100;
+	const f = n => {
+		const k = (n + h / 30) % 12;
+		const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+		return Math.round(255 * color).toString(16).padStart(2, '0');
+	};
+	return `#${f(0)}${f(8)}${f(4)}`;
+}
+
+/**
+ * Generates a random pastel hex color.
+ */
+function getRandomPastelHex() {
+	const hue = Math.floor(Math.random() * 360);
+	return hslToHex(hue, 70, 85);
+}
+
+
+
+/**
+ * Handles tag input for autocomplete.
+ */
+function handleTagInput(e) {
+	const val = e.target.value.trim().toLowerCase();
+	const dropdown = document.getElementById('tagAutocompleteDropdown');
+	if (!dropdown) return;
+
+	if (!val) {
+		dropdown.classList.add('hidden');
+		return;
+	}
+
+	const matches = Object.values(state.allTags || {})
+		.filter(t => t.name.toLowerCase().includes(val) && !state.currentTags.includes(t.name));
+
+	if (matches.length === 0) {
+		dropdown.classList.add('hidden');
+		return;
+	}
+
+	dropdown.innerHTML = '';
+	matches.forEach(match => {
+		const item = document.createElement('div');
+		item.className = 'px-3 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-700 cursor-pointer flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-200 transition-colors';
+		item.innerHTML = `<span class="w-2.5 h-2.5 rounded-full ring-1 ring-black/10 flex-shrink-0" style="background-color: ${match.color}"></span> <span class="font-bold flex-shrink-0">${match.name}</span>${match.description ? `<span class="text-xs text-zinc-400 dark:text-zinc-500 ml-auto italic truncate">${match.description}</span>` : ''}`;
+		item.onclick = () => {
+			if (!state.currentTags.includes(match.name)) {
+				state.currentTags.push(match.name);
+				renderGenericTags();
+				document.getElementById('tagInput').value = '';
+				dropdown.classList.add('hidden');
+			}
+		};
+		dropdown.appendChild(item);
+	});
+	dropdown.classList.remove('hidden');
+}
+
+/**
+ * Renders generic tags with persistent colors.
  */
 export function renderGenericTags() {
 	const container = document.getElementById('tagTagsContainer');
 	const input = document.getElementById('tagInput');
 	if (!container) return; // Might be hidden/not rendered
+
+	// Autocomplete setup
+	let dropdown = document.getElementById('tagAutocompleteDropdown');
+	if (!dropdown) {
+		dropdown = document.createElement('div');
+		dropdown.id = 'tagAutocompleteDropdown';
+		dropdown.className = 'absolute z-50 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-xl max-h-48 overflow-y-auto hidden w-full left-0 top-full mt-1 custom-scrollbar';
+		container.style.position = 'relative';
+		container.appendChild(dropdown);
+
+		input.addEventListener('input', handleTagInput);
+		input.addEventListener('focus', handleTagInput);
+
+		// Close on click outside
+		document.addEventListener('click', (e) => {
+			if (!container.contains(e.target)) dropdown.classList.add('hidden');
+		});
+	}
 
 	Array.from(container.children).forEach(c => {
 		if (c.tagName === 'SPAN') c.remove();
@@ -277,9 +359,17 @@ export function renderGenericTags() {
 
 	state.currentTags.forEach(tag => {
 		const tagEl = document.createElement('span');
-		tagEl.className = 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 text-xs px-2 py-1 rounded flex items-center gap-1 font-medium';
+		tagEl.className = 'text-zinc-800 dark:text-zinc-900 text-xs px-2 py-1 rounded flex items-center gap-1 font-bold shadow-sm border border-black/5 transition-transform hover:scale-105';
+
+		const tagData = state.allTags[tag];
+		if (tagData && tagData.color) {
+			tagEl.style.backgroundColor = tagData.color;
+		} else {
+			tagEl.classList.add('bg-zinc-200', 'dark:bg-zinc-700');
+		}
+
 		const safeTag = tag.replace(/'/g, "\\'");
-		tagEl.innerHTML = `${tag} <button type="button" onclick="window.removeTag('${safeTag}')" class="hover:text-red-400 flex items-center"><i data-lucide="x" class="w-3 h-3"></i></button>`;
+		tagEl.innerHTML = `${tag} <button type="button" onclick="window.removeTag('${safeTag}')" class="hover:text-red-700 flex items-center opacity-50 hover:opacity-100 transition-opacity"><i data-lucide="x" class="w-3 h-3"></i></button>`;
 		container.insertBefore(tagEl, input);
 	});
 
@@ -334,6 +424,14 @@ export function checkEnterKey(e, type) {
 		case 'tag':
 			if (!state.currentTags.includes(val)) {
 				state.currentTags.push(val);
+
+				// Handle persistence
+				if (!state.allTags[val]) {
+					const newColor = getRandomPastelHex();
+					state.allTags[val] = { name: val, color: newColor, description: '' };
+					saveTag(val, newColor);
+				}
+
 				e.target.value = '';
 				renderGenericTags();
 			}
@@ -974,6 +1072,25 @@ export function renderDetailView(item, content) {
                         <span class="${STATUS_COLOR_MAP[item.status]} px-4 py-1.5 rounded text-xs font-black uppercase tracking-widest border border-current/20 flex items-center gap-1.5"><i data-lucide="${STATUS_ICON_MAP[item.status]}" class="w-3.5 h-3.5"></i> ${item.status}</span>
                         ${isFieldVisible('progress') && item.progress ? `<span class="px-4 py-1.5 rounded text-xs font-black font-mono uppercase tracking-widest border border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-500 flex items-center gap-1.5">Progress: ${item.progress}</span>` : ''}
                     </div>
+                    ${isFieldVisible('tags') && item.tags && item.tags.length ? `
+                    <div class="flex flex-wrap gap-1.5 mb-4">
+                        ${item.tags.map(tag => {
+		const tagData = state.allTags?.[tag] || {};
+		const color = tagData.color || '#e4e4e7';
+		const desc = (tagData.description || '').replace(/"/g, '&quot;');
+
+		return `
+                                <span class="relative group px-2.5 py-1 rounded-md text-[11px] font-bold text-zinc-800 shadow-sm border border-black/5 select-none cursor-help" style="background-color: ${color}">
+                                    ${tag}
+                                    ${tagData.description ? `
+                                        <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-zinc-900/90 backdrop-blur text-white text-xs font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-50 w-max max-w-[200px] text-center shadow-xl translate-y-2 group-hover:translate-y-0 text-balance leading-tight">
+                                            ${desc}
+                                            <div class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-zinc-900/90"></div>
+                                        </div>
+                                    ` : ''}
+                                </span>`;
+	}).join('')}
+                    </div>` : ''}
                     <h1 class="text-5xl md:text-6xl font-heading font-black text-zinc-900 dark:text-[var(--theme-col)] leading-none tracking-tight mb-2 drop-shadow-sm">${item.title}</h1>
                     ${isFieldVisible('alternate_titles') && item.alternateTitles && item.alternateTitles.length ? `<h2 class="text-xl text-zinc-500 dark:text-zinc-400 font-bold mb-4 font-heading">${item.alternateTitles.join(', ')}</h2>` : ''}
                     <div class="flex flex-wrap gap-6 text-base font-medium text-zinc-500 dark:text-zinc-400 mt-4">
