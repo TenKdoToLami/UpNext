@@ -72,7 +72,6 @@ window.updateRatingVisuals = updateRatingVisuals;
 window.renderAbbrTags = renderAbbrTags;
 window.removeAbbreviation = removeAbbreviation;
 window.toggleAbbrField = toggleAbbrField;
-window.toggleAbbrField = toggleAbbrField;
 window.generateAbbreviation = generateAbbreviation;
 window.renderGenericTags = renderGenericTags;
 window.removeTag = removeTag;
@@ -750,7 +749,7 @@ window.saveEntry = async () => {
             releaseDate: document.getElementById('releaseDate').value || null,
             episodeCount: parseInt(document.getElementById('episodeCount').value) || null,
             volumeCount: parseInt(document.getElementById('volumeCount').value) || null,
-            pageCount: parseInt(document.getElementById('pageCount').value) || null,
+            wordCount: parseInt(document.getElementById('wordCount').value) || null,
             avgDurationMinutes: parseInt(document.getElementById('avgDurationMinutes').value) || null,
             rereadCount: parseInt(document.getElementById('rereadCount').value) || 0,
             completedAt: document.getElementById('completedAt').value || null

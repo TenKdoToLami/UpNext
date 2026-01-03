@@ -501,7 +501,7 @@
 								</label>
 							</div>
 							<div class="grid grid-cols-2 gap-3" id="totalsGrid">
-								<div class="space-y-1 anime-total">
+								<div class="space-y-1 series-total">
 									<label
 										class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider ml-1">Total
 										Episodes</label>
@@ -509,15 +509,15 @@
 										class="w-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-500 dark:text-zinc-400 outline-none transition-all placeholder-zinc-400"
 										placeholder="Auto">
 								</div>
-								<div class="space-y-1 anime-total">
-									<label
+								<div class="space-y-1 duration-total">
+									<label id="durationLabel"
 										class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider ml-1">Total
 										Duration (min)</label>
 									<input type="number" id="avgDurationMinutes" min="0" readonly
 										class="w-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-500 dark:text-zinc-400 outline-none transition-all placeholder-zinc-400"
 										placeholder="Auto">
 								</div>
-								<div class="space-y-1 book-total hidden">
+								<div class="space-y-1 reading-total hidden">
 									<label
 										class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider ml-1">Total
 										Chapters</label>
@@ -525,11 +525,11 @@
 										class="w-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-500 dark:text-zinc-400 outline-none transition-all placeholder-zinc-400"
 										placeholder="Auto">
 								</div>
-								<div class="space-y-1 book-total hidden">
+								<div class="space-y-1 book-only-total hidden">
 									<label
 										class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider ml-1">Total
-										Pages</label>
-									<input type="number" id="pageCount" min="0" readonly
+										Words</label>
+									<input type="number" id="wordCount" min="0" readonly
 										class="w-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-500 dark:text-zinc-400 outline-none transition-all placeholder-zinc-400"
 										placeholder="Auto">
 								</div>

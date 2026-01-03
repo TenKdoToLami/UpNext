@@ -193,8 +193,12 @@ export function getSkippedSteps() {
 		skipped.push(9);
 	}
 
-	// Step 10 (Seasons/Volumes): Skip for Manga/Movie OR if series_number is hidden
-	if (['Manga', 'Movie'].includes(type) || !isFieldVisible('series_number')) {
+	// Step 10 (Technical Stats / Seasons/Volumes): Skip if both technical_stats is hidden
+	// AND (series_number is hidden OR type doesn't support children)
+	const hasChildItems = ['Book', 'Series', 'Anime'].includes(type);
+	const showForStats = isFieldVisible('technical_stats');
+	const showForChildren = isFieldVisible('series_number') && hasChildItems;
+	if (!showForStats && !showForChildren) {
 		skipped.push(10);
 	}
 
@@ -461,8 +465,10 @@ export function updateFormUI() {
 
 	markStepSkipped('step-9', !isFieldVisible('notes'));
 
-	const showChildren = isFieldVisible('series_number') && !['Manga', 'Movie'].includes(type);
-	markStepSkipped('step-10', !showChildren);
+	const hasChildItems = ['Book', 'Series', 'Anime'].includes(type);
+	const showForStats = isFieldVisible('technical_stats');
+	const showForChildren = isFieldVisible('series_number') && hasChildItems;
+	markStepSkipped('step-10', !showForStats && !showForChildren);
 
 	markStepSkipped('step-11', !state.isHidden);
 
@@ -521,13 +527,7 @@ export function updateWizardUI() {
 		seriesWrapper.style.display = ['Book', 'Movie'].includes(type) ? 'block' : 'none';
 	}
 
-	// Update child items label
-	const childLabel = document.querySelector('#step-10 #childLabel');
-	if (childLabel) {
-		childLabel.innerText = ['Book', 'Manga'].includes(type) ? 'Volumes' : 'Seasons';
-	}
-
-	// Update totals UI for correct type (anime vs book fields)
+	// Update totals UI based on type
 	if (window.updateTotalsUIForType) window.updateTotalsUIForType();
 
 	updateDynamicLinks();
@@ -798,7 +798,8 @@ export function resetWizardFields() {
 	safeVal('releaseDate', '');
 	safeVal('episodeCount', '');
 	safeVal('volumeCount', '');
-	safeVal('pageCount', '');
+	safeVal('wordCount', '');
+	safeVal('chapterCount', '');
 	safeVal('avgDurationMinutes', '');
 	safeVal('rereadCount', '');
 	safeVal('completedAt', '');

@@ -89,6 +89,15 @@ export function renderSidebarNav() {
 	const nav = document.getElementById('editSidebarNav');
 	if (!nav) return;
 
+	// Get type for dynamic step-10 label
+	const type = document.getElementById('type')?.value || 'Anime';
+	let step10Label = 'Seasons & Stats';
+	if (type === 'Movie' || type === 'Manga') {
+		step10Label = 'Technical Stats';
+	} else if (type === 'Book') {
+		step10Label = 'Volumes & Stats';
+	}
+
 	// Define sections based on steps
 	const sections = [
 		{ id: 'step-1', label: 'Media Type', icon: 'monitor' },
@@ -100,7 +109,7 @@ export function renderSidebarNav() {
 		{ id: 'step-7', label: 'Progress', icon: 'bookmark' },
 		{ id: 'step-8', label: 'Review & Rating', icon: 'star' },
 		{ id: 'step-9', label: 'Notes', icon: 'sticky-note' },
-		{ id: 'step-10', label: 'Seasons/Volumes', icon: 'layers' },
+		{ id: 'step-10', label: step10Label, icon: 'layers' },
 		{ id: 'step-11', label: 'Privacy', icon: 'shield' } // Conditionally hidden
 	];
 
@@ -200,7 +209,7 @@ export function populateFormFromItem(id) {
 	// Stats
 	safeVal('episodeCount', item.episodeCount || '');
 	safeVal('volumeCount', item.volumeCount || '');
-	safeVal('pageCount', item.pageCount || '');
+	safeVal('wordCount', item.wordCount || '');
 	safeVal('avgDurationMinutes', item.avgDurationMinutes || '');
 
 	const rVal = item.rating || 2;
