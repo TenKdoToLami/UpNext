@@ -70,10 +70,6 @@ export const state = {
 			'reread_count',      // Most users don't reread/rewatch
 			'completed_at',      // Completion date is optional detail
 			'release_date',      // Release date is optional
-			'verdict',           // Verdict badge is optional flair
-			'alternate_titles',  // Most users only need main title
-			'abbreviations',     // Power user feature
-			'technical_stats'    // Episode counts etc. are optional
 		],
 		disabledFeatures: [], // Features to disable (e.g. 'calendar', 'stats')
 		disabledTypes: [],    // Media Types to hide (e.g. 'Manga')

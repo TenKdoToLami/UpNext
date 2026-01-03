@@ -7,79 +7,90 @@
 ## Technology Stack
 
 -   **Backend**: Python (Flask) with modular blueprints and service layer.
--   **Data**: SQLite relational persistence.
--   **Frontend**: Vanilla HTML/CSS/JS with Lucide icons.
+-   **Data**: SQLite relational persistence (SQLAlchemy).
+-   **Frontend**: Vanilla HTML/CSS/JS (SPA pattern) with state management.
 -   **Packaging**: PyInstaller for native cross-platform executables.
+-   **Native Shell**: `pywebview` for windowing and hardware acceleration.
 -   **Tooling**: pytest, black, isort, Chart.js.
 
-## System Architecture
+---
+
+## 🗺️ System Architecture
 
 ```mermaid
 graph TD
-    User[User] -->|Interact| Frontend["Frontend (HTML/JS)"]
-    Frontend -->|HTTP Requests| Flask["Flask App"]
+    User([User]) <--> GUI[Native Window - pywebview]
     
-    subgraph Backend Structure
-        Flask -->|Register| Blueprints["Routes (app/routes/)"]
-        Blueprints -->|Invoke| Services["Services (app/services/)"]
-        Services -->|Configure| Config["Config (app/config.py)"]
-        Services -->|Persist| DataManager["DB Manager (app/database.py)"]
-        DataManager -->|Read/Write| SQLite[(SQLite Database)]
+    subgraph Frontend [JS Frontend - SPA]
+        JS[Main JS Logic]
+        State[State Management - state.js]
+        Wizard[Entry Wizard Logic]
+        API_S[API Client Service]
     end
     
-    subgraph Frontend Components
-        Frontend -->|Render| Templates["Jinja2 Templates"]
-        Frontend -->|Style| CSS["Static CSS"]
-        Frontend -->|Logic| JS["Static JS"]
-        Frontend -->|Visualize| ChartJS["Chart.js Engine"]
+    subgraph Backend [Python Backend - Flask]
+        Flask[Flask Server]
+        Routes[API Blueprints]
+        DM[DataManager Service]
+        DB[(SQLite - library.db)]
     end
+    
+    GUI <--> JS
+    JS <--> State
+    API_S <--> Flask
+    Flask <--> DM
+    DM <--> DB
+    
+    subgraph Native_Bridge [Native Bridge]
+        B_API[python_api - window.pywebview.api]
+    end
+    
+    JS <--> B_API
+    B_API <--> Flask
 ```
 
-## Directory Structure
+---
 
-Modular project structure:
+## 🔄 Development Workflow
 
--   **`manage.py`**: Unified entry point for `run`, `build`, and `clean` commands.
--   **`app/`**: Core source code.
-    -   `routes/`: API endpoints for library and releases.
-    -   `services/`: Business logic, window lifecycle, and native integration.
-    -   `models.py`: Normalized SQLAlchemy models.
-    -   `database.py`: Session management.
-    -   `utils/`: Win32 icon injection and config utilities.
-    -   `static/`: Production assets (img, js, css).
-    -   `templates/`: Jinja2 templates.
--   **`scripts/`**: Automation tools for build and cleanup.
-    -   `build.py`: Orchestrates the PyInstaller compilation process.
-    -   `clean.py`: Wipes build artifacts and Python cache.
--   **`data/`**: Local SQLite databases and covers.
+For developers looking to extend UpNext:
 
-## Key Components
+1.  **UI Adjustments**: All styling is handled in `app/static/css/style.css`. We use CSS variables for theme colors and glassmorphism levels.
+2.  **Adding API Endpoints**: New routes should be added to the appropriate blueprint in `app/routes/`.
+3.  **State Logic**: If adding new UI features, register the state in `app/static/js/state.js` to ensure it is correctly persisted and globally accessible.
+4.  **Database Migration**: Since we use SQLAlchemy, model changes in `app/models.py` will require a database migration or a fresh library creation.
 
-### Management Script (`manage.py`)
-Universal entry point:
--   **Run**: Launches multi-threaded Flask backend and native GUI.
--   **Build**: Produces optimized, single-file native executable.
--   **Clean**: Removes temporary production and development files.
+---
 
-### Release Calendar System
-Granular release tracking:
--   **Future Events**: Recurring release generation (weekly).
--   **Overdue Logic**: Missed release notifications based on system time.
--   **Dynamic Linkage**: Associates releases with library items for metadata access.
+## 📂 Key Components
 
-### Data Persistence
-Local SQLite storage in `data/` for high-performance relational queries and offline privacy.
+### 1. Backend Services
+- **`DataManager`**: The core abstraction layer over SQLAlchemy. It handles complex relational operations across multiple tables (Covers, UserData, Metadata) and ensures data normalization.
+- **`AppLifecycle`**: Manages the startup sequence: initializing the Flask thread, waiting for the port to open, and launching the `pywebview` window.
+- **`ConfigManager`**: Handles `config.json` serialization, including application settings, database history, and window state.
 
-#### Normalized Database Schema
-5-table architecture (default `library.db`):
-1.  **`MediaItem`**: Lightweight registry for fast listing.
-2.  **`MediaCover`**: Separate BLOB storage for heavy binary image data.
-3.  **`MediaUserData`**: User tracking stats, ratings, and progress.
-4.  **`MediaMetadata`**: Technical spec storage (counts, durations).
-5.  **`MediaRelease`**: Event entities for the calendar.
+### 2. Frontend Core
+- **State Management (`state.js`)**: A centralized, lightweight store inspired by Redux. It tracks everything from filter criteria and UI modes (Dark/Light) to wizard navigation and persistent user settings.
+- **Entry Wizard (`wizard_logic.js`)**: Manages the complex 12-step form logic, including dynamic step skipping based on media types and field visibility.
+- **The Native Bridge**: UpNext uses a custom `JsApi` class in Python exposed as `window.pywebview.api`. This allows the JS frontend to call Python methods directly for saving configurations or querying system-level information.
 
-### Build & Packaging
-Optimized desktop distribution:
--   **Asset Injection**: Templates and static files bundled into binary.
--   **Native Integration**: Custom Win32 logic for icon injection.
--   **Portability**: Executable runs directly without host Python installation.
+### 3. Release Calendar System
+- **Event Generation**: Supports single point-in-time releases or automated recurring series (Daily/Weekly frequency).
+- **Overdue Tracking**: A specialized service that identifies "missed" consumption dates and alerts the user on the next launch.
+
+### 4. Data Persistence (6-Table Schema)
+UpNext uses a highly normalized SQLite schema to ensure data integrity:
+- **`MediaItem`**: Core entity (Title, Type, Links, Authors).
+- **`MediaCover`**: Binary BLOB storage for cover images and mime types.
+- **`MediaUserData`**: Tracking fields (Status, Rating, Progress, Privacy).
+- **`MediaMetadata`**: Technical stats (Episodes, Chapters, Word Counts).
+- **`MediaRelease`**: Calendar events linked to items.
+- **`TagMeta`**: Global tag metadata (Unique Colors, Descriptions).
+
+---
+
+## 📦 Build & Packaging
+
+The application is packaged into a single binary using **PyInstaller**.
+- **Asset Resolution**: Uses a custom `ResourcePath` utility to resolve static assets and templates whether running from source or from the temporary directory created by the executable (`sys._MEIPASS`).
+- **One-File Mode**: All dependencies, including the Python runtime and static assets, are bundled into the final executable.
