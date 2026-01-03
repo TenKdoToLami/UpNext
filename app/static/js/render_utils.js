@@ -311,9 +311,13 @@ export function renderGrid() {
 	if (searchVal.length > 0) clearBtn.classList.remove('hidden');
 	else clearBtn.classList.add('hidden');
 
-	let textQuery = searchVal.replace(/(universe|author|series|type)=("([^"]*)"|([^"\s]+))/gi, () => '').trim();
+	let textQuery = searchVal.replace(/(universe|author|series|type|tags?)=("([^"]*)"|([^"\s]+))/gi, () => '').trim();
 	const searchFilters = {};
-	searchVal.replace(/(universe|author|series|type)=("([^"]*)"|([^"\s]+))/gi, (m, k, qf, qi, s) => { searchFilters[k.toLowerCase()] = (qi || s).toLowerCase(); });
+	searchVal.replace(/(universe|author|series|type|tags?)=("([^"]*)"|([^"\s]+))/gi, (m, k, qf, qi, s) => {
+		let key = k.toLowerCase();
+		if (key === 'tags') key = 'tag';
+		searchFilters[key] = (qi || s).toLowerCase();
+	});
 
 	let filtered = state.items.filter(item => {
 		// Global Filters (Settings)
@@ -342,6 +346,10 @@ export function renderGrid() {
 			const auths = (item.authors || (item.author ? [item.author] : [])).map(a => a.toLowerCase());
 			if (!auths.some(a => a.includes(searchFilters.author))) return false;
 		}
+		if (searchFilters.tag) {
+			const itemTags = (item.tags || []).map(t => t.toLowerCase());
+			if (!itemTags.some(t => t.includes(searchFilters.tag))) return false;
+		}
 
 		if (!textQuery) return true;
 
@@ -350,8 +358,9 @@ export function renderGrid() {
 		const matchesUniverse = (item.universe && item.universe.toLowerCase().includes(textQuery));
 		// Match against any abbreviation in the list
 		const matchesAbbreviation = (item.abbreviations || []).some(abbr => abbr.toLowerCase().includes(textQuery));
+		const matchesTags = (item.tags || []).some(tag => tag.toLowerCase().includes(textQuery));
 
-		return matchesMainTitle || matchesAlternateTitle || matchesUniverse || matchesAbbreviation;
+		return matchesMainTitle || matchesAlternateTitle || matchesUniverse || matchesAbbreviation || matchesTags;
 	});
 
 	filtered = sortItems(filtered);

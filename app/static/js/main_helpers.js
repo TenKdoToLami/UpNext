@@ -1080,7 +1080,7 @@ export function renderDetailView(item, content) {
 		const desc = (tagData.description || '').replace(/"/g, '&quot;');
 
 		return `
-                                <span class="relative group px-2.5 py-1 rounded-md text-[11px] font-bold text-zinc-800 shadow-sm border border-black/5 select-none cursor-help" style="background-color: ${color}">
+								<span onclick="smartFilter(event, 'tag', '&quot;${tag.replace(/'/g, "\\'").replace(/"/g, '&quot;')}&quot;')" class="relative group px-2.5 py-1 rounded-md text-[11px] font-bold text-zinc-800 shadow-sm border border-black/5 select-none cursor-pointer hover:opacity-80 transition-opacity" style="background-color: ${color}">
                                     ${tag}
                                     ${tagData.description ? `
                                         <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-zinc-900/90 backdrop-blur text-white text-xs font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-50 w-max max-w-[200px] text-center shadow-xl translate-y-2 group-hover:translate-y-0 text-balance leading-tight">

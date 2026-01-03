@@ -638,7 +638,18 @@ window.toggleSortMenu = () => {
 window.smartFilter = (e, key, val) => {
     if (e) e.stopPropagation();
     const input = document.getElementById('searchInput');
-    const term = val.includes(' ') ? `"${val}"` : val;
+
+    let term = val;
+    // Don't double quote if already quoted
+    const isQuoted = val.length > 1 && (
+        (val.startsWith('"') && val.endsWith('"')) ||
+        (val.startsWith("'") && val.endsWith("'"))
+    );
+
+    if (!isQuoted && val.includes(' ')) {
+        term = `"${val}"`;
+    }
+
     const newFilter = `${key}=${term}`;
 
     if (!input.value.includes(newFilter)) {
