@@ -1,9 +1,17 @@
-import ctypes
-from ctypes import wintypes
+import sys
+import logging
 import time
 import threading
-import logging
 from typing import Optional
+
+# Only import Windows-specific modules on Windows
+if sys.platform == "win32":
+    import ctypes
+    from ctypes import wintypes
+else:
+    # Placeholders for non-Windows platforms to avoid NameErrors if called
+    ctypes = None
+    wintypes = None
 
 logger = logging.getLogger("win32_icon")
 

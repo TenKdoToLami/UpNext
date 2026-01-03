@@ -8,7 +8,8 @@ import threading
 import time
 import socket
 import logging
-import webview
+import os
+import locale
 from typing import Callable
 
 from app.services.browser import launch_browser_app
@@ -58,12 +59,28 @@ def run_application_stack(create_app_func: Callable, host: str, port: int):
     target_url = f'http://{host}:{port}'
     launch_browser_app(target_url)
 
-    # 4. Start GUI Loop (Blocking)
-    # 4. Start GUI Loop (Blocking)
-    logger.info("Starting native window loop...")
-    
+    # Stability fixes for Linux/Qt
+    if sys.platform != 'win32':
+        # Force UTF-8 locale for Qt 6 compatibility
+        try:
+            locale.setlocale(locale.LC_ALL, 'C.UTF-8')
+        except Exception:
+            pass
+            
+        # Address sandbox and rendering issues on Linux
+        # pywebview often suggests this for Arch/Manjaro/Nixos
+        os.environ['QTWEBENGINE_DISABLE_SANDBOX'] = '1'
+        # Prevent some GPU-related crashes on certain drivers
+        if os.environ.get('WEBVIEW_DISABLE_GPU'):
+            os.environ['QT_WEBENGINE_DISABLE_GPU'] = '1'
+        
+        # Ensure encoding is UTF-8
+        os.environ['PYTHONIOENCODING'] = 'utf-8'
+
+    # Lazy import webview after environment variables are set
+    import webview
+
     # Resolve icon path (use PNG on Linux, ICO on Windows)
-    import os
     basedir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     if sys.platform == 'win32':
         icon_path = os.path.join(basedir, 'app', 'static', 'img', 'icon.ico')
@@ -75,13 +92,15 @@ def run_application_stack(create_app_func: Callable, host: str, port: int):
     webview.settings['OPEN_DEVTOOLS_IN_DEBUG'] = False
     
     # Manually apply icon for Windows (pywebview 6.x workaround)
-    try:
-        from app.utils.win32_icon import set_window_icon
-        # Note: Title must match exactly what is passed to create_window ("UpNext")
-        set_window_icon("UpNext", icon_path)
-    except Exception as e:
-        logger.error(f"Failed to apply Windows icon: {e}")
+    if sys.platform == 'win32':
+        try:
+            from app.utils.win32_icon import set_window_icon
+            # Note: Title must match exactly what is passed to create_window ("UpNext")
+            set_window_icon("UpNext", icon_path)
+        except Exception as e:
+            logger.error(f"Failed to apply Windows icon: {e}")
 
+    # Use a safer start for Linux if needed, but for now we just apply env vars above
     webview.start(debug=True, icon=icon_path)
     
     logger.info("Window closed. Exiting...")
