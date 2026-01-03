@@ -133,7 +133,8 @@ export const STEP_TITLES = {
 	8: 'Review & Verdict',
 	9: 'Personal Notes',
 	10: 'Seasons / Volumes',
-	11: 'Privacy Setting'
+	11: 'Privacy Setting',
+	12: 'Calendar Event'
 };
 
 /** Suggested external links by media type */

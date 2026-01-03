@@ -789,13 +789,52 @@ window.saveEntry = async () => {
         if (file) formData.append('image', file);
 
         const savedItem = await saveItem(formData);
+
+        // --- CALENDAR INTEGRATION ---
+        const addToCalendar = document.getElementById('addToCalendar');
+        if (addToCalendar && addToCalendar.checked && savedItem.item) {
+            const calDateRaw = document.getElementById('calDate').value;
+            if (calDateRaw) {
+                const calPayload = {
+                    date: calDateRaw,
+                    time: null,
+                    content: document.getElementById('calContent').value || '',
+                    itemId: savedItem.item.id,
+                    isTracked: true
+                };
+
+                const isRecurring = document.getElementById('calRecurring').checked;
+                if (isRecurring) {
+                    calPayload.recurrence = {
+                        frequency: document.getElementById('calFreq').value,
+                        count: parseInt(document.getElementById('calCount').value) || 12,
+                        useCounter: document.getElementById('calUseCounter').checked,
+                        startCount: parseInt(document.getElementById('calStartCount').value) || 1,
+                        prefix: document.getElementById('calPrefix').value || ''
+                    };
+                }
+
+                try {
+                    await fetch('/api/releases', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(calPayload)
+                    });
+                    console.log("Calendar events created via Wizard");
+                } catch (calErr) {
+                    console.error("Failed to create calendar events:", calErr);
+                    showToast("Item saved, but failed to create calendar events.", "warning");
+                }
+            }
+        }
+
         closeModal();
         loadItems();
 
         // Show Rich Toast
         showRichToast({
             title: state.isEditMode ? `Updated '${savedItem.item.title}'` : `Added '${savedItem.item.title}'`,
-            message: state.isEditMode ? 'Item updated successfully.' : 'Added to your library.',
+            message: state.isEditMode ? 'Item updated successfully.' : 'Added to library & calendar.',
             coverUrl: savedItem.item.coverUrl,
             type: 'success'
         });

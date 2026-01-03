@@ -207,6 +207,12 @@ export function getSkippedSteps() {
 		skipped.push(11);
 	}
 
+	// Step 12 (Calendar): Skip if not Planning/Anticipating OR Calendar feature disabled
+	const canHaveCalendar = ['Planning', 'Anticipating'].includes(status) && !state.appSettings.disabledFeatures?.includes('calendar');
+	if (!canHaveCalendar) {
+		skipped.push(12);
+	}
+
 	return [...new Set(skipped)]; // Remove duplicates
 }
 
@@ -424,6 +430,12 @@ export function validateStep(step) {
 				return false;
 			}
 			break;
+		case 12: // Calendar
+			if (document.getElementById('addToCalendar')?.checked && !document.getElementById('calDate').value) {
+				showToast('Please select a start date for the event.', 'warning');
+				return false;
+			}
+			break;
 	}
 	return true;
 }
@@ -578,7 +590,6 @@ export function renderTypeSelection() {
 	container.innerHTML = types
 		.map((type, i) => {
 			// For the last item, span 2 cols to center it, but restrict width to match others (50% - half gap)
-			// gap-4 is 1rem (16px), so half gap is 0.5rem
 			const isLast = i === types.length - 1;
 			const extra = isLast
 				? 'col-span-2 justify-self-center w-[calc(50%-0.5rem)]'
@@ -626,7 +637,6 @@ export function renderStatusSelection() {
 	container.style.gridAutoRows = '1fr';
 
 	container.innerHTML = STATUS_TYPES.map(status => createStatusCardHtml(status)).join('');
-
 	safeCreateIcons();
 }
 
@@ -654,7 +664,247 @@ function createStatusCardHtml(status) {
     `;
 }
 
+// =============================================================================
+// SELECTION HANDLERS
+// =============================================================================
 
+/**
+ * Handles media type selection.
+ * @param {string} t - Selected type
+ */
+export function selectType(t) {
+	const current = document.getElementById('type').value;
+	if (current === t && state.isEditMode) return;
+
+	if (!state.isEditMode) {
+		resetWizardFields();
+		state.maxReachedStep = 1;
+		document.getElementById('status').value = '';
+
+		document.querySelectorAll('[id^="status-card-"]').forEach(el => {
+			el.classList.remove('ring-2', 'ring-white', 'bg-zinc-800');
+			el.classList.add('border-zinc-800');
+		});
+		renderStatusSelection();
+	}
+
+	document.getElementById('type').value = t;
+	if (!state.isEditMode) updateDynamicLinks(t);
+	selectTypeVisuals(t);
+	updateWizardUI();
+	updateFormUI(); // Apply field visibility
+
+	if (state.isEditMode) {
+		// Already called updateFormUI above
+	} else {
+		// Auto-advance
+		setTimeout(() => window.nextStep(), 400);
+	}
+}
+
+/**
+ * Handles status selection.
+ * @param {string} s - Selected status
+ */
+export function selectStatus(s) {
+	const current = document.getElementById('status').value;
+	if (current === s && !state.isEditMode) {
+		window.nextStep();
+		return;
+	}
+
+	document.getElementById('status').value = s;
+	selectStatusVisuals(s);
+
+	// Prefill completedAt with today's date when 'Completed' is selected
+	if (s === 'Completed' && !state.isEditMode) {
+		const completedAtInput = document.getElementById('completedAt');
+		if (completedAtInput && !completedAtInput.value) {
+			const today = new Date().toISOString().split('T')[0];
+			completedAtInput.value = today;
+		}
+	}
+
+	updateFormUI(); // Apply field visibility for all modes
+
+	if (!state.isEditMode) {
+		setTimeout(() => window.nextStep(), 300);
+	}
+}
+
+/**
+ * Updates visual selection state for type cards.
+ * @param {string} t - Selected type
+ */
+export function selectTypeVisuals(t) {
+	const COLOR_MAP = {
+		'Anime': 'violet', 'Manga': 'pink', 'Book': 'blue',
+		'Movie': 'red', 'Series': 'amber'
+	};
+	const colorName = COLOR_MAP[t] || 'zinc';
+
+	document.querySelectorAll('[id^="type-card-"]').forEach(el => {
+		if (el.id !== `type-card-${t}`) restoreDefaultVisuals(el);
+	});
+
+	const card = document.getElementById(`type-card-${t}`);
+	if (!card) return;
+
+	Array.from(card.classList).forEach(cls => {
+		if (cls.startsWith('bg-') || cls.startsWith('dark:bg-') ||
+			cls.startsWith('hover:bg-') || cls.startsWith('dark:hover:bg-') ||
+			(cls.startsWith('border-') && cls !== 'border-2') ||
+			cls.startsWith('dark:border-')) {
+			card.classList.remove(cls);
+		}
+	});
+
+	card.classList.add('selected', 'scale-[1.02]', 'ring-4', 'ring-indigo-500/50', 'bg-black', 'dark:bg-white');
+
+	const innerText = card.querySelector('span');
+	if (innerText) {
+		Array.from(innerText.classList).forEach(cls => {
+			if (cls.startsWith('text-') || cls.startsWith('dark:text-')) innerText.classList.remove(cls);
+		});
+		innerText.classList.add(`text-${colorName}-400`, `dark:text-${colorName}-600`, 'font-bold');
+	}
+}
+
+/** Extracts the Tailwind color name from an element's ID. */
+export function elementColorName(el) {
+	const COLOR_MAP = {
+		'Anime': 'violet', 'Manga': 'pink', 'Book': 'blue', 'Movie': 'red', 'Series': 'amber',
+		'Planning': 'zinc', 'NumberOne': 'zinc', 'Reading': 'sky', 'Watching': 'sky',
+		'Dropped': 'red', 'On': 'orange', 'Hold': 'orange', 'Anticipating': 'fuchsia', 'Completed': 'emerald'
+	};
+	for (const key of Object.keys(COLOR_MAP)) {
+		if (el.id.includes(key)) return COLOR_MAP[key];
+	}
+	return 'zinc';
+}
+
+/** Restores a selection card to its default unselected visual state. */
+export function restoreDefaultVisuals(el) {
+	const c = elementColorName(el);
+
+	el.classList.remove('selected', 'ring-4', 'ring-indigo-500/50', 'scale-[1.02]');
+
+	Array.from(el.classList).forEach(cls => {
+		if (cls.startsWith('bg-') || cls.startsWith('dark:bg-') ||
+			cls.startsWith('hover:bg-') || cls.startsWith('dark:hover:bg-') ||
+			(cls.startsWith('border-') && cls !== 'border-2') ||
+			cls.startsWith('dark:border-')) {
+			el.classList.remove(cls);
+		}
+	});
+
+	if (c === 'zinc') {
+		el.classList.add('bg-zinc-100', 'dark:bg-zinc-800/80', 'border-zinc-300', 'dark:border-zinc-600');
+	} else {
+		el.classList.add(`bg-${c}-100`, `dark:bg-${c}-500/10`, `border-${c}-300`, `dark:border-${c}-500/30`);
+	}
+
+	const innerText = el.querySelector('span');
+	if (innerText) {
+		Array.from(innerText.classList).forEach(cls => {
+			if (cls.startsWith('text-') || cls.startsWith('dark:text-')) innerText.classList.remove(cls);
+		});
+		innerText.classList.remove('font-bold');
+		innerText.classList.add(`text-${c}-600`, `dark:text-${c}-400`);
+	}
+
+	const innerIcon = el.querySelector('i');
+	if (innerIcon) {
+		Array.from(innerIcon.classList).forEach(cls => {
+			if (cls.startsWith('text-') || cls.startsWith('dark:text-')) innerIcon.classList.remove(cls);
+		});
+		innerIcon.classList.add(`text-${c}-500`, `dark:text-${c}-400`);
+	}
+
+	const innerBg = el.querySelector('div.p-3');
+	if (innerBg) {
+		Array.from(innerBg.classList).forEach(cls => {
+			if (cls.startsWith('bg-') || cls.startsWith('dark:bg-') || cls.startsWith('group-hover:bg-')) {
+				innerBg.classList.remove(cls);
+			}
+		});
+		innerBg.classList.add('bg-white', 'dark:bg-zinc-900/50', 'group-hover:bg-zinc-100');
+	}
+}
+
+/**
+ * Updates visual selection state for status cards.
+ * @param {string} s - Selected status
+ */
+export function selectStatusVisuals(s) {
+	const idSafe = s.replace(/[^a-zA-Z]/g, '');
+	const COLOR_MAP = {
+		'Planning': 'zinc', 'Reading/Watching': 'sky', 'Dropped': 'red',
+		'On Hold': 'orange', 'Anticipating': 'fuchsia', 'Completed': 'emerald'
+	};
+	const colorName = Object.entries(COLOR_MAP).find(([k]) => s.includes(k) || k.includes(s))?.[1] || 'zinc';
+	const selectedCardId = `status-card-${idSafe}`;
+
+	document.querySelectorAll('[id^="status-card-"]').forEach(el => {
+		if (el.id !== selectedCardId) restoreDefaultVisuals(el);
+	});
+
+	const card = document.getElementById(selectedCardId);
+	if (!card) return;
+
+	Array.from(card.classList).forEach(cls => {
+		if (cls.startsWith('bg-') || cls.startsWith('dark:bg-') ||
+			cls.startsWith('hover:bg-') || cls.startsWith('dark:hover:bg-') ||
+			(cls.startsWith('border-') && cls !== 'border-2') ||
+			cls.startsWith('dark:border-')) {
+			card.classList.remove(cls);
+		}
+	});
+
+	card.classList.add('selected', 'scale-[1.02]', 'ring-4', 'ring-indigo-500/50', 'bg-black', 'dark:bg-white');
+
+	const innerText = card.querySelector('span');
+	if (innerText) {
+		Array.from(innerText.classList).forEach(cls => {
+			if (cls.startsWith('text-') || cls.startsWith('dark:text-')) innerText.classList.remove(cls);
+		});
+		innerText.classList.add(`text-${colorName}-400`, `dark:text-${colorName}-600`, 'font-bold');
+	}
+}
+
+
+// =============================================================================
+// CALENDAR & RECURRENCE HELPERS (Step 12)
+// =============================================================================
+
+window.toggleCalendarFields = (show) => {
+	const el = document.getElementById('calendarFields');
+	if (el) {
+		el.classList.toggle('hidden', !show);
+		el.classList.add('animate-enter');
+
+		if (show) {
+			// Auto-fill date if empty
+			const releaseDate = document.getElementById('releaseDate').value;
+			const calDate = document.getElementById('calDate');
+			if (calDate && !calDate.value && releaseDate) {
+				calDate.value = releaseDate;
+			}
+			// Auto-fill title? No, usually title is item title.
+			// Content can be specific.
+		}
+	}
+};
+
+window.toggleRecurrenceFields = (show) => {
+	const el = document.getElementById('calRecurrenceFields');
+	if (el) {
+		el.classList.toggle('hidden', !show);
+		if (show) {
+			// Default focus?
+		}
+	}
+};
 // =============================================================================
 // WIZARD INITIALIZATION
 // =============================================================================
@@ -811,215 +1061,4 @@ export function resetWizardFields() {
 	}, 0);
 }
 
-// =============================================================================
-// SELECTION HANDLERS
-// =============================================================================
 
-/**
- * Handles media type selection.
- * @param {string} t - Selected type
- */
-export function selectType(t) {
-	const current = document.getElementById('type').value;
-	if (current === t && state.isEditMode) return;
-
-	if (!state.isEditMode) {
-		resetWizardFields();
-		state.maxReachedStep = 1;
-		document.getElementById('status').value = '';
-
-		document.querySelectorAll('[id^="status-card-"]').forEach(el => {
-			el.classList.remove('ring-2', 'ring-white', 'bg-zinc-800');
-			el.classList.add('border-zinc-800');
-		});
-		renderStatusSelection();
-	}
-
-	document.getElementById('type').value = t;
-	if (!state.isEditMode) updateDynamicLinks(t);
-	selectTypeVisuals(t);
-	updateWizardUI();
-	updateFormUI(); // Apply field visibility
-
-	if (state.isEditMode) {
-		// Already called updateFormUI above
-	} else {
-		state.maxReachedStep = 1;
-		updateDots(1);
-		animateStepChange(1, 2, 'right');
-		state.currentStep = 2;
-	}
-}
-
-/**
- * Handles status selection.
- * @param {string} s - Selected status
- */
-export function selectStatus(s) {
-	const current = document.getElementById('status').value;
-	if (current === s && !state.isEditMode) {
-		animateStepChange(2, 3, 'right');
-		state.currentStep = 3;
-		return;
-	}
-
-	document.getElementById('status').value = s;
-	selectStatusVisuals(s);
-
-	// Prefill completedAt with today's date when 'Completed' is selected
-	if (s === 'Completed' && !state.isEditMode) {
-		const completedAtInput = document.getElementById('completedAt');
-		if (completedAtInput && !completedAtInput.value) {
-			const today = new Date().toISOString().split('T')[0];
-			completedAtInput.value = today;
-		}
-	}
-
-	updateFormUI(); // Apply field visibility for all modes
-
-	if (!state.isEditMode) {
-		if (state.currentStep === 2) state.maxReachedStep = 2;
-		animateStepChange(2, 3, 'right');
-		state.currentStep = 3;
-	}
-}
-
-/**
- * Updates visual selection state for type cards.
- * @param {string} t - Selected type
- */
-export function selectTypeVisuals(t) {
-	const COLOR_MAP = {
-		'Anime': 'violet', 'Manga': 'pink', 'Book': 'blue',
-		'Movie': 'red', 'Series': 'amber'
-	};
-	const colorName = COLOR_MAP[t] || 'zinc';
-
-	document.querySelectorAll('[id^="type-card-"]').forEach(el => {
-		if (el.id !== `type-card-${t}`) restoreDefaultVisuals(el);
-	});
-
-	const card = document.getElementById(`type-card-${t}`);
-	if (!card) return;
-
-	Array.from(card.classList).forEach(cls => {
-		if (cls.startsWith('bg-') || cls.startsWith('dark:bg-') ||
-			cls.startsWith('hover:bg-') || cls.startsWith('dark:hover:bg-') ||
-			(cls.startsWith('border-') && cls !== 'border-2') ||
-			cls.startsWith('dark:border-')) {
-			card.classList.remove(cls);
-		}
-	});
-
-	card.classList.add('selected', 'scale-[1.02]', 'ring-4', 'ring-indigo-500/50', 'bg-black', 'dark:bg-white');
-
-	const innerText = card.querySelector('span');
-	if (innerText) {
-		Array.from(innerText.classList).forEach(cls => {
-			if (cls.startsWith('text-') || cls.startsWith('dark:text-')) innerText.classList.remove(cls);
-		});
-		innerText.classList.add(`text-${colorName}-400`, `dark:text-${colorName}-600`, 'font-bold');
-	}
-}
-
-/** Extracts the Tailwind color name from an element's ID. */
-export function elementColorName(el) {
-	const COLOR_MAP = {
-		'Anime': 'violet', 'Manga': 'pink', 'Book': 'blue', 'Movie': 'red', 'Series': 'amber',
-		'Planning': 'zinc', 'NumberOne': 'zinc', 'Reading': 'sky', 'Watching': 'sky',
-		'Dropped': 'red', 'On': 'orange', 'Hold': 'orange', 'Anticipating': 'fuchsia', 'Completed': 'emerald'
-	};
-	for (const key of Object.keys(COLOR_MAP)) {
-		if (el.id.includes(key)) return COLOR_MAP[key];
-	}
-	return 'zinc';
-}
-
-/** Restores a selection card to its default unselected visual state. */
-export function restoreDefaultVisuals(el) {
-	const c = elementColorName(el);
-
-	el.classList.remove('selected', 'ring-4', 'ring-indigo-500/50', 'scale-[1.02]');
-
-	Array.from(el.classList).forEach(cls => {
-		if (cls.startsWith('bg-') || cls.startsWith('dark:bg-') ||
-			cls.startsWith('hover:bg-') || cls.startsWith('dark:hover:bg-') ||
-			(cls.startsWith('border-') && cls !== 'border-2') ||
-			cls.startsWith('dark:border-')) {
-			el.classList.remove(cls);
-		}
-	});
-
-	if (c === 'zinc') {
-		el.classList.add('bg-zinc-100', 'dark:bg-zinc-800/80', 'border-zinc-300', 'dark:border-zinc-600');
-	} else {
-		el.classList.add(`bg-${c}-100`, `dark:bg-${c}-500/10`, `border-${c}-300`, `dark:border-${c}-500/30`);
-	}
-
-	const innerText = el.querySelector('span');
-	if (innerText) {
-		Array.from(innerText.classList).forEach(cls => {
-			if (cls.startsWith('text-') || cls.startsWith('dark:text-')) innerText.classList.remove(cls);
-		});
-		innerText.classList.remove('font-bold');
-		innerText.classList.add(`text-${c}-600`, `dark:text-${c}-400`);
-	}
-
-	const innerIcon = el.querySelector('i');
-	if (innerIcon) {
-		Array.from(innerIcon.classList).forEach(cls => {
-			if (cls.startsWith('text-') || cls.startsWith('dark:text-')) innerIcon.classList.remove(cls);
-		});
-		innerIcon.classList.add(`text-${c}-500`, `dark:text-${c}-400`);
-	}
-
-	const innerBg = el.querySelector('div.p-3');
-	if (innerBg) {
-		Array.from(innerBg.classList).forEach(cls => {
-			if (cls.startsWith('bg-') || cls.startsWith('dark:bg-') || cls.startsWith('group-hover:bg-')) {
-				innerBg.classList.remove(cls);
-			}
-		});
-		innerBg.classList.add('bg-white', 'dark:bg-zinc-900/50', 'group-hover:bg-zinc-100');
-	}
-}
-
-/**
- * Updates visual selection state for status cards.
- * @param {string} s - Selected status
- */
-export function selectStatusVisuals(s) {
-	const idSafe = s.replace(/[^a-zA-Z]/g, '');
-	const COLOR_MAP = {
-		'Planning': 'zinc', 'Reading/Watching': 'sky', 'Dropped': 'red',
-		'On Hold': 'orange', 'Anticipating': 'fuchsia', 'Completed': 'emerald'
-	};
-	const colorName = Object.entries(COLOR_MAP).find(([k]) => s.includes(k) || k.includes(s))?.[1] || 'zinc';
-	const selectedCardId = `status-card-${idSafe}`;
-
-	document.querySelectorAll('[id^="status-card-"]').forEach(el => {
-		if (el.id !== selectedCardId) restoreDefaultVisuals(el);
-	});
-
-	const card = document.getElementById(selectedCardId);
-	if (!card) return;
-
-	Array.from(card.classList).forEach(cls => {
-		if (cls.startsWith('bg-') || cls.startsWith('dark:bg-') ||
-			cls.startsWith('hover:bg-') || cls.startsWith('dark:hover:bg-') ||
-			(cls.startsWith('border-') && cls !== 'border-2') ||
-			cls.startsWith('dark:border-')) {
-			card.classList.remove(cls);
-		}
-	});
-
-	card.classList.add('selected', 'scale-[1.02]', 'ring-4', 'ring-indigo-500/50', 'bg-black', 'dark:bg-white');
-
-	const innerText = card.querySelector('span');
-	if (innerText) {
-		Array.from(innerText.classList).forEach(cls => {
-			if (cls.startsWith('text-') || cls.startsWith('dark:text-')) innerText.classList.remove(cls);
-		});
-		innerText.classList.add(`text-${colorName}-400`, `dark:text-${colorName}-600`, 'font-bold');
-	}
-}
