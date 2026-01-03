@@ -190,6 +190,8 @@ class MediaItem(db.Model):
             data.update({
                 "episodeCount": self.metadata_info.episode_count,
                 "volumeCount": self.metadata_info.volume_count,
+                "chapterCount": self.metadata_info.chapter_count,
+                "wordCount": self.metadata_info.word_count,
                 "pageCount": self.metadata_info.page_count,
                 "avgDurationMinutes": self.metadata_info.avg_duration_minutes,
             })
@@ -250,7 +252,9 @@ class MediaMetadata(db.Model):
     
     episode_count: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     volume_count: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    page_count: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    chapter_count: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    word_count: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    page_count: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)  # Legacy, kept for compatibility
     avg_duration_minutes: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     
     item: Mapped["MediaItem"] = relationship("MediaItem", back_populates="metadata_info")

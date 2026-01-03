@@ -209,6 +209,7 @@ export function populateFormFromItem(id) {
 	// Stats
 	safeVal('episodeCount', item.episodeCount || '');
 	safeVal('volumeCount', item.volumeCount || '');
+	safeVal('chapterCount', item.chapterCount || '');
 	safeVal('wordCount', item.wordCount || '');
 	safeVal('avgDurationMinutes', item.avgDurationMinutes || '');
 

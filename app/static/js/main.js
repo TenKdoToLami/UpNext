@@ -749,6 +749,7 @@ window.saveEntry = async () => {
             releaseDate: document.getElementById('releaseDate').value || null,
             episodeCount: parseInt(document.getElementById('episodeCount').value) || null,
             volumeCount: parseInt(document.getElementById('volumeCount').value) || null,
+            chapterCount: parseInt(document.getElementById('chapterCount').value) || null,
             wordCount: parseInt(document.getElementById('wordCount').value) || null,
             avgDurationMinutes: parseInt(document.getElementById('avgDurationMinutes').value) || null,
             rereadCount: parseInt(document.getElementById('rereadCount').value) || 0,

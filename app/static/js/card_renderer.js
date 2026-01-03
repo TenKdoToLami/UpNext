@@ -6,8 +6,8 @@
 
 import { state, isFieldVisible } from './state.js';
 import {
-	ICON_MAP, STATUS_ICON_MAP, STATUS_COLOR_MAP, TYPE_COLOR_MAP,
-	RATING_LABELS, TEXT_COLORS, STAR_FILLS
+    ICON_MAP, STATUS_ICON_MAP, STATUS_COLOR_MAP, TYPE_COLOR_MAP,
+    RATING_LABELS, TEXT_COLORS, STAR_FILLS
 } from './constants.js';
 
 /**
@@ -17,8 +17,8 @@ import {
  * @returns {string} HTML string.
  */
 function getAuthorsHtml(authors, extraClass = '') {
-	if (!authors || !authors.length) return '<span class="italic text-zinc-400 dark:text-white/40">Unknown</span>';
-	return authors.map(a => `<button type="button" onclick="smartFilter(event, 'author', '${a.replace(/'/g, "\\'")}')" class="bg-transparent border-none p-0 hover:text-zinc-900 dark:hover:text-white underline decoration-zinc-300 dark:decoration-white/20 underline-offset-2 hover:decoration-zinc-900 dark:hover:decoration-white transition-all cursor-pointer relative z-50 inline ${extraClass}">${a}</button>`).join(', ');
+    if (!authors || !authors.length) return '<span class="italic text-zinc-400 dark:text-white/40">Unknown</span>';
+    return authors.map(a => `<button type="button" onclick="smartFilter(event, 'author', '${a.replace(/'/g, "\\'")}')" class="bg-transparent border-none p-0 hover:text-zinc-900 dark:hover:text-white underline decoration-zinc-300 dark:decoration-white/20 underline-offset-2 hover:decoration-zinc-900 dark:hover:decoration-white transition-all cursor-pointer relative z-50 inline ${extraClass}">${a}</button>`).join(', ');
 }
 
 /**
@@ -28,14 +28,57 @@ function getAuthorsHtml(authors, extraClass = '') {
  * @returns {string} HTML string for the synopsis or empty string.
  */
 function getSynopsisBlockHtml(item, authors) {
-	if (!item.description) return '';
-	// Minimum of 2 lines available for synopsis, more if fields are missing
-	let availableLines = 2;
-	if (!authors || !authors.length) availableLines += 1;
-	if (!item.universe) availableLines += 1;
-	if (!item.series) availableLines += 1;
+    if (!item.description) return '';
+    // Minimum of 2 lines available for synopsis, more if fields are missing
+    let availableLines = 2;
+    if (!authors || !authors.length) availableLines += 1;
+    if (!item.universe) availableLines += 1;
+    if (!item.series) availableLines += 1;
 
-	return `<div style="-webkit-line-clamp: ${availableLines}; display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden;" class="text-xs leading-5 text-zinc-500 dark:text-zinc-400 flex-1 min-h-0 border-t border-zinc-100 dark:border-white/5 pt-2 mt-2">${item.description}</div>`;
+    return `<div style="-webkit-line-clamp: ${availableLines}; display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden;" class="text-xs leading-5 text-zinc-500 dark:text-zinc-400 flex-1 min-h-0 border-t border-zinc-100 dark:border-white/5 pt-2 mt-2">${item.description}</div>`;
+}
+
+/**
+ * Formats minutes into hours:minutes format.
+ * @param {number} minutes - Total minutes
+ * @returns {string} Formatted time string
+ */
+function formatDuration(minutes) {
+    if (!minutes) return '';
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    if (hours === 0) return `${mins}m`;
+    if (mins === 0) return `${hours}h`;
+    return `${hours}h ${mins}m`;
+}
+
+/**
+ * Generates HTML for technical stats bar based on media type.
+ * @param {Object} item - The media item.
+ * @returns {string} HTML string for stats row.
+ */
+function getTechStatsHtml(item) {
+    if (!isFieldVisible('technical_stats')) return '';
+
+    const type = item.type;
+    const stats = [];
+
+    if (['Anime', 'Series'].includes(type)) {
+        if (item.volumeCount) stats.push(`<span class="flex items-center gap-1"><i data-lucide="layers" class="w-3.5 h-3.5 opacity-60"></i> ${item.volumeCount} seasons</span>`);
+        if (item.episodeCount) stats.push(`<span class="flex items-center gap-1"><i data-lucide="tv" class="w-3.5 h-3.5 opacity-60"></i> ${item.episodeCount} ep</span>`);
+        if (item.avgDurationMinutes) stats.push(`<span class="flex items-center gap-1"><i data-lucide="clock" class="w-3.5 h-3.5 opacity-60"></i> ~${formatDuration(item.avgDurationMinutes)}</span>`);
+    } else if (type === 'Book') {
+        if (item.volumeCount) stats.push(`<span class="flex items-center gap-1"><i data-lucide="layers" class="w-3.5 h-3.5 opacity-60"></i> ${item.volumeCount} vol</span>`);
+        if (item.chapterCount) stats.push(`<span class="flex items-center gap-1"><i data-lucide="bookmark" class="w-3.5 h-3.5 opacity-60"></i> ${item.chapterCount} ch</span>`);
+        if (item.wordCount) stats.push(`<span class="flex items-center gap-1"><i data-lucide="file-text" class="w-3.5 h-3.5 opacity-60"></i> ~${item.wordCount.toLocaleString()} words</span>`);
+    } else if (type === 'Manga') {
+        if (item.chapterCount) stats.push(`<span class="flex items-center gap-1"><i data-lucide="bookmark" class="w-3.5 h-3.5 opacity-60"></i> ${item.chapterCount} ch</span>`);
+    } else if (type === 'Movie') {
+        if (item.avgDurationMinutes) stats.push(`<span class="flex items-center gap-1"><i data-lucide="clock" class="w-3.5 h-3.5 opacity-60"></i> ${formatDuration(item.avgDurationMinutes)}</span>`);
+    }
+
+    if (stats.length === 0) return '';
+    return `<div class="flex flex-wrap gap-3 text-xs text-zinc-500 dark:text-zinc-400">${stats.join('')}</div>`;
 }
 
 /**
@@ -45,55 +88,55 @@ function getSynopsisBlockHtml(item, authors) {
  * @returns {string} The generated HTML string.
  */
 export function generateCardHtml(item) {
-	const mediaClass = `media-${item.type}`;
-	const authors = item.authors || (item.author ? [item.author] : []);
-	const authorsHtml = getAuthorsHtml(authors);
+    const mediaClass = `media-${item.type}`;
+    const authors = item.authors || (item.author ? [item.author] : []);
+    const authorsHtml = getAuthorsHtml(authors);
 
-	// Verdict Badge
-	let verdictHtml = '';
-	// Use isFieldVisible('verdict') instead of checking disabledFeatures directly
-	if (['Completed', 'Anticipating', 'Dropped', 'On Hold'].includes(item.status) && item.rating && isFieldVisible('verdict')) {
-		verdictHtml = `<span class="text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-md backdrop-blur-md shadow-xl ${TEXT_COLORS[item.rating]}">${RATING_LABELS[item.rating]}</span>`;
-	}
+    // Verdict Badge
+    let verdictHtml = '';
+    // Use isFieldVisible('verdict') instead of checking disabledFeatures directly
+    if (['Completed', 'Anticipating', 'Dropped', 'On Hold'].includes(item.status) && item.rating && isFieldVisible('verdict')) {
+        verdictHtml = `<span class="text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-md backdrop-blur-md shadow-xl ${TEXT_COLORS[item.rating]}">${RATING_LABELS[item.rating]}</span>`;
+    }
 
-	const coverUrl = item.coverUrl ? `/images/${item.coverUrl}` : null;
-	const coverHtml = coverUrl
-		? `<img src="${coverUrl}" loading="lazy" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105">`
-		: `<div class="w-full h-full flex items-center justify-center text-zinc-400 dark:text-zinc-700 bg-zinc-100 dark:bg-zinc-900"><i data-lucide="image" class="w-10 h-10 opacity-30"></i></div>`;
+    const coverUrl = item.coverUrl ? `/images/${item.coverUrl}` : null;
+    const coverHtml = coverUrl
+        ? `<img src="${coverUrl}" loading="lazy" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105">`
+        : `<div class="w-full h-full flex items-center justify-center text-zinc-400 dark:text-zinc-700 bg-zinc-100 dark:bg-zinc-900"><i data-lucide="image" class="w-10 h-10 opacity-30"></i></div>`;
 
-	let progressHtml = '';
-	if (item.progress) {
-		progressHtml = `<div class="absolute top-3 right-3 z-20 bg-transparent backdrop-blur-md px-2 py-1 rounded-md border border-amber-500/30 shadow-lg flex items-center gap-1.5 pointer-events-none">
+    let progressHtml = '';
+    if (item.progress) {
+        progressHtml = `<div class="absolute top-3 right-3 z-20 bg-transparent backdrop-blur-md px-2 py-1 rounded-md border border-amber-500/30 shadow-lg flex items-center gap-1.5 pointer-events-none">
                     <div class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></div>
                     <span class="text-[10px] font-bold text-amber-600 dark:text-amber-300 drop-shadow-md dark:[text-shadow:0_1px_3px_rgba(0,0,0,0.9)] truncate max-w-[80px]">${item.progress}</span>
                 </div>`;
-	}
+    }
 
-	let hiddenBadge = '';
-	if (item.isHidden) {
-		hiddenBadge = `<span class="media-badge !border-[var(--col-hidden)] !text-[var(--col-hidden)] px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider shadow-lg backdrop-blur-md whitespace-nowrap">HIDDEN</span>`;
-	}
+    let hiddenBadge = '';
+    if (item.isHidden) {
+        hiddenBadge = `<span class="media-badge !border-[var(--col-hidden)] !text-[var(--col-hidden)] px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider shadow-lg backdrop-blur-md whitespace-nowrap">HIDDEN</span>`;
+    }
 
-	const statusIcon = STATUS_ICON_MAP[item.status] || 'circle';
-	let displayStatus = item.status;
-	if (item.status === 'Reading/Watching') {
-		displayStatus = ['Anime', 'Movie', 'Series'].includes(item.type) ? 'Watching' : 'Reading';
-	}
-	const statusBadge = `<span class="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider ${STATUS_COLOR_MAP[item.status]} !bg-transparent !border-none backdrop-blur-md whitespace-nowrap px-2.5 py-1 rounded-md"><i data-lucide="${statusIcon}" class="w-3 h-3"></i> ${displayStatus}</span>`;
+    const statusIcon = STATUS_ICON_MAP[item.status] || 'circle';
+    let displayStatus = item.status;
+    if (item.status === 'Reading/Watching') {
+        displayStatus = ['Anime', 'Movie', 'Series'].includes(item.type) ? 'Watching' : 'Reading';
+    }
+    const statusBadge = `<span class="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider ${STATUS_COLOR_MAP[item.status]} !bg-transparent !border-none backdrop-blur-md whitespace-nowrap px-2.5 py-1 rounded-md"><i data-lucide="${statusIcon}" class="w-3 h-3"></i> ${displayStatus}</span>`;
 
-	// Media Type Icon Styling
-	let iconColorClass = "text-zinc-600 dark:text-white bg-white/80 dark:bg-black/60 border-white/20 dark:border-white/10";
-	if (item.type === 'Anime') iconColorClass = "text-white bg-violet-600 border-violet-400";
-	if (item.type === 'Manga') iconColorClass = "text-white bg-pink-600 border-pink-400";
-	if (item.type === 'Book') iconColorClass = "text-white bg-blue-600 border-blue-400";
-	if (item.type === 'Movie') iconColorClass = "text-white bg-red-600 border-red-400";
-	if (item.type === 'Series') iconColorClass = "text-white bg-amber-600 border-amber-400";
+    // Media Type Icon Styling
+    let iconColorClass = "text-zinc-600 dark:text-white bg-white/80 dark:bg-black/60 border-white/20 dark:border-white/10";
+    if (item.type === 'Anime') iconColorClass = "text-white bg-violet-600 border-violet-400";
+    if (item.type === 'Manga') iconColorClass = "text-white bg-pink-600 border-pink-400";
+    if (item.type === 'Book') iconColorClass = "text-white bg-blue-600 border-blue-400";
+    if (item.type === 'Movie') iconColorClass = "text-white bg-red-600 border-red-400";
+    if (item.type === 'Series') iconColorClass = "text-white bg-amber-600 border-amber-400";
 
-	const seriesDisplayText = item.seriesNumber ? `${item.series} #${item.seriesNumber}` : item.series;
+    const seriesDisplayText = item.seriesNumber ? `${item.series} #${item.seriesNumber}` : item.series;
 
 
-	if (state.viewMode === 'grid') {
-		const badgeOverlay = `
+    if (state.viewMode === 'grid') {
+        const badgeOverlay = `
             <div class="absolute bottom-0 left-0 right-0 p-3 flex flex-col justify-end z-20 pointer-events-none">
                 <div class="flex flex-wrap items-end justify-between mb-1.5 gap-y-1">
                     <div class="flex flex-wrap gap-2 items-center">${statusBadge} ${item.isHidden ? `<i data-lucide="eye-off" class="w-4 h-4 text-[var(--col-hidden)] drop-shadow-md" title="Hidden"></i>` : ''}</div>
@@ -104,9 +147,9 @@ export function generateCardHtml(item) {
             <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-100 pointer-events-none"></div>
         `;
 
-		let detailBlock = '';
-		if (state.showDetails) {
-			detailBlock = `
+        let detailBlock = '';
+        if (state.showDetails) {
+            detailBlock = `
                  <div class="p-4 pt-5 bg-white dark:bg-zinc-900 border-t border-zinc-100 dark:border-white/5 flex flex-col relative z-20 pointer-events-auto h-[12rem] overflow-hidden">
                      <h3 class="font-heading font-bold text-2xl leading-[1.2] line-clamp-2 text-[var(--theme-col)] transition-colors mb-1.5 shrink-0">${item.title}</h3>
                      <div class="flex flex-col gap-0.5 text-xs font-medium text-zinc-500 dark:text-zinc-400 shrink-0">
@@ -116,9 +159,9 @@ export function generateCardHtml(item) {
                      </div>
                      ${getSynopsisBlockHtml(item, authors)}
                  </div>`;
-		}
+        }
 
-		return `
+        return `
              <div onclick="openDetail('${item.id}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openDetail('${item.id}');}" class="group relative h-auto rounded-xl overflow-hidden cursor-pointer media-card ${mediaClass} bg-white dark:bg-zinc-900 flex flex-col shadow-lg outline-none focus:ring-4 focus:ring-indigo-500/50">
                  <div class="relative w-full aspect-[2/3] overflow-hidden bg-zinc-100 dark:bg-zinc-950 pointer-events-none">
                      ${coverHtml}
@@ -130,37 +173,58 @@ export function generateCardHtml(item) {
                  </div>
                  ${detailBlock}
              </div>`;
-	} else {
-		// LIST VIEW (Expanded or compact)
-		if (state.showDetails) {
-			let childrenListHtml = '';
-			if (isFieldVisible('series_number') && item.children && item.children.length) {
-				childrenListHtml = item.children.map(c => {
-					let stars = '';
-					for (let i = 1; i <= 4; i++) {
-						stars += `<i data-lucide="star" class="w-4 h-4 ${c.rating >= i ? STAR_FILLS[c.rating] : 'text-zinc-400 dark:text-zinc-700'} fill-current"></i>`;
-					}
-					return `<div class="flex items-center justify-between bg-zinc-50 dark:bg-zinc-800/50 p-3 rounded-lg border border-zinc-200 dark:border-zinc-700/50 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors w-full">
-                                    <span class="text-sm text-zinc-700 dark:text-zinc-300 font-bold tracking-wide">${c.title}</span>
+    } else {
+        // LIST VIEW (Expanded or compact)
+        if (state.showDetails) {
+            let childrenListHtml = '';
+            if (isFieldVisible('series_number') && item.children && item.children.length) {
+                const isBookType = ['Book', 'Manga'].includes(item.type);
+                childrenListHtml = item.children.map(c => {
+                    let stars = '';
+                    for (let i = 1; i <= 4; i++) {
+                        stars += `<i data-lucide="star" class="w-4 h-4 ${c.rating >= i ? STAR_FILLS[c.rating] : 'text-zinc-400 dark:text-zinc-700'} fill-current"></i>`;
+                    }
+
+                    // Build stats text
+                    let statsText = '';
+                    if (c.hasDetails) {
+                        if (isBookType && c.chapters) {
+                            const totalWords = c.chapters * (c.avgWords || 0);
+                            statsText = `${c.chapters} ch`;
+                            if (totalWords) statsText += ` • ~${totalWords.toLocaleString()} words (~${(c.avgWords || 0).toLocaleString()}/ch)`;
+                        } else if (!isBookType && c.episodes) {
+                            const totalDur = c.episodes * (c.duration || 20);
+                            const hours = Math.floor(totalDur / 60);
+                            const mins = totalDur % 60;
+                            const durStr = hours > 0 ? (mins > 0 ? `${hours}h ${mins}m` : `${hours}h`) : `${mins}m`;
+                            statsText = `${c.episodes} ep • ~${durStr} (~${c.duration || 20}m/ep)`;
+                        }
+                    }
+
+                    return `<div class="flex items-center justify-between bg-zinc-50 dark:bg-zinc-800/50 p-3 rounded-lg border border-zinc-200 dark:border-zinc-700/50 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors w-full">
+                                    <div class="flex flex-col gap-0.5">
+                                        <span class="text-sm text-zinc-700 dark:text-zinc-300 font-bold tracking-wide">${c.title}</span>
+                                        ${statsText ? `<span class="text-xs text-zinc-500">${statsText}</span>` : ''}
+                                    </div>
                                     <div class="flex gap-1">${stars}</div>
                                 </div>`;
-				}).join('');
-				childrenListHtml = `<div class="flex flex-col gap-2 w-full mt-2">${childrenListHtml}</div>`;
-			}
+                }).join('');
+                childrenListHtml = `<div class="flex flex-col gap-2 w-full mt-2">${childrenListHtml}</div>`;
+            }
 
-			const detailedLinksHtml = (isFieldVisible('external_links') && item.externalLinks && item.externalLinks.length)
-				? `<div class="flex flex-wrap gap-2 mt-3 justify-center">
+            const detailedLinksHtml = (isFieldVisible('external_links') && item.externalLinks && item.externalLinks.length)
+                ? `<div class="flex flex-wrap gap-2 mt-3 justify-center">
                                  ${item.externalLinks.map(l => `<a href="${l.url}" target="_blank" onclick="event.stopPropagation()" class="px-3 py-1.5 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-xs text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 flex items-center gap-1 transition-colors"><i data-lucide="link" class="w-3 h-3"></i> ${l.label || 'Link'}</a>`).join('')}
                                 </div>`
-				: '';
+                : '';
 
-			const detailCover = coverUrl
-				? `<img src="${coverUrl}" loading="lazy" class="w-full h-full object-contain rounded-lg shadow-xl">`
-				: `<div class="w-full h-full flex items-center justify-center text-zinc-500 dark:text-zinc-700 bg-zinc-100 dark:bg-zinc-800 rounded-lg"><i data-lucide="image" class="w-12 h-12 opacity-30"></i></div>`;
+            const detailCover = coverUrl
+                ? `<img src="${coverUrl}" loading="lazy" class="w-full h-full object-contain rounded-lg shadow-xl">`
+                : `<div class="w-full h-full flex items-center justify-center text-zinc-500 dark:text-zinc-700 bg-zinc-100 dark:bg-zinc-800 rounded-lg"><i data-lucide="image" class="w-12 h-12 opacity-30"></i></div>`;
 
-			const hasRating = ['Completed', 'Anticipating', 'Dropped', 'On Hold'].includes(item.status) && item.rating;
+            const hasRating = ['Completed', 'Anticipating', 'Dropped', 'On Hold'].includes(item.status) && item.rating;
 
-			return `
+            return `
                  <div onclick="openDetail('${item.id}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openDetail('${item.id}');}" class="group bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden media-card list-card-mode ${mediaClass} hover:border-[var(--theme-col)] transition-all shadow-lg p-6 cursor-pointer outline-none focus:ring-4 focus:ring-indigo-500/50">
                           <div class="flex flex-col md:flex-row gap-8">
  
@@ -187,6 +251,7 @@ export function generateCardHtml(item) {
                                            ${isFieldVisible('series') && item.series ? `<button type="button" onclick="smartFilter(event, 'series', '${item.series}')" class="bg-transparent border-none p-0 text-emerald-500 dark:text-emerald-400/90 flex items-center gap-1.5 cursor-pointer hover:underline"><i data-lucide="library" class="w-4 h-4"></i> ${seriesDisplayText}</button>` : ''}
                                            ${isFieldVisible('universe') && item.universe ? `<button type="button" onclick="smartFilter(event, 'universe', '${item.universe}')" class="bg-transparent border-none p-0 text-indigo-500 dark:text-indigo-400/90 flex items-center gap-1.5 cursor-pointer hover:underline"><i data-lucide="globe" class="w-4 h-4"></i> ${item.universe}</button>` : ''}
                                        </div>
+                                       ${getTechStatsHtml(item)}
  
                                        ${item.description ? `
                                        <div class="text-zinc-600 dark:text-zinc-400 text-sm mt-3 leading-relaxed group/desc relative" onclick="event.stopPropagation()">
@@ -233,11 +298,11 @@ export function generateCardHtml(item) {
                           </div>
                      </div>
              `;
-		} else {
-			// Condensed List View
-			const themeColorClass = TYPE_COLOR_MAP[item.type].split(' ')[0]; // Gets 'text-pink-400' etc.
+        } else {
+            // Condensed List View
+            const themeColorClass = TYPE_COLOR_MAP[item.type].split(' ')[0]; // Gets 'text-pink-400' etc.
 
-			return `
+            return `
                 <div onclick="openDetail('${item.id}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openDetail('${item.id}');}" class="group flex items-center justify-between gap-4 p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800/80 rounded-xl hover:border-[var(--theme-col)] hover:bg-zinc-50 dark:hover:bg-zinc-800/80 cursor-pointer shadow-sm mb-3 media-card list-card-mode ${mediaClass} outline-none focus:ring-4 focus:ring-indigo-500/50">
                     
                     <!-- Left: Cover & Info -->
@@ -294,6 +359,6 @@ export function generateCardHtml(item) {
                         
                     </div>
                 </div>`;
-		}
-	}
+        }
+    }
 }

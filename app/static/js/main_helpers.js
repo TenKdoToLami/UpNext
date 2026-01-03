@@ -855,6 +855,49 @@ export function pasteLink(idx) {
 // =============================================================================
 
 /**
+ * Formats minutes into hours:minutes format (e.g., "2h 30m").
+ * @param {number} minutes - Total minutes
+ * @returns {string} Formatted time string
+ */
+function formatDuration(minutes) {
+	if (!minutes) return '';
+	const hours = Math.floor(minutes / 60);
+	const mins = minutes % 60;
+	if (hours === 0) return `${mins}m`;
+	if (mins === 0) return `${hours}h`;
+	return `${hours}h ${mins}m`;
+}
+
+/**
+ * Renders a compact stats bar for the detail view based on media type.
+ * @param {Object} item - Item to render stats for
+ * @returns {string} HTML string for stats bar
+ */
+function renderTechStatsBar(item) {
+	const type = item.type;
+	const stats = [];
+
+	if (['Anime', 'Series'].includes(type)) {
+		// Order: Seasons → Episodes → Duration (estimated with ~)
+		if (item.volumeCount) stats.push(`<span class="flex items-center gap-1.5"><i data-lucide="layers" class="w-4 h-4"></i> ${item.volumeCount} seasons</span>`);
+		if (item.episodeCount) stats.push(`<span class="flex items-center gap-1.5"><i data-lucide="tv" class="w-4 h-4"></i> ${item.episodeCount} episodes</span>`);
+		if (item.avgDurationMinutes) stats.push(`<span class="flex items-center gap-1.5"><i data-lucide="clock" class="w-4 h-4"></i> ~${formatDuration(item.avgDurationMinutes)}</span>`);
+	} else if (type === 'Book') {
+		// Order: Volumes → Chapters → Words (estimated with ~)
+		if (item.volumeCount) stats.push(`<span class="flex items-center gap-1.5"><i data-lucide="layers" class="w-4 h-4"></i> ${item.volumeCount} volumes</span>`);
+		if (item.chapterCount) stats.push(`<span class="flex items-center gap-1.5"><i data-lucide="bookmark" class="w-4 h-4"></i> ${item.chapterCount} chapters</span>`);
+		if (item.wordCount) stats.push(`<span class="flex items-center gap-1.5"><i data-lucide="file-text" class="w-4 h-4"></i> ~${item.wordCount.toLocaleString()} words</span>`);
+	} else if (type === 'Manga') {
+		if (item.chapterCount) stats.push(`<span class="flex items-center gap-1.5"><i data-lucide="bookmark" class="w-4 h-4"></i> ${item.chapterCount} chapters</span>`);
+	} else if (type === 'Movie') {
+		if (item.avgDurationMinutes) stats.push(`<span class="flex items-center gap-1.5"><i data-lucide="clock" class="w-4 h-4"></i> ${formatDuration(item.avgDurationMinutes)}</span>`);
+	}
+
+	if (stats.length === 0) return '';
+	return `<div class="flex flex-wrap gap-4 text-sm text-zinc-500 dark:text-zinc-400 mt-3">${stats.join('')}</div>`;
+}
+
+/**
  * Renders the detail view for an item.
  * @param {Object} item - Item to display
  * @param {HTMLElement} content - Container element
@@ -869,14 +912,31 @@ export function renderDetailView(item, content) {
 	const seriesText = item.seriesNumber ? `${item.series} #${item.seriesNumber}` : item.series;
 	const childLabel = ['Book', 'Manga'].includes(item.type) ? 'Volumes' : 'Seasons';
 
-	const childrenHtml = (item.children || []).map(c => `
+	const isBookType = ['Book', 'Manga'].includes(item.type);
+	const childrenHtml = (item.children || []).map(c => {
+		let statsText = '';
+		if (c.hasDetails) {
+			if (isBookType && c.chapters) {
+				const totalWords = c.chapters * (c.avgWords || 0);
+				statsText = `${c.chapters} ch`;
+				if (totalWords) statsText += ` • ~${totalWords.toLocaleString()} words (~${(c.avgWords || 0).toLocaleString()}/ch)`;
+			} else if (!isBookType && c.episodes) {
+				const totalDur = c.episodes * (c.duration || 20);
+				statsText = `${c.episodes} ep • ~${formatDuration(totalDur)} (~${c.duration || 20}m/ep)`;
+			}
+		}
+		return `
         <div class="flex items-center justify-between bg-zinc-100 dark:bg-zinc-900/60 p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors group/child w-full">
-            <span class="text-base text-zinc-700 dark:text-zinc-300 font-bold font-heading tracking-wide">${c.title}</span>
+            <div class="flex flex-col gap-0.5">
+                <span class="text-base text-zinc-700 dark:text-zinc-300 font-bold font-heading tracking-wide">${c.title}</span>
+                ${statsText ? `<span class="text-xs text-zinc-500 dark:text-zinc-500">${statsText}</span>` : ''}
+            </div>
             <div class="flex gap-1">
                 ${[1, 2, 3, 4].map(i => `<i data-lucide="star" class="w-5 h-5 ${c.rating >= i ? STAR_FILLS[c.rating] : 'text-zinc-300 dark:text-zinc-800'} fill-current"></i>`).join('')}
             </div>
         </div>
-    `).join('');
+    `;
+	}).join('');
 
 	const linksHtml = (item.externalLinks || []).map(l => `
         <a href="${l.url}" target="_blank" class="flex items-center gap-1.5 text-indigo-500 dark:text-indigo-400 hover:text-white bg-indigo-100 dark:bg-indigo-500/10 px-4 py-2 rounded-full border border-indigo-200 dark:border-indigo-500/20 hover:bg-indigo-500 dark:hover:bg-indigo-500 transition-all text-sm font-bold">
@@ -920,6 +980,7 @@ export function renderDetailView(item, content) {
                         ${isFieldVisible('series') && item.series ? `<div onclick="smartFilter(event, 'series', '${item.series}')" class="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 dark:hover:text-emerald-300 cursor-pointer transition-colors"><i data-lucide="library" class="w-5 h-5"></i> ${seriesText}</div>` : ''}
                         ${isFieldVisible('universe') && item.universe ? `<div onclick="smartFilter(event, 'universe', '${item.universe}')" class="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 cursor-pointer transition-colors"><i data-lucide="globe" class="w-5 h-5"></i> ${item.universe}</div>` : ''}
                     </div>
+                    ${isFieldVisible('technical_stats') ? renderTechStatsBar(item) : ''}
                 </div>
                 <div class="p-10 pt-6 space-y-8">
                     

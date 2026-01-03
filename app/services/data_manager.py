@@ -116,6 +116,8 @@ class DataManager:
                 item_id=new_item.id,
                 episode_count=data.get("episodeCount"),
                 volume_count=data.get("volumeCount"),
+                chapter_count=data.get("chapterCount"),
+                word_count=data.get("wordCount"),
                 page_count=data.get("pageCount"),
                 avg_duration_minutes=data.get("avgDurationMinutes")
             )
@@ -195,6 +197,8 @@ class DataManager:
                 item.metadata_info = MediaMetadata(item_id=item.id)
             if "episodeCount" in data: item.metadata_info.episode_count = data["episodeCount"]
             if "volumeCount" in data: item.metadata_info.volume_count = data["volumeCount"]
+            if "chapterCount" in data: item.metadata_info.chapter_count = data["chapterCount"]
+            if "wordCount" in data: item.metadata_info.word_count = data["wordCount"]
             if "pageCount" in data: item.metadata_info.page_count = data["pageCount"]
             if "avgDurationMinutes" in data: item.metadata_info.avg_duration_minutes = data["avgDurationMinutes"]
 
