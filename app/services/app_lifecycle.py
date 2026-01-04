@@ -208,6 +208,8 @@ def run_application_stack(create_app_func: Callable, host: str, port: int, headl
             from app.utils.config_manager import load_config
             return load_config()
 
+    from app.build_config import ENABLE_TRAY
+
     # Create the webview window
     # js_api is bound here to enable `window.pywebview.api` in frontend
     window = webview.create_window(
@@ -221,10 +223,12 @@ def run_application_stack(create_app_func: Callable, host: str, port: int, headl
     window_ref[0] = window
     
     # Attach closing event to minimize instead of quit if tray is active
-    window.events.closing += on_closing
+    if ENABLE_TRAY:
+        window.events.closing += on_closing
 
     # Initialize System Tray
-    setup_tray()
+    if ENABLE_TRAY:
+        setup_tray()
 
     # Apply Windows-specific Icon
     if sys.platform == 'win32':
@@ -239,7 +243,7 @@ def run_application_stack(create_app_func: Callable, host: str, port: int, headl
     webview.start(debug=True, icon=icon_path)
     
     # Cleanup after loop exit
-    if tray_icon[0]:
+    if ENABLE_TRAY and tray_icon[0]:
         tray_icon[0].stop()
     
     logger.info("Exiting...")

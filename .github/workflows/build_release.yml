@@ -17,12 +17,14 @@ jobs:
           # Linux (Ubuntu) Configuration
           - os: ubuntu-latest
             artifact_name: UpNext
-            asset_name: UpNext-Linux-x64  # Renamed for the release download
+            os_short: Linux
+            ext: ""
           
           # Windows Configuration
           - os: windows-latest
             artifact_name: UpNext.exe
-            asset_name: UpNext-Windows-x64.exe
+            os_short: Windows
+            ext: ".exe"
 
     steps:
       - name: Checkout code
@@ -42,28 +44,42 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libgirepository1.0-dev libcairo2-dev pkg-config gir1.2-webkit2-4.1
 
-      # --- BUILD PROCESS ---
+      # --- BUILD PROCESS (TRAY VERSION) ---
       - name: Install Python Dependencies
         run: |
           pip install -r requirements.txt
-          # Verify pyinstaller is installed (it is in your requirements, but this is a safety check)
           pip install pyinstaller
 
-      - name: Build with manage.py
-        # This calls your custom build.py logic which handles the spec file and moves the binary to root
+      - name: Build Tray Version
         run: python manage.py build
 
-      # --- PREPARE & UPLOAD ---
-      - name: Rename Binary for Release
-        # Renames 'UpNext.exe' to 'UpNext-Windows-x64.exe' for clarity
+      - name: Rename Tray Artifact
         shell: bash
         run: |
-          mv ${{ matrix.artifact_name }} ${{ matrix.asset_name }}
+          # Rename based on matrix config
+          mv ${{ matrix.artifact_name }} UpNext-${{ matrix.os_short }}-Tray-x64${{ matrix.ext }}
 
-      - name: Upload Release Asset
+      # --- BUILD PROCESS (STANDARD VERSION) ---
+      - name: Configure for Standard Build
+        run: |
+          # Overwrite config to disable tray
+          echo "ENABLE_TRAY = False" > app/build_config.py
+
+      - name: Build Standard Version
+        run: python manage.py build
+
+      - name: Rename Standard Artifact
+        shell: bash
+        run: |
+           mv ${{ matrix.artifact_name }} UpNext-${{ matrix.os_short }}-Standard-x64${{ matrix.ext }}
+
+      # --- UPLOAD ASSETS ---
+      - name: Upload Release Assets
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: ${{ matrix.asset_name }}
+          files: |
+            UpNext-${{ matrix.os_short }}-Tray-x64${{ matrix.ext }}
+            UpNext-${{ matrix.os_short }}-Standard-x64${{ matrix.ext }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
