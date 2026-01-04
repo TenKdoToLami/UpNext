@@ -492,7 +492,7 @@ export function renderSettings() {
 	// 4. Other Settings
 	const autoLaunchToggle = document.getElementById('setting-autoLaunchDb');
 	if (autoLaunchToggle) {
-		autoLaunchToggle.checked = !!currentSettings.autoLaunchLastDb;
+		autoLaunchToggle.checked = !!currentSettings.autoLaunchDb;
 	}
 
 	const openWindowToggle = document.getElementById('setting-openWindowOnStart');
@@ -571,6 +571,24 @@ export function renderSettings() {
 export function toggleAutoLaunchSetting(checked) {
 	if (!pendingAppSettings) pendingAppSettings = JSON.parse(JSON.stringify(state.appSettings));
 	pendingAppSettings.autoLaunchDb = checked;
+}
+
+/**
+ * Toggles the open window on start preference from settings.
+ * @param {boolean} checked 
+ */
+export function toggleOpenWindowOnStart(checked) {
+	if (!pendingAppSettings) pendingAppSettings = JSON.parse(JSON.stringify(state.appSettings));
+	pendingAppSettings.openWindowOnStart = checked;
+}
+
+/**
+ * Sets the tray click action preference from settings.
+ * @param {string} value - 'native' or 'browser'
+ */
+export function setTrayClickAction(value) {
+	if (!pendingAppSettings) pendingAppSettings = JSON.parse(JSON.stringify(state.appSettings));
+	pendingAppSettings.trayClickAction = value;
 }
 
 /**

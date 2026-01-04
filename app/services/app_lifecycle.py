@@ -159,7 +159,7 @@ def run_application_stack(create_app_func: Callable, host: str, port: int, headl
         icon.stop()
         if window_ref[0]:
             window_ref[0].destroy()
-        sys.exit(0)
+        os._exit(0)
 
     def setup_tray():
         if not tray_available[0] or not pystray:

@@ -94,8 +94,9 @@
 					<div
 						class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 flex items-center justify-between">
 						<div>
-							<div class="font-bold text-zinc-900 dark:text-white">Auto-Launch Last Library</div>
-							<div class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">Skip selection screen on startup
+							<div class="font-bold text-zinc-900 dark:text-white">Auto Select Last Active Database</div>
+							<div class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">Skip database selection screen on
+								startup
 							</div>
 						</div>
 						<label class="relative inline-flex items-center cursor-pointer">
@@ -116,7 +117,7 @@
 						</div>
 						<label class="relative inline-flex items-center cursor-pointer">
 							<input type="checkbox" class="sr-only peer" id="setting-openWindowOnStart"
-								onchange="if(!window.pendingAppSettings) window.pendingAppSettings = JSON.parse(JSON.stringify(window.state.appSettings)); window.pendingAppSettings.openWindowOnStart = this.checked">
+								onchange="window.toggleOpenWindowOnStart(this.checked)">
 							<div
 								class="w-11 h-6 bg-zinc-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600">
 							</div>
@@ -130,8 +131,7 @@
 							<div class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">Action when clicking the system
 								tray icon</div>
 						</div>
-						<select id="setting-trayClickAction"
-							onchange="if(!window.pendingAppSettings) window.pendingAppSettings = JSON.parse(JSON.stringify(window.state.appSettings)); window.pendingAppSettings.trayClickAction = this.value"
+						<select id="setting-trayClickAction" onchange="window.setTrayClickAction(this.value)"
 							class="bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:text-white">
 							<option value="native">Open App Window</option>
 							<option value="browser">Open in Browser</option>
