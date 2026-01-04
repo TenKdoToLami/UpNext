@@ -507,6 +507,11 @@ export function renderSettings() {
 		trayActionSelect.value = currentSettings.trayClickAction || 'native';
 	}
 
+	const closeBehaviorSelect = document.getElementById('setting-closeBehavior');
+	if (closeBehaviorSelect) {
+		closeBehaviorSelect.value = currentSettings.closeBehavior || 'ask';
+	}
+
 	// 5. Tags Settings
 	const tagsContainer = document.getElementById('settings-tags-container');
 	if (tagsContainer) {
@@ -589,6 +594,15 @@ export function toggleOpenWindowOnStart(checked) {
 export function setTrayClickAction(value) {
 	if (!pendingAppSettings) pendingAppSettings = JSON.parse(JSON.stringify(state.appSettings));
 	pendingAppSettings.trayClickAction = value;
+}
+
+/**
+ * Sets the close behavior preference from settings.
+ * @param {string} value - 'ask', 'minimize', or 'exit'
+ */
+export function setCloseBehavior(value) {
+	if (!pendingAppSettings) pendingAppSettings = JSON.parse(JSON.stringify(state.appSettings));
+	pendingAppSettings.closeBehavior = value;
 }
 
 /**

@@ -180,13 +180,25 @@ def run_application_stack(create_app_func: Callable, host: str, port: int, headl
             logger.error(f"Failed to setup tray icon: {e}")
 
     def on_closing():
-        """Intercept window closing to minimize to tray instead."""
-        if tray_available[0] and tray_icon[0]: # If tray is active
+        """Intercept window closing to minimize to tray or exit based on preference."""
+        if not tray_available[0] or not tray_icon[0]:
+            return True  # Allow close if no tray
+        
+        # Check user preference
+        from app.utils.config_manager import load_config
+        config = load_config()
+        close_behavior = config.get('appSettings', {}).get('closeBehavior', 'minimize')
+        
+        if close_behavior == 'exit':
+            # Always exit
+            logger.info("Exiting (user preference)...")
+            return True
+        else:
+            # Default behavior: minimize to tray (covers 'ask' and 'minimize')
             logger.info("Minimizing to tray...")
             if window_ref[0]:
                 window_ref[0].hide()
-            return False # Cancel close
-        return True # Allow close if no tray
+            return False
 
     # Create Window
     # To prevent resource starvation, we start with a blank page if minimized (lazy loading)

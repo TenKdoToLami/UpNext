@@ -139,6 +139,22 @@
 					</div>
 
 					<div
+						class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 flex items-center justify-between">
+						<div>
+							<div class="font-bold text-zinc-900 dark:text-white">Close Window Behavior</div>
+							<div class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">What happens when you close the
+								window
+							</div>
+						</div>
+						<select id="setting-closeBehavior" onchange="window.setCloseBehavior(this.value)"
+							class="bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:text-white">
+							<option value="minimize">Minimize to Tray</option>
+							<option value="exit">Exit Completely</option>
+
+						</select>
+					</div>
+
+					<div
 						class="bg-zinc-100 dark:bg-zinc-900/50 rounded-xl p-4 border border-zinc-200 dark:border-zinc-800/50 flex items-center justify-between">
 						<div class="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-2">
 							<i data-lucide="arrow-left-right" class="w-4 h-4"></i>

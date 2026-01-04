@@ -31,7 +31,7 @@ import {
     openSettingsModal, closeSettingsModal, saveSettingsAndClose,
     switchSettingsTab, toggleFeature, toggleHiddenField,
     toggleGroupCollapse, toggleMediaType, toggleStatus, toggleAutoLaunchSetting,
-    toggleOpenWindowOnStart, setTrayClickAction,
+    toggleOpenWindowOnStart, setTrayClickAction, setCloseBehavior,
     saveTagColor, saveTagDesc, addNewTagHandler, renameTagHandler, deleteTagHandler
 } from './settings_logic.js';
 
@@ -110,6 +110,7 @@ window.toggleStatus = toggleStatus;
 window.toggleAutoLaunchSetting = toggleAutoLaunchSetting;
 window.toggleOpenWindowOnStart = toggleOpenWindowOnStart;
 window.setTrayClickAction = setTrayClickAction;
+window.setCloseBehavior = setCloseBehavior;
 window.saveTagColor = saveTagColor;
 window.saveTagDesc = saveTagDesc;
 window.addNewTagHandler = addNewTagHandler;
