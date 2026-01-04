@@ -13,7 +13,7 @@ import {
 import { safeCreateIcons, toggleExpand, checkOverflow } from './dom_utils.js';
 import { generateCardHtml } from './card_renderer.js';
 
-// --- Logic ---
+
 
 /**
  * Calculates counts for types, statuses, and ratings based on current items.
@@ -87,13 +87,7 @@ export function sortItems(arr) {
 	});
 }
 
-// --- Helpers ---
 
-
-
-
-
-// --- Render ---
 
 /**
  * Renders all filter controls (Type, Status, Rating, Sort).
@@ -102,7 +96,7 @@ export function sortItems(arr) {
 export function renderFilters() {
 	const counts = getCounts();
 
-	// --- 1. Type Filters ---
+
 	/**
 	 * Generates HTML for a type filter button.
 	 * @param {string} t - The type (e.g., 'Anime', 'All').
@@ -154,13 +148,31 @@ export function renderFilters() {
                 </button>`;
 	};
 
+	const availableTypes = ['All', ...MEDIA_TYPES.filter(t => !state.appSettings?.disabledTypes?.includes(t))];
 	const typeContainer = document.getElementById('typeFilters');
-	if (typeContainer) typeContainer.innerHTML = ['All', ...MEDIA_TYPES.filter(t => !state.appSettings?.disabledTypes?.includes(t))].map(t => renderTypeBtn(t, false)).join('');
+	if (typeContainer) {
+		if (availableTypes.length <= 2) { // Just All + 1 Type
+			typeContainer.classList.add('hidden');
+			typeContainer.classList.remove('flex');
+		} else {
+			typeContainer.classList.remove('hidden');
+			typeContainer.classList.add('flex');
+			typeContainer.innerHTML = availableTypes.map(t => renderTypeBtn(t, false)).join('');
+		}
+	}
 
 	const typeContainerMobile = document.getElementById('typeFiltersMobile');
-	if (typeContainerMobile) typeContainerMobile.innerHTML = ['All', ...MEDIA_TYPES.filter(t => !state.appSettings?.disabledTypes?.includes(t))].map(t => renderTypeBtn(t, true)).join('');
+	if (typeContainerMobile) {
+		const mobileWrapper = document.getElementById('typeFiltersMobileContainer');
+		if (availableTypes.length <= 2) {
+			if (mobileWrapper) mobileWrapper.classList.add('hidden');
+		} else {
+			if (mobileWrapper) mobileWrapper.classList.remove('hidden');
+			typeContainerMobile.innerHTML = availableTypes.map(t => renderTypeBtn(t, true)).join('');
+		}
+	}
 
-	// --- 2. Status Filters ---
+
 	/**
 	 * Generates HTML for a status filter button.
 	 * @param {string} s - The status (e.g., 'Completed', 'All').
@@ -208,13 +220,31 @@ export function renderFilters() {
                 </button>`;
 	};
 
+	const availableStatuses = ['All', ...STATUS_TYPES.filter(s => !state.appSettings?.disabledStatuses?.includes(s))];
 	const statusContainer = document.getElementById('statusFilters');
-	if (statusContainer) statusContainer.innerHTML = ['All', ...STATUS_TYPES.filter(s => !state.appSettings?.disabledStatuses?.includes(s))].map(s => renderStatusBtn(s, false)).join('');
+	if (statusContainer) {
+		if (availableStatuses.length <= 2) { // Just All + 1 Status
+			statusContainer.classList.add('hidden');
+			statusContainer.classList.remove('flex');
+		} else {
+			statusContainer.classList.remove('hidden');
+			statusContainer.classList.add('flex');
+			statusContainer.innerHTML = availableStatuses.map(s => renderStatusBtn(s, false)).join('');
+		}
+	}
 
 	const statusContainerMobile = document.getElementById('statusFiltersMobile');
-	if (statusContainerMobile) statusContainerMobile.innerHTML = ['All', ...STATUS_TYPES.filter(s => !state.appSettings?.disabledStatuses?.includes(s))].map(s => renderStatusBtn(s, true)).join('');
+	if (statusContainerMobile) {
+		const mobileWrapper = document.getElementById('statusFiltersMobileContainer');
+		if (availableStatuses.length <= 2) {
+			if (mobileWrapper) mobileWrapper.classList.add('hidden');
+		} else {
+			if (mobileWrapper) mobileWrapper.classList.remove('hidden');
+			statusContainerMobile.innerHTML = availableStatuses.map(s => renderStatusBtn(s, true)).join('');
+		}
+	}
 
-	// --- 3. Sort Options ---
+	// Sort Options
 	const sortFieldContainer = document.getElementById('sortFieldFilters');
 	if (sortFieldContainer) {
 		sortFieldContainer.innerHTML = SORT_OPTIONS.map(opt => {
@@ -237,7 +267,7 @@ export function renderFilters() {
 		}).join('');
 	}
 
-	// --- 4. Rating Filters ---
+	// Rating Filters
 	const ratingContainer = document.getElementById('ratingFilters');
 	const ratingAllowed = state.filterStatuses.some(s => ['Completed', 'Anticipating', 'Dropped', 'On Hold'].includes(s));
 

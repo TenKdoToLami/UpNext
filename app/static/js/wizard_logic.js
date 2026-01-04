@@ -156,6 +156,23 @@ export function getSkippedSteps() {
 
 	const skipped = [];
 
+	// Step 1 & 2 Auto-Skip Support
+	// Get available options from state
+	const disabledStatuses = state.appSettings?.disabledStatuses || [];
+	const availableStatuses = ['Planning', 'Reading/Watching', 'Dropped', 'On Hold', 'Anticipating', 'Completed'].filter(s => !disabledStatuses.includes(s));
+
+	// Skip Step 2 if only one status exists
+	if (availableStatuses.length === 1) {
+		skipped.push(2);
+	}
+
+	// Similar check for Type (Step 1) if we are navigating BACK?
+	const disabledTypes = state.appSettings?.disabledTypes || [];
+	const availableTypes = ['Anime', 'Manga', 'Book', 'Movie', 'Series'].filter(t => !disabledTypes.includes(t));
+	if (availableTypes.length === 1) {
+		skipped.push(1);
+	}
+
 	// Step 3 (Cover Image): Skip if cover_image is hidden
 	if (!isFieldVisible('cover_image')) {
 		skipped.push(3);
@@ -586,12 +603,25 @@ export function renderTypeSelection() {
 	// Ensure rows stretch evenly to fill vertical space
 	container.style.gridAutoRows = '1fr';
 
-	const types = ['Anime', 'Manga', 'Book', 'Movie', 'Series'];
+	const disabledTypes = state.appSettings?.disabledTypes || [];
+	const currentType = document.getElementById('type')?.value || '';
+
+	const types = ['Anime', 'Manga', 'Book', 'Movie', 'Series']
+		.filter(type => {
+			// Always show the currently selected type (for edit mode)
+			if (currentType === type) return true;
+			// Hide if in disabled list
+			return !disabledTypes.includes(type);
+		});
+
 	container.innerHTML = types
 		.map((type, i) => {
 			// For the last item, span 2 cols to center it, but restrict width to match others (50% - half gap)
+			// Only apply this if we have an odd number of items
 			const isLast = i === types.length - 1;
-			const extra = isLast
+			const isOdd = types.length % 2 !== 0;
+
+			const extra = (isLast && isOdd)
 				? 'col-span-2 justify-self-center w-[calc(50%-0.5rem)]'
 				: 'w-full';
 			return createTypeCardHtml(type, extra);
@@ -636,7 +666,17 @@ export function renderStatusSelection() {
 	// Ensure rows stretch evenly
 	container.style.gridAutoRows = '1fr';
 
-	container.innerHTML = STATUS_TYPES.map(status => createStatusCardHtml(status)).join('');
+	const disabledStatuses = state.appSettings?.disabledStatuses || [];
+	const currentStatus = document.getElementById('status')?.value || '';
+
+	const visibleStatuses = STATUS_TYPES.filter(status => {
+		// Always show currently selected status
+		if (currentStatus === status) return true;
+		// Hide if disabled
+		return !disabledStatuses.includes(status);
+	});
+
+	container.innerHTML = visibleStatuses.map(status => createStatusCardHtml(status)).join('');
 	safeCreateIcons();
 }
 
@@ -693,6 +733,19 @@ export function selectType(t) {
 	selectTypeVisuals(t);
 	updateWizardUI();
 	updateFormUI(); // Apply field visibility
+
+	// Auto-fill Status if only 1 available (and not in edit mode to avoid overriding existing)
+	if (!state.isEditMode) {
+		const disabledStatuses = state.appSettings?.disabledStatuses || [];
+		const availableStatuses = ['Planning', 'Reading/Watching', 'Dropped', 'On Hold', 'Anticipating', 'Completed'].filter(s => !disabledStatuses.includes(s));
+		if (availableStatuses.length === 1) {
+			const singleStatus = availableStatuses[0];
+			document.getElementById('status').value = singleStatus;
+			selectStatusVisuals(singleStatus);
+			// Also update form UI again as status affects visibility of some fields
+			updateFormUI();
+		}
+	}
 
 	if (state.isEditMode) {
 		// Already called updateFormUI above
@@ -964,7 +1017,46 @@ export function initWizard(isEdit) {
 	// Apply field visibility from settings
 	updateFormUI();
 
-	showStep(1);
+	// Check for Single Options (Auto-Select)
+	const disabledTypes = state.appSettings?.disabledTypes || [];
+	const availableTypes = ['Anime', 'Manga', 'Book', 'Movie', 'Series'].filter(t => !disabledTypes.includes(t));
+
+	const disabledStatuses = state.appSettings?.disabledStatuses || [];
+	const availableStatuses = ['Planning', 'Reading/Watching', 'Dropped', 'On Hold', 'Anticipating', 'Completed'].filter(s => !disabledStatuses.includes(s));
+
+	let startStep = 1;
+
+	// Auto-select Type if only 1 available
+	if (availableTypes.length === 1) {
+		const type = availableTypes[0];
+		document.getElementById('type').value = type;
+		// Trigger UI updates normally handled by selectType
+		updateDynamicLinks(type);
+		selectTypeVisuals(type);
+		updateWizardUI();
+
+		// Move start to next step
+		startStep = 2;
+	}
+
+	// Auto-select Status if only 1 available
+	if (availableStatuses.length === 1) {
+		const status = availableStatuses[0];
+		document.getElementById('status').value = status;
+		selectStatusVisuals(status);
+
+		// If we also skipped type, move to 3
+		if (startStep === 2) startStep = 3;
+	}
+
+	// Apply the determined start step
+
+	if (startStep > 1) {
+		state.currentStep = startStep;
+		state.maxReachedStep = startStep;
+	}
+
+	showStep(state.currentStep);
 }
 
 /**
