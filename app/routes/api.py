@@ -161,6 +161,42 @@ def save_settings():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
+@bp.route("/config", methods=["GET"])
+def get_config():
+    """
+    Retrieves the full application configuration.
+    
+    Used by the frontend to sync state when running in browser mode or purely via API.
+    Returns:
+        JSON response containing the config dict, with no-cache headers.
+    """
+    from app.utils.config_manager import load_config
+    resp = jsonify(load_config())
+    # critical for ensuring browser doesn't cache stale settings
+    resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    return resp
+
+@bp.route("/config", methods=["POST"])
+def update_config():
+    """
+    Updates the application configuration.
+    
+    Accepts a partial JSON object and merges it into the existing config.
+    Used for persisting settings from the frontend.
+    """
+    try:
+        data = request.get_json()
+        from app.utils.config_manager import save_config
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+            
+        save_config(data)
+        return jsonify({"status": "success"})
+    except Exception as e:
+        logger.error(f"Failed to update config: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
 
 @bp.route("/items", methods=["POST"])
 def save_item():

@@ -95,6 +95,21 @@
 					</div>
 
 					<div
+						class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 flex items-center justify-between">
+						<div>
+							<div class="font-bold text-zinc-900 dark:text-white">Tray Click Behavior</div>
+							<div class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">Action when clicking the system
+								tray icon</div>
+						</div>
+						<select id="setting-trayClickAction"
+							onchange="if(!window.pendingAppSettings) window.pendingAppSettings = JSON.parse(JSON.stringify(window.state.appSettings)); window.pendingAppSettings.trayClickAction = this.value"
+							class="bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:text-white">
+							<option value="native">Open App Window</option>
+							<option value="browser">Open in Browser</option>
+						</select>
+					</div>
+
+					<div
 						class="bg-zinc-100 dark:bg-zinc-900/50 rounded-xl p-4 border border-zinc-200 dark:border-zinc-800/50">
 						<div class="text-xs text-zinc-500 dark:text-zinc-400 mb-3 flex items-center gap-2">
 							<i data-lucide="info" class="w-4 h-4"></i>

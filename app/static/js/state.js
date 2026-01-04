@@ -73,7 +73,8 @@ export const state = {
 		],
 		disabledFeatures: [], // Features to disable (e.g. 'calendar', 'stats')
 		disabledTypes: [],    // Media Types to hide (e.g. 'Manga')
-		disabledStatuses: []  // Statuses to hide (e.g. 'Dropped')
+		disabledStatuses: [], // Statuses to hide (e.g. 'Dropped')
+		trayClickAction: 'native' // 'native' or 'browser'
 	}
 };
 
@@ -106,6 +107,10 @@ function waitForPywebview(timeout = 1000) {
  * Saves specific application state to persistent storage.
  * Uses pywebview native API if available, falls back to LocalStorage.
  */
+/**
+ * Saves specific application state to persistent storage.
+ * Uses pywebview native API if available, otherwise syncs via Backend API.
+ */
 async function saveUIState(key, value) {
 	const isNative = await waitForPywebview(200);
 
@@ -116,48 +121,89 @@ async function saveUIState(key, value) {
 			console.error("Native save failed:", e);
 		}
 	} else {
-		// Fallback or Sync Mirror
+		// Browser Mode: Sync to Backend
+		// We also save to localStorage for immediate offline/latency availability
+		try {
+			const data = {};
+			data[key] = value;
+			fetch('/api/config', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(data)
+			}).catch(e => console.warn("API state sync failed", e));
+		} catch (e) { console.warn(e); }
+
 		const stored = localStorage.getItem('upnext_ui_state') || '{}';
-		const data = JSON.parse(stored);
-		data[key] = value;
-		localStorage.setItem('upnext_ui_state', JSON.stringify(data));
+		try {
+			const data = JSON.parse(stored);
+			data[key] = value;
+			localStorage.setItem('upnext_ui_state', JSON.stringify(data));
+		} catch (e) { }
 	}
 }
 
+const NATIVE_CONNECT_TIMEOUT = 2000;
+
 /**
  * Loads persisted state from storage.
+ * 
+ * Implements a robust fallback strategy:
+ * 1. Native Bridge (Primary for Desktop App)
+ * 2. Backend API (Primary for Browser, Fallback for Desktop)
+ * 3. LocalStorage (Last Resort / Offline)
  */
 export async function loadUIState() {
 	let data = {};
+	let loadedSource = null;
 
-	// 1. Try Native Config (Wait briefly)
-	const isNative = await waitForPywebview(500);
+	// 1. Try Native Config
+	// We wait longer to allow the pywebview bridge to inject itself on slower systems.
+	const isNative = await waitForPywebview(NATIVE_CONNECT_TIMEOUT);
 
 	if (isNative && window.pywebview.api) {
 		try {
 			data = await window.pywebview.api.get_app_config();
+			if (data && Object.keys(data).length > 0) {
+				loadedSource = 'native';
+			}
 		} catch (e) {
-			console.error("Native load failed:", e);
+			console.warn("Native config load failed, attempting API fallback...", e);
 		}
 	}
 
-	// 2. Merge/Fallback to LocalStorage if native empty (or first run)
-	if (Object.keys(data).length === 0) {
+	// 2. Fallback to API 
+	// If native failed (or we are in a normal browser), fetch from Flask backend.
+	if (!loadedSource) {
+		try {
+			// Timestamp prevents browser caching of the config JSON
+			const res = await fetch(`/api/config?t=${Date.now()}`);
+			if (res.ok) {
+				data = await res.json();
+				loadedSource = 'api';
+			}
+		} catch (e) {
+			console.warn("API config load failed, attempting LocalStorage fallback...", e);
+		}
+	}
+
+	// 3. Last Resort: LocalStorage
+	// Useful if offline or if API is temporarily unreachable.
+	if (!loadedSource) {
 		try {
 			const stored = localStorage.getItem('upnext_ui_state');
 			if (stored) data = JSON.parse(stored);
-		} catch (e) { console.error(e); }
+		} catch (e) {
+			// Silent fail, start with defaults
+		}
 	}
 
-	// 3. Apply to state
+	// 4. Apply to global state
+	// Only overwrite keys that exist in the loaded data
 	PERSISTED_KEYS.forEach(key => {
 		if (data[key] !== undefined) {
 			state[key] = data[key];
 		}
 	});
-
-	// 4. Trigger UI updates based on loaded state if needed
-	// (Caller usually calls applyStateToUI next)
 }
 
 /**

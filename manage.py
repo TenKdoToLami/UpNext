@@ -45,14 +45,17 @@ def main():
     )
     subparsers = parser.add_subparsers(dest="command", help="Operational commands")
 
-    subparsers.add_parser("run", help="Start the development server and launch UI")
+    run_parser = subparsers.add_parser("run", help="Start the development server and launch UI")
+    run_parser.add_argument("--headless", action="store_true", help="Run in headless mode (no GUI)")
+    run_parser.add_argument("--minimized", action="store_true", help="Start with window minimized to tray")
+    
     subparsers.add_parser("build", help="Compile the application into a standalone executable")
     subparsers.add_parser("clean", help="Remove temporary build artifacts and cache files")
 
     args = parser.parse_args()
 
     if args.command == "run":
-        run_application_stack(create_app, HOST, PORT)
+        run_application_stack(create_app, HOST, PORT, headless=args.headless, minimized=args.minimized)
     elif args.command == "build":
         build.build_project()
     elif args.command == "clean":

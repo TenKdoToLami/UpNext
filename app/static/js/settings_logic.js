@@ -91,20 +91,36 @@ export async function saveSettingsAndClose() {
 }
 
 /**
- * Applies the current state.appSettings to the global UI.
- * (Replaces `applyStateToUI` partially, or supplements it)
+ * Applies the current app settings to the global UI.
+ * 
+ * Performs:
+ * 1. Global Theme Application
+ * 2. Active Filter Sanitization (removes disabled tabs if currently selected)
+ * 3. Rerendering of Filters and Grid
+ * 4. Toggling of Feature Buttons (Calendar, Stats)
  */
 export function applySettingsToGlobalUI() {
-	// 1. Theme (Handled globally usually, but let's ensure)
+	// 1. Theme
 	const isDark = state.theme === 'dark';
 	if (isDark) document.documentElement.classList.add('dark');
 	else document.documentElement.classList.remove('dark');
 
-	// 2. Filters & Grid
+	// 2. Sanitize Active Filters 
+	// If the currently selected type/status was just disabled, switch to 'All'
+	if (state.appSettings.disabledTypes && state.appSettings.disabledTypes.length > 0) {
+		state.filterTypes = state.filterTypes.filter(t => !state.appSettings.disabledTypes.includes(t));
+		if (state.filterTypes.length === 0) state.filterTypes = ['All'];
+	}
+	if (state.appSettings.disabledStatuses && state.appSettings.disabledStatuses.length > 0) {
+		state.filterStatuses = state.filterStatuses.filter(s => !state.appSettings.disabledStatuses.includes(s));
+		if (state.filterStatuses.length === 0) state.filterStatuses = ['All'];
+	}
+
+	// 3. Render UI Components
 	renderFilters();
 	renderGrid();
 
-	// 3. Feature Toggles (Buttons in UI)
+	// 4. Toggle Feature Buttons in Header
 	const calendarBtn = document.getElementById('calendarBtn');
 	if (calendarBtn) {
 		if (state.appSettings.disabledFeatures.includes('calendar')) calendarBtn.classList.add('hidden');
@@ -477,6 +493,12 @@ export function renderSettings() {
 	const autoLaunchCheckbox = document.getElementById('setting-autoLaunchDb');
 	if (autoLaunchCheckbox) {
 		autoLaunchCheckbox.checked = currentSettings.autoLaunchDb === true;
+	}
+
+	// Tray Click Action
+	const traySelect = document.getElementById('setting-trayClickAction');
+	if (traySelect && currentSettings.trayClickAction) {
+		traySelect.value = currentSettings.trayClickAction;
 	}
 
 	// 5. Tags Settings

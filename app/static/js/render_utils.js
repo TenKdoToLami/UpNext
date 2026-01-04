@@ -148,15 +148,19 @@ export function renderFilters() {
                 </button>`;
 	};
 
+	// TYPE FILTERS
+	// Logic: If only 'All' + 1 other type are available, hide the filter bar entireley (filtering is redundant).
+	// Must handle Desktop (xl:flex) and Mobile separately to prevent ghost elements.
 	const availableTypes = ['All', ...MEDIA_TYPES.filter(t => !state.appSettings?.disabledTypes?.includes(t))];
 	const typeContainer = document.getElementById('typeFilters');
 	if (typeContainer) {
 		if (availableTypes.length <= 2) { // Just All + 1 Type
 			typeContainer.classList.add('hidden');
-			typeContainer.classList.remove('flex');
+			typeContainer.classList.remove('flex', 'xl:flex');
+			typeContainer.innerHTML = ''; // Clear to prevent potential click listeners
 		} else {
 			typeContainer.classList.remove('hidden');
-			typeContainer.classList.add('flex');
+			typeContainer.classList.add('flex', 'xl:flex');
 			typeContainer.innerHTML = availableTypes.map(t => renderTypeBtn(t, false)).join('');
 		}
 	}
@@ -171,6 +175,8 @@ export function renderFilters() {
 			typeContainerMobile.innerHTML = availableTypes.map(t => renderTypeBtn(t, true)).join('');
 		}
 	}
+
+	// ... (Status Logic below follows same pattern)
 
 
 	/**
@@ -225,10 +231,11 @@ export function renderFilters() {
 	if (statusContainer) {
 		if (availableStatuses.length <= 2) { // Just All + 1 Status
 			statusContainer.classList.add('hidden');
-			statusContainer.classList.remove('flex');
+			statusContainer.classList.remove('flex', 'xl:flex');
+			statusContainer.innerHTML = '';
 		} else {
 			statusContainer.classList.remove('hidden');
-			statusContainer.classList.add('flex');
+			statusContainer.classList.add('flex', 'xl:flex');
 			statusContainer.innerHTML = availableStatuses.map(s => renderStatusBtn(s, false)).join('');
 		}
 	}

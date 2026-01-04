@@ -31,6 +31,9 @@ pyinstaller-hooks-contrib==2025.10
 pytest==9.0.2
 pythonnet>=3.0.0; sys_platform == 'win32'
 pywebview>=5.0.0
+pystray>=0.19.5
+python-xlib>=0.33; sys_platform == 'linux'
+six>=1.17.0
 pytokens==0.3.0
 setuptools==80.9.0
 tinycss2==1.5.1
