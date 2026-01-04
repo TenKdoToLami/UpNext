@@ -29,13 +29,13 @@
 				class="settings-tab-btn px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-white dark:hover:bg-zinc-900 border border-transparent hover:border-zinc-200 dark:hover:border-zinc-800">
 				Content
 			</button>
-			<button onclick="switchSettingsTab('database')" id="tab-database"
-				class="settings-tab-btn px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-white dark:hover:bg-zinc-900 border border-transparent hover:border-zinc-200 dark:hover:border-zinc-800">
-				Database
-			</button>
 			<button onclick="switchSettingsTab('tags')" id="tab-tags"
 				class="settings-tab-btn px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-white dark:hover:bg-zinc-900 border border-transparent hover:border-zinc-200 dark:hover:border-zinc-800">
 				Tags
+			</button>
+			<button onclick="switchSettingsTab('other')" id="tab-other"
+				class="settings-tab-btn px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-white dark:hover:bg-zinc-900 border border-transparent hover:border-zinc-200 dark:hover:border-zinc-800">
+				Other
 			</button>
 		</div>
 
@@ -71,11 +71,24 @@
 				</div>
 			</div>
 
-			<!-- Database Settings -->
-			<div id="settings-database" class="settings-panel hidden space-y-6">
+			<!-- Tags Settings -->
+			<div id="settings-tags" class="settings-panel hidden space-y-6">
+				<div class="space-y-4">
+					<div class="flex items-center justify-between">
+						<h3 class="text-sm font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Manage
+							Tags</h3>
+					</div>
+					<div id="settings-tags-container" class="space-y-3">
+						<!-- Populated by JS -->
+					</div>
+				</div>
+			</div>
+
+			<!-- Other / System Settings -->
+			<div id="settings-other" class="settings-panel hidden space-y-6">
 				<div class="space-y-4">
 					<h3 class="text-sm font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 mb-2">
-						Library Selection
+						System & Library
 					</h3>
 
 					<div
@@ -83,7 +96,7 @@
 						<div>
 							<div class="font-bold text-zinc-900 dark:text-white">Auto-Launch Last Library</div>
 							<div class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">Skip selection screen on startup
-								if active database exists</div>
+							</div>
 						</div>
 						<label class="relative inline-flex items-center cursor-pointer">
 							<input type="checkbox" class="sr-only peer" id="setting-autoLaunchDb"
@@ -92,6 +105,33 @@
 								class="w-11 h-6 bg-zinc-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600">
 							</div>
 						</label>
+					</div>
+
+					<div
+						class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 flex items-center justify-between">
+						<div>
+							<div class="font-bold text-zinc-900 dark:text-white">Open Window on Launch</div>
+							<div class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">Open main window when starting
+								from Tray</div>
+						</div>
+						<label class="relative inline-flex items-center cursor-pointer">
+							<input type="checkbox" class="sr-only peer" id="setting-openWindowOnStart"
+								onchange="if(!window.pendingAppSettings) window.pendingAppSettings = JSON.parse(JSON.stringify(window.state.appSettings)); window.pendingAppSettings.openWindowOnStart = this.checked">
+							<div
+								class="w-11 h-6 bg-zinc-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600">
+							</div>
+						</label>
+					</div>
+
+					<div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4">
+						<div class="mb-2">
+							<div class="font-bold text-zinc-900 dark:text-white">Custom Domain / URL</div>
+							<div class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">Overrides IP in Mobile QR Code
+								(e.g. http://my-server.local:5000)</div>
+						</div>
+						<input type="text" id="setting-customDomain" placeholder="http://192.168.1.x:5000"
+							onchange="if(!window.pendingAppSettings) window.pendingAppSettings = JSON.parse(JSON.stringify(window.state.appSettings)); window.pendingAppSettings.customDomain = this.value"
+							class="w-full bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:text-white placeholder:text-zinc-400">
 					</div>
 
 					<div
@@ -110,28 +150,15 @@
 					</div>
 
 					<div
-						class="bg-zinc-100 dark:bg-zinc-900/50 rounded-xl p-4 border border-zinc-200 dark:border-zinc-800/50">
-						<div class="text-xs text-zinc-500 dark:text-zinc-400 mb-3 flex items-center gap-2">
-							<i data-lucide="info" class="w-4 h-4"></i>
-							<span>Manage libraries via the selection screen (restart to switch).</span>
+						class="bg-zinc-100 dark:bg-zinc-900/50 rounded-xl p-4 border border-zinc-200 dark:border-zinc-800/50 flex items-center justify-between">
+						<div class="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-2">
+							<i data-lucide="arrow-left-right" class="w-4 h-4"></i>
+							<span>Return to library selection screen.</span>
 						</div>
 						<button onclick="window.restartToDbSelect()"
-							class="text-xs font-bold text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300">
-							Restart Application
+							class="px-3 py-1.5 bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-lg text-xs font-bold hover:bg-indigo-500 hover:text-white transition-all shadow-sm">
+							Switch Database
 						</button>
-					</div>
-				</div>
-			</div>
-
-			<!-- Tags Settings -->
-			<div id="settings-tags" class="settings-panel hidden space-y-6">
-				<div class="space-y-4">
-					<div class="flex items-center justify-between">
-						<h3 class="text-sm font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Manage
-							Tags</h3>
-					</div>
-					<div id="settings-tags-container" class="space-y-3">
-						<!-- Populated by JS -->
 					</div>
 				</div>
 			</div>

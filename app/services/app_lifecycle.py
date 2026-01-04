@@ -208,6 +208,18 @@ def run_application_stack(create_app_func: Callable, host: str, port: int, headl
             from app.utils.config_manager import load_config
             return load_config()
 
+    # Load Config to check startup behavior
+    from app.utils.config_manager import load_config
+    config = load_config()
+    app_settings = config.get("appSettings", {})
+    # Default is Open Window (openWindowOnStart=True). If False, we minimize.
+    # CLI arg 'minimized' overrides this to be TRUE (force minimized).
+    open_window = app_settings.get("openWindowOnStart", True)
+    
+    # If CLI says minimized, or config says DON'T open window, then start hidden.
+    if not open_window:
+        minimized = True
+        
     from app.build_config import ENABLE_TRAY
 
     # Create the webview window

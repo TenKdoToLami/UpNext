@@ -489,16 +489,27 @@ export function renderSettings() {
 		}).join('');
 	}
 
-	// 4. Database Settings
-	const autoLaunchCheckbox = document.getElementById('setting-autoLaunchDb');
-	if (autoLaunchCheckbox) {
-		autoLaunchCheckbox.checked = currentSettings.autoLaunchDb === true;
+	// 4. Other Settings
+	const autoLaunchToggle = document.getElementById('setting-autoLaunchDb');
+	if (autoLaunchToggle) {
+		autoLaunchToggle.checked = !!currentSettings.autoLaunchLastDb;
 	}
 
-	// Tray Click Action
-	const traySelect = document.getElementById('setting-trayClickAction');
-	if (traySelect && currentSettings.trayClickAction) {
-		traySelect.value = currentSettings.trayClickAction;
+	const openWindowToggle = document.getElementById('setting-openWindowOnStart');
+	if (openWindowToggle) {
+		// Default to true if undefined
+		const currentVal = currentSettings.openWindowOnStart !== undefined ? currentSettings.openWindowOnStart : true;
+		openWindowToggle.checked = currentVal;
+	}
+
+	const customDomainInput = document.getElementById('setting-customDomain');
+	if (customDomainInput) {
+		customDomainInput.value = currentSettings.customDomain || '';
+	}
+
+	const trayActionSelect = document.getElementById('setting-trayClickAction');
+	if (trayActionSelect) {
+		trayActionSelect.value = currentSettings.trayClickAction || 'native';
 	}
 
 	// 5. Tags Settings
