@@ -502,11 +502,6 @@ export function renderSettings() {
 		openWindowToggle.checked = currentVal;
 	}
 
-	const customDomainInput = document.getElementById('setting-customDomain');
-	if (customDomainInput) {
-		customDomainInput.value = currentSettings.customDomain || '';
-	}
-
 	const trayActionSelect = document.getElementById('setting-trayClickAction');
 	if (trayActionSelect) {
 		trayActionSelect.value = currentSettings.trayClickAction || 'native';
