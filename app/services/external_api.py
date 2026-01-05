@@ -16,6 +16,7 @@ from urllib.parse import quote_plus
 import time
 
 import requests
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -349,7 +350,9 @@ class TMDBClient(BaseAPIClient):
             
             # Date parsing
             date_str = item.get("release_date") or item.get("first_air_date") or ""
-            year = int(date_str[:4]) if len(date_str) >= 4 else None
+            year = None
+            if len(date_str) >= 4 and date_str[:4].isdigit():
+                year = int(date_str[:4])
 
             # Poster URL
             poster_path = item.get("poster_path")
@@ -418,11 +421,29 @@ class TMDBClient(BaseAPIClient):
         runtime = data.get("runtime")  # Movies
         if not runtime and data.get("episode_run_time"):
             runtimes = data.get("episode_run_time", [])
-            runtime = runtimes[0] if runtimes else None
+            if runtimes:
+                runtime = sum(runtimes) // len(runtimes)
+            else:
+                runtime = None
 
         # Episode/Season count for Series
         episodes = data.get("number_of_episodes")
         seasons = data.get("number_of_seasons")
+
+        # Seasons list for Series
+        seasons_list = []
+        if media_type == "Series" and data.get("seasons"):
+            for s in data["seasons"]:
+                # Many series have a Season 0 for specials; we can include it or skip it.
+                # User usually wants numbered seasons.
+                if s.get("season_number") == 0: continue 
+                
+                seasons_list.append({
+                    "number": s.get("season_number"),
+                    "episodes": s.get("episode_count"),
+                    "duration": runtime,
+                    "release_date": s.get("air_date")
+                })
 
         return {
             "id": str(data["id"]),
@@ -434,7 +455,8 @@ class TMDBClient(BaseAPIClient):
             "release_date": release_date,
             "avg_duration_minutes": runtime,
             "episodes": episodes,
-            "volumes": seasons,  # Map seasons to volumes for Series
+            "volumes": seasons,  # Map seasons count to volumes for Series
+            "seasons": seasons_list, # Full list for auto-population
             "genres": genres,
             "authors": directors,  # Directors/Creators
             "external_link": f"https://www.themoviedb.org/{'movie' if media_type == 'Movie' else 'tv'}/{data['id']}",
@@ -553,7 +575,6 @@ class OpenLibraryClient(BaseAPIClient):
         first_publish = data.get("first_publish_date", "")
         release_date = None
         
-        import re
         if first_publish:
             # Try to extract year
             year_match = re.search(r'\d{4}', first_publish)
@@ -595,6 +616,89 @@ class OpenLibraryClient(BaseAPIClient):
             "external_link": f"https://openlibrary.org/works/{external_id}",
         }
 
+class TVMazeAPI(BaseAPIClient):
+    """API Client for TVMaze (Series). No API key required."""
+    
+    BASE_URL = "https://api.tvmaze.com"
+
+    def search(self, query: str, media_type: str) -> List[Dict[str, Any]]:
+        if media_type != "Series":
+            return []
+            
+        try:
+            response = requests.get(f"{self.BASE_URL}/search/shows", params={"q": query}, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+        except Exception as e:
+            logger.error(f"TVMaze search failed: {e}")
+            return []
+
+        results = []
+        for entry in data:
+            show = entry.get("show", {})
+            if not show: continue
+            
+            # Extract year from premiered date (YYYY-MM-DD)
+            premiered = show.get("premiered")
+            year = premiered[:4] if premiered and len(premiered) >= 4 else None
+            
+            results.append({
+                "id": str(show.get("id")),
+                "source": "tvmaze",
+                "title": show.get("name"),
+                "cover_url": show.get("image", {}).get("medium"),
+                "year": year,
+                "description_preview": (show.get("summary") or "").replace("<p>", "").replace("</p>", "").replace("<b>", "").replace("</b>", "").replace("<i>", "").replace("</i>", "")[:200],
+                "genres": show.get("genres", []),
+            })
+        return results
+
+    def get_details(self, external_id: str) -> Optional[Dict[str, Any]]:
+        try:
+            # Use embed=seasons to get all seasons in one request
+            response = requests.get(f"{self.BASE_URL}/shows/{external_id}?embed=seasons", timeout=10)
+            response.raise_for_status()
+            show = response.json()
+        except Exception as e:
+            logger.error(f"TVMaze details fetch failed: {e}")
+            return None
+
+        # Clean HTML from summary
+        summary = show.get("summary") or ""
+        summary = re.sub(r'<[^>]+>', '', summary)
+
+        # Prepare seasons list and calculate total episodes
+        seasons_data = []
+        total_episodes = 0
+        embedded = show.get("_embedded", {})
+        for s in embedded.get("seasons", []):
+            ep_count = s.get("episodeOrder")
+            if ep_count:
+                total_episodes += ep_count
+                
+            seasons_data.append({
+                "number": s.get("number"),
+                "episodes": ep_count, 
+                "duration": show.get("averageRuntime"), # TVMaze stores runtime at show level
+                "release_date": s.get("premiereDate")
+            })
+
+        return {
+            "id": str(show["id"]),
+            "source": "tvmaze",
+            "title": show.get("name"),
+            "alternate_titles": [], 
+            "cover_url": show.get("image", {}).get("original") or show.get("image", {}).get("medium"),
+            "description": summary,
+            "release_date": show.get("premiered"),
+            "avg_duration_minutes": show.get("averageRuntime"),
+            "genres": show.get("genres", []),
+            "external_link": show.get("url"),
+            "seasons": seasons_data,
+            "episodes": total_episodes if total_episodes > 0 else None,
+            "volumes": len(seasons_data) if seasons_data else None,
+        }
+
 
 class ExternalAPIService:
     """
@@ -606,15 +710,17 @@ class ExternalAPIService:
     def __init__(self, tmdb_api_key: Optional[str] = None):
         self.anilist = AniListClient()
         self.tmdb = TMDBClient(api_key=tmdb_api_key)
+        self.tvmaze = TVMazeAPI()
         self.openlibrary = OpenLibraryClient()
 
-    def search(self, query: str, media_type: str) -> List[Dict[str, Any]]:
+    def search(self, query: str, media_type: str, source: Optional[str] = None) -> List[Dict[str, Any]]:
         """
         Search for media items across appropriate external APIs.
         
         Args:
             query: Search query string
             media_type: One of 'Anime', 'Manga', 'Book', 'Movie', 'Series'
+            source: Optional specific source ('tmdb', 'tvmaze', 'anilist', 'openlibrary')
             
         Returns:
             List of search results with normalized structure
@@ -624,10 +730,75 @@ class ExternalAPIService:
 
         query = query.strip()
 
-        if media_type in ("Anime", "Manga"):
+        # Explicit source request
+        if source:
+            if source == 'tmdb':
+                # Map Anime to Series for TMDB search
+                tmdb_type = 'Series' if media_type == 'Anime' else media_type
+                if tmdb_type not in ('Movie', 'Series'): return []
+                return self.tmdb.search(query, tmdb_type)
+            elif source == 'tvmaze':
+                # TVMaze only supports Series/Anime (as shows)
+                if media_type not in ('Series', 'Anime'): return []
+                return self.tvmaze.search(query, 'Series')
+            elif source == 'anilist':
+                # Anime/Manga only
+                if media_type not in ('Anime', 'Manga', 'Movie', 'Series'): return []
+                # Try to fuzzy map Movie/Series to Anime if requested
+                search_type = 'Anime' if media_type in ('Movie', 'Series') else media_type
+                return self.anilist.search(query, search_type)
+            elif source == 'openlibrary':
+                return self.openlibrary.search(query)
+            return []
+
+        # Default routing logic with priority config
+        from app.utils.config_manager import load_config
+        config = load_config()
+        priorities = config.get('searchPriorities', {})
+        
+        # Get priority for this media type, defaulting to standard behavior
+        priority_source = priorities.get(media_type)
+
+        if media_type == "Anime":
+            if priority_source == 'tmdb':
+                 return self.tmdb.search(query, 'Series')
+            elif priority_source == 'tvmaze':
+                 return self.tvmaze.search(query, 'Series')
+            # Default to AniList
             return self.anilist.search(query, media_type)
-        elif media_type in ("Movie", "Series"):
+            
+        elif media_type == "Manga":
+            return self.anilist.search(query, media_type)
+            
+        elif media_type == "Movie":
+            if priority_source == 'anilist':
+                return self.anilist.search(query, 'Anime') # Treat as Anime Movie
+            # Default to TMDB
             return self.tmdb.search(query, media_type)
+            
+        elif media_type == "Series":
+            # Priority override
+            if priority_source == 'anilist':
+                return self.anilist.search(query, 'Anime') # Treat as Anime Series
+            elif priority_source == 'tvmaze':
+                return self.tvmaze.search(query, media_type)
+            elif priority_source == 'tmdb':
+                # Force TMDB if API key exists, otherwise fallback to TVMaze?
+                # User selected TMDB explicitly, so try TMDB.
+                # But if no key, self.tmdb.search might fail or return empty if we don't handle it?
+                # Actually earlier code handled no-key by falling back.
+                # If priority is effectively set to TMDB (default), we keep old logic?
+                if self.tmdb.api_key:
+                    return self.tmdb.search(query, media_type)
+                # If they explicitly chose TMDB but have no key, it might be better to fall back or return error?
+                # Let's keep the fallback for robustness unless they have a key.
+                return self.tvmaze.search(query, media_type)
+            
+            # Default fallback logic (no priority set or 'tmdb' default)
+            if self.tmdb.api_key:
+                return self.tmdb.search(query, media_type)
+            return self.tvmaze.search(query, media_type)
+
         elif media_type == "Book":
             return self.openlibrary.search(query)
         else:
@@ -650,6 +821,8 @@ class ExternalAPIService:
             return self.anilist.get_details(external_id)
         elif source == "tmdb":
             return self.tmdb.get_details(external_id, media_type)
+        elif source == "tvmaze":
+            return self.tvmaze.get_details(external_id)
         elif source == "openlibrary":
             return self.openlibrary.get_details(external_id)
         else:

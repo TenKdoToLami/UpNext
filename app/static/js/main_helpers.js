@@ -515,7 +515,7 @@ export function renderChildren() {
 					<div class="flex items-center gap-1">
 						<span class="text-[10px] text-zinc-400 font-medium uppercase">Ch</span>
 						<button type="button" onclick="window.decrementChildField(${idx}, 'chapters')" class="w-5 h-5 flex items-center justify-center bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 rounded text-zinc-600 dark:text-zinc-300 text-xs font-bold transition-colors">−</button>
-						<input type="number" value="${child.chapters || ''}" min="0" 
+						<input type="number" value="${(child.chapters !== undefined && child.chapters !== null) ? child.chapters : ''}" min="0" 
 							oninput="window.updateChild(${idx}, 'chapters', parseInt(this.value) || null)"
 							placeholder="0"
 							class="w-12 bg-zinc-100 dark:bg-zinc-800 border-none rounded px-1 py-0.5 text-xs text-zinc-700 dark:text-zinc-300 outline-none focus:ring-1 focus:ring-indigo-500 text-center font-bold">
@@ -524,7 +524,7 @@ export function renderChildren() {
 					<div class="flex items-center gap-1">
 						<span class="text-[10px] text-zinc-400 font-medium uppercase">Words</span>
 						<button type="button" onclick="window.decrementChildField(${idx}, 'avgWords', 100)" class="w-5 h-5 flex items-center justify-center bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 rounded text-zinc-600 dark:text-zinc-300 text-xs font-bold transition-colors">−</button>
-						<input type="number" value="${child.avgWords || ''}" min="0" step="100"
+						<input type="number" value="${(child.avgWords !== undefined && child.avgWords !== null) ? child.avgWords : ''}" min="0" step="100"
 							oninput="window.updateChild(${idx}, 'avgWords', parseInt(this.value) || null)"
 							placeholder="2k"
 							class="w-14 bg-zinc-100 dark:bg-zinc-800 border-none rounded px-1 py-0.5 text-xs text-zinc-700 dark:text-zinc-300 outline-none focus:ring-1 focus:ring-indigo-500 text-center font-bold">
@@ -538,7 +538,7 @@ export function renderChildren() {
 					<div class="flex items-center gap-1">
 						<span class="text-[10px] text-zinc-400 font-medium uppercase">Ep</span>
 						<button type="button" onclick="window.decrementChildField(${idx}, 'episodes')" class="w-5 h-5 flex items-center justify-center bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 rounded text-zinc-600 dark:text-zinc-300 text-xs font-bold transition-colors">−</button>
-						<input type="number" value="${child.episodes || ''}" min="0"
+						<input type="number" value="${(child.episodes !== undefined && child.episodes !== null) ? child.episodes : ''}" min="0"
 							oninput="window.updateChild(${idx}, 'episodes', parseInt(this.value) || null)"
 							placeholder="12"
 							class="w-12 bg-zinc-100 dark:bg-zinc-800 border-none rounded px-1 py-0.5 text-xs text-zinc-700 dark:text-zinc-300 outline-none focus:ring-1 focus:ring-indigo-500 text-center font-bold">
@@ -547,7 +547,7 @@ export function renderChildren() {
 					<div class="flex items-center gap-1">
 						<span class="text-[10px] text-zinc-400 font-medium uppercase">Min</span>
 						<button type="button" onclick="window.decrementChildField(${idx}, 'duration')" class="w-5 h-5 flex items-center justify-center bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 rounded text-zinc-600 dark:text-zinc-300 text-xs font-bold transition-colors">−</button>
-						<input type="number" value="${child.duration || ''}" min="0"
+						<input type="number" value="${(child.duration !== undefined && child.duration !== null) ? child.duration : ''}" min="0"
 							oninput="window.updateChild(${idx}, 'duration', parseInt(this.value) || null)"
 							placeholder="20"
 							class="w-12 bg-zinc-100 dark:bg-zinc-800 border-none rounded px-1 py-0.5 text-xs text-zinc-700 dark:text-zinc-300 outline-none focus:ring-1 focus:ring-indigo-500 text-center font-bold">

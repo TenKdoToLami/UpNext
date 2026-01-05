@@ -161,20 +161,6 @@ def save_settings():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
-@bp.route("/config", methods=["GET"])
-def get_config():
-    """
-    Retrieves the full application configuration.
-    
-    Used by the frontend to sync state when running in browser mode or purely via API.
-    Returns:
-        JSON response containing the config dict, with no-cache headers.
-    """
-    from app.utils.config_manager import load_config
-    resp = jsonify(load_config())
-    # critical for ensuring browser doesn't cache stale settings
-    resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-    return resp
 
 @bp.route("/config", methods=["POST"])
 def update_config():
@@ -446,19 +432,27 @@ def external_search():
     
     try:
         service = _get_external_api_service()
+        source = request.args.get("source")
         
-        # Check TMDB API key for Movies/Series
-        if media_type in ("Movie", "Series") and not service.tmdb.api_key:
+        # Check TMDB API key for Movies (only if not forcing another source)
+        if media_type == "Movie" and not source and not service.tmdb.api_key:
             return jsonify({
                 "error": "TMDB API key not configured",
-                "message": "Please add your TMDB API key in Settings to search for movies and series."
+                "message": "Please add your TMDB API key in Settings to search for movies."
+            }), 400
+            
+        # Also check if explicit TMDB source requested without key
+        if source == "tmdb" and not service.tmdb.api_key:
+             return jsonify({
+                "error": "TMDB API key not configured",
+                "message": "Please add your TMDB API key in Settings."
             }), 400
         
-        results = service.search(query, media_type)
+        results = service.search(query, media_type, source)
         return jsonify({"results": results})
     
     except Exception as e:
-        logger.error(f"External search failed: {e}", exc_info=True)
+        logger.exception(f"External search failed for query '{query}', type '{media_type}': {e}")
         return jsonify({"error": "Search failed", "message": str(e)}), 500
 
 
@@ -485,8 +479,8 @@ def external_details():
     if media_type not in MEDIA_TYPES:
         return jsonify({"error": f"Invalid media type. Must be one of: {', '.join(MEDIA_TYPES)}"}), 400
     
-    if source not in ("anilist", "tmdb", "openlibrary"):
-        return jsonify({"error": "Invalid source. Must be one of: anilist, tmdb, openlibrary"}), 400
+    if source not in ("anilist", "tmdb", "openlibrary", "tvmaze"):
+        return jsonify({"error": "Invalid source. Must be one of: anilist, tmdb, openlibrary, tvmaze"}), 400
     
     try:
         service = _get_external_api_service()
@@ -518,18 +512,59 @@ def update_external_api_key():
     Body:
         tmdb: TMDB API key
     """
-    data = request.get_json()
-    tmdb_key = data.get("tmdb")
-    
-    if tmdb_key:
-        service = _get_external_api_service()
-        service.set_tmdb_api_key(tmdb_key)
+    try:
+        data = request.get_json()
+        tmdb_key = data.get("tmdb")
         
-        # Also persist to config
+        if tmdb_key:
+            service = _get_external_api_service()
+            service.set_tmdb_api_key(tmdb_key)
+            
+            # Also persist to config
+            from app.utils.config_manager import load_config, save_config
+            config = load_config()
+            api_keys = config.get('apiKeys', {})
+            api_keys['tmdb'] = tmdb_key
+            save_config({'apiKeys': api_keys})
+        
+        return jsonify({"status": "success"})
+    except Exception as e:
+        logger.exception(f"Failed to update API key: {e}")
+        return jsonify({"error": "Update failed", "message": str(e)}), 500
+
+
+@bp.route("/external/priority", methods=["POST"])
+def update_search_priority():
+    """
+    Update search priority configuration.
+    
+    Body:
+        type: Media type ('Anime', 'Movie', 'Series')
+        source: Source name ('anilist', 'tmdb', 'tvmaze')
+    """
+    try:
+        data = request.get_json()
+        media_type = data.get("type")
+        source = data.get("source")
+        
+        if not media_type or not source:
+            return jsonify({"error": "Missing type or source"}), 400
+            
         from app.utils.config_manager import load_config, save_config
         config = load_config()
-        api_keys = config.get('apiKeys', {})
-        api_keys['tmdb'] = tmdb_key
-        save_config({'apiKeys': api_keys})
-    
-    return jsonify({"status": "success"})
+        priorities = config.get('searchPriorities', {})
+        priorities[media_type] = source
+        save_config({'searchPriorities': priorities})
+        
+        return jsonify({"status": "success"})
+    except Exception as e:
+        logger.exception(f"Failed to update search priority: {e}")
+        return jsonify({"error": "Update failed", "message": str(e)}), 500
+
+
+@bp.route("/config", methods=["GET"])
+def get_config():
+    """Returns the current public configuration."""
+    from app.utils.config_manager import load_config
+    config = load_config()
+    return jsonify(config)

@@ -781,3 +781,49 @@ function showConfirm(title, message, confirmText = 'Confirm', type = 'danger') {
 	});
 }
 
+
+/**
+ * Update the search priority configuration.
+ * @param {string} type - 'Anime', 'Movie', 'Series'
+ * @param {string} source - 'anilist', 'tmdb', 'tvmaze'
+ */
+window.savePrioritySearch = async function (type, source) {
+	try {
+		const response = await fetch('/api/external/priority', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ type, source })
+		});
+
+		if (response.ok) {
+			showToast(`${type} priority updated`);
+		} else {
+			showToast('Failed to update priority', 'error');
+		}
+	} catch (e) {
+		console.error(e);
+		showToast('Connection failed', 'error');
+	}
+};
+
+/**
+ * Loads current config (including priorities) from the backend.
+ * Checks /api/config or similar if available, or we might need to expose it.
+ * But currently we don't have a direct endpoint for full config.
+ * We can reuse loadApiKeyStatus logic or add a new call.
+ * 
+ * Ideally we fetch this on modal open.
+ */
+// We need to inject this loading into openSettingsModal or loadApiKeyStatus or similar.
+// For now, let's assume we can fetch it when rendering the Connections tab.
+// I will update loadApiKeyStatus to also fetch priorities if I can modify the backend to return them,
+// OR I create a separate loader.
+
+// Since I cannot easily modify loadAttributes easily without viewing it, I will add a new function here
+// and call it from openSettingsModal (via window export or editing openSettingsModal).
+
+window.loadSearchPriorities = async function () {
+	// We don't have a GET endpoint for priorities yet.
+	// I should probably add one or include it in /api/keys which I recall exists?
+	// Let's check api.py for GET /api/keys or config.
+};

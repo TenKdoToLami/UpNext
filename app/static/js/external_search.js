@@ -16,7 +16,8 @@ import { resetWizardFields } from './wizard_logic.js';
 const SOURCE_CONFIG = {
     anilist: { name: 'AniList', icon: 'sparkles', color: 'text-blue-400' },
     tmdb: { name: 'TMDB', icon: 'film', color: 'text-green-400' },
-    openlibrary: { name: 'Open Library', icon: 'book-open', color: 'text-amber-400' }
+    openlibrary: { name: 'Open Library', icon: 'book-open', color: 'text-amber-400' },
+    tvmaze: { name: 'TVMaze', icon: 'tv', color: 'text-teal-400' }
 };
 
 // Debounce timer
@@ -24,6 +25,8 @@ let searchDebounceTimer = null;
 
 // Current search state
 let currentSearchType = '';
+let currentSearchSource = '';
+let searchPriorities = {};
 let currentResults = [];
 
 /**
@@ -58,7 +61,44 @@ export function openExternalSearchModal(mediaType) {
     // Focus input
     setTimeout(() => input?.focus(), 100);
 
+
+    // Fetch configuration to determine priority source
+    fetch('/api/config')
+        .then(res => res.json())
+        .then(config => {
+            searchPriorities = config.searchPriorities || {};
+
+            // Determine effective source
+            currentSearchSource = searchPriorities[mediaType] || null;
+
+            if (!currentSearchSource) {
+                // Defaults matching backend logic
+                if (['Anime', 'Manga'].includes(mediaType)) currentSearchSource = 'anilist';
+                else if (mediaType === 'Movie') currentSearchSource = 'tmdb';
+                else if (mediaType === 'Series') currentSearchSource = 'tmdb'; // Default to TMDB, will fallback to TVMaze in backend if no key but UI considers TMDB primary
+                else if (mediaType === 'Book') currentSearchSource = 'openlibrary';
+            }
+
+            updateSearchHeader();
+        })
+        .catch(err => console.error("Failed to load search config", err));
+
     safeCreateIcons();
+}
+
+function updateSearchHeader() {
+    const btn = document.querySelector('button[onclick="window.toggleSearchInput()"]');
+    if (btn && currentSearchSource) {
+        const config = SOURCE_CONFIG[currentSearchSource] || { name: 'External', icon: 'globe' };
+        btn.innerHTML = `
+            <div class="flex items-center gap-2 text-zinc-400 group-hover:text-zinc-200 transition-colors">
+                 <i data-lucide="${config.icon}" class="w-3 h-3"></i>
+                 <span class="text-[10px] font-bold uppercase tracking-wider">Searching in ${config.name}</span>
+            </div>
+            <i id="searchInputArrow" data-lucide="chevron-up" class="w-3 h-3 text-zinc-600 group-hover:text-zinc-400 transition-transform"></i>
+        `;
+        safeCreateIcons();
+    }
 }
 
 /**
@@ -84,8 +124,18 @@ function createSearchModal() {
 					</button>
 				</div>
 				
+				<!-- Search Controls Header -->
+                <button onclick="window.toggleSearchInput()" 
+                    class="w-full flex items-center justify-between px-4 py-2 bg-zinc-800/30 hover:bg-zinc-800/50 border-b border-zinc-800 transition-colors group">
+                    <div class="flex items-center gap-2 text-zinc-500 group-hover:text-zinc-300 transition-colors">
+                         <i data-lucide="filter" class="w-3 h-3"></i>
+                         <span class="text-[10px] font-bold uppercase tracking-wider">Search Parameters</span>
+                    </div>
+                    <i id="searchInputArrow" data-lucide="chevron-up" class="w-3 h-3 text-zinc-600 group-hover:text-zinc-400 transition-transform"></i>
+                </button>
+
 				<!-- Search Input -->
-				<div class="p-4 border-b border-zinc-800">
+				<div id="externalSearchInputContainer" class="p-4 border-b border-zinc-800 transition-all origin-top">
 					<div class="relative">
 						<i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500"></i>
 						<input 
@@ -191,7 +241,7 @@ async function performSearch(query) {
         currentResults = data.results || [];
 
         if (currentResults.length === 0) {
-            resultsContainer.innerHTML = renderNoResults(query);
+            resultsContainer.innerHTML = renderNoResults(query) + renderSecondarySearchOptions(query);
         } else {
             resultsContainer.innerHTML = renderResults(currentResults);
         }
@@ -203,6 +253,106 @@ async function performSearch(query) {
         if (spinner) spinner.classList.add('hidden');
         safeCreateIcons();
     }
+}
+
+/**
+ * Handles secondary search (e.g. Anime in TMDB, Series in AniList)
+ */
+window.performSecondarySearch = async function (source) {
+    const query = document.getElementById('externalSearchInput').value.trim();
+    if (!query) return;
+
+    const spinner = document.getElementById(`secondary-spinner-${source}`);
+    const button = document.getElementById(`secondary-btn-${source}`);
+    const resultsContainer = document.getElementById(`secondary-results-${source}`);
+
+    // UI Loading state
+    if (spinner) spinner.classList.remove('hidden');
+    if (button) button.classList.add('opacity-50', 'pointer-events-none');
+
+    try {
+        const response = await fetch(`/api/external/search?q=${encodeURIComponent(query)}&type=${encodeURIComponent(currentSearchType)}&source=${source}`);
+        const data = await response.json();
+
+        if (!response.ok) {
+            if (resultsContainer) resultsContainer.innerHTML = `<div class="p-3 text-red-400 text-xs text-center">${data.message || 'Search failed'}</div>`;
+            return;
+        }
+
+        const newResults = data.results || [];
+
+        if (newResults.length === 0) {
+            if (resultsContainer) resultsContainer.innerHTML = `<div class="p-3 text-zinc-500 text-xs text-center italic">No additional results found in ${source.toUpperCase()}</div>`;
+        } else {
+            // Append these results to currentResults so index works for selection
+            const startIdx = currentResults.length;
+            currentResults = [...currentResults, ...newResults];
+
+            if (resultsContainer) {
+                resultsContainer.innerHTML = `
+                    <div class="space-y-2 mt-2">
+                        ${newResults.map((item, i) => renderResultCard(item, startIdx + i)).join('')}
+                    </div>
+                `;
+            }
+        }
+
+    } catch (error) {
+        console.error(`Secondary search for ${source} failed:`, error);
+        if (resultsContainer) resultsContainer.innerHTML = `<div class="p-3 text-red-400 text-xs text-center">Connection error</div>`;
+    } finally {
+        if (spinner) spinner.classList.add('hidden');
+        if (button) button.classList.add('hidden'); // Hide button after search
+        safeCreateIcons();
+    }
+};
+
+function renderSecondarySearchOptions(query) {
+    if (!query) return '';
+
+    let secondarySources = [];
+
+    // Define all potential sources for types
+    const sourcesForType = {
+        'Anime': ['anilist', 'tmdb', 'tvmaze'],
+        'Series': ['tmdb', 'tvmaze', 'anilist'],
+        'Movie': ['tmdb', 'anilist'],
+        'Manga': ['anilist'],
+        'Book': ['openlibrary']
+    };
+
+    const candidates = sourcesForType[currentSearchType] || [];
+
+    // Filter out the current primary source
+    secondarySources = candidates
+        .filter(id => id !== currentSearchSource)
+        .map(id => ({ id, ...SOURCE_CONFIG[id] }));
+
+    if (secondarySources.length === 0) return '';
+
+    return `
+        <div class="mt-6 pt-4 border-t border-zinc-800">
+            <div class="text-[10px] uppercase font-bold text-zinc-500 mb-3 tracking-wider text-center">Search Also In</div>
+            <div class="space-y-4">
+                ${secondarySources.map(src => `
+                    <div class="bg-zinc-900/30 rounded-xl overflow-hidden border border-zinc-800/50">
+                        <button id="secondary-btn-${src.id}" onclick="window.performSecondarySearch('${src.id}')" 
+                            class="w-full flex items-center justify-between p-3 hover:bg-zinc-800 transition-colors group">
+                            <div class="flex items-center gap-2 text-zinc-400 group-hover:text-zinc-300">
+                                <i data-lucide="${src.icon}" class="w-4 h-4"></i>
+                                <span class="text-xs font-medium">Search in ${src.name}</span>
+                            </div>
+                            <div id="secondary-spinner-${src.id}" class="hidden animate-spin">
+                                <i data-lucide="loader-2" class="w-3 h-3 text-indigo-500"></i>
+                            </div>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-zinc-600 group-hover:text-zinc-500 transition-transform"></i>
+                        </button>
+                        <div id="secondary-results-${src.id}" class="empty:hidden"></div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
 }
 
 /**
@@ -277,9 +427,9 @@ function renderApiKeyMissing() {
  */
 function renderResults(results) {
     return `
-		<div class="space-y-2">
 			${results.map((item, index) => renderResultCard(item, index)).join('')}
 		</div>
+        ${renderSecondarySearchOptions(document.getElementById('externalSearchInput').value)}
 	`;
 }
 
@@ -532,23 +682,50 @@ function prefillWizardFromExternal(data) {
         pageInput.dispatchEvent(new Event('input', { bubbles: true }));
     }
 
-    // Auto-populate Season 1 for Anime/Series
-    if (['Anime', 'Series'].includes(currentSearchType) && (data.episodes || data.avg_duration_minutes)) {
+    // Auto-populate Seasons for Anime/Series
+    if (['Anime', 'Series'].includes(currentSearchType)) {
         if (!state.currentChildren) state.currentChildren = [];
 
-        let season1 = state.currentChildren.find(c => c.title.toLowerCase().startsWith('season 1'));
-        if (!season1) {
-            season1 = {
-                id: crypto.randomUUID(),
-                title: 'Season 1',
-                rating: 0
-            };
-            state.currentChildren.push(season1);
-        }
+        if (data.seasons && data.seasons.length > 0) {
+            data.seasons.forEach(s => {
+                const title = `Season ${s.number}`;
+                // Check if this season already exists
+                let season = state.currentChildren.find(c =>
+                    c.title.toLowerCase() === title.toLowerCase() ||
+                    c.title.toLowerCase() === `season ${s.number}`.toLowerCase()
+                );
 
-        season1.hasDetails = true;
-        if (data.episodes) season1.episodes = data.episodes;
-        if (data.avg_duration_minutes) season1.duration = data.avg_duration_minutes;
+                if (!season) {
+                    season = {
+                        id: crypto.randomUUID(),
+                        title: title,
+                        rating: 0
+                    };
+                    state.currentChildren.push(season);
+                }
+
+                season.hasDetails = true;
+                if (s.episodes !== undefined && s.episodes !== null) season.episodes = s.episodes;
+                if (s.duration !== undefined && s.duration !== null) season.duration = s.duration;
+                // Add release date if we have a field for it in child entries
+                if (s.release_date) season.release_date = s.release_date;
+            });
+        } else if (data.episodes || data.avg_duration_minutes) {
+            // Fallback: Populate Season 1 if no specific seasons list available
+            let season1 = state.currentChildren.find(c => c.title.toLowerCase().startsWith('season 1'));
+            if (!season1) {
+                season1 = {
+                    id: crypto.randomUUID(),
+                    title: 'Season 1',
+                    rating: 0
+                };
+                state.currentChildren.push(season1);
+            }
+
+            season1.hasDetails = true;
+            if (data.episodes) season1.episodes = data.episodes;
+            if (data.avg_duration_minutes) season1.duration = data.avg_duration_minutes;
+        }
 
         if (window.renderChildren) window.renderChildren();
     }
@@ -580,22 +757,23 @@ function prefillWizardFromExternal(data) {
             // Strict naming based on media type for known sources
             let sourceName = 'External';
 
-            if (currentSearchType === 'Book' || (data.source && data.source.toLowerCase() === 'openlibrary')) {
+            if (data.source && data.source.toLowerCase() === 'tvmaze') {
+                sourceName = 'TVMaze';
+            } else if (data.source && data.source.toLowerCase() === 'anilist') {
+                sourceName = 'AniList';
+            } else if (data.source && data.source.toLowerCase() === 'tmdb') {
+                sourceName = 'TMDB';
+            } else if (data.source && data.source.toLowerCase() === 'openlibrary') {
+                sourceName = 'Open Library';
+            } else if (currentSearchType === 'Book') {
                 sourceName = 'Open Library';
             } else if (currentSearchType === 'Anime' || currentSearchType === 'Manga') {
-                sourceName = 'AniList'; // Validated casing
+                sourceName = 'AniList';
             } else if (currentSearchType === 'Movie' || currentSearchType === 'Series') {
                 sourceName = 'TMDB';
             } else if (data.source) {
-                // Fallback to data source only if not one of the above types
                 const key = data.source.toLowerCase();
-                if (SOURCE_CONFIG[key]) {
-                    sourceName = SOURCE_CONFIG[key].name;
-                } else if (key === 'openlibrary') {
-                    sourceName = 'Open Library';
-                } else {
-                    sourceName = data.source.charAt(0).toUpperCase() + data.source.slice(1);
-                }
+                sourceName = data.source.charAt(0).toUpperCase() + data.source.slice(1);
             }
 
             state.currentLinks.push({

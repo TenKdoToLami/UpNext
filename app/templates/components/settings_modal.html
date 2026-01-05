@@ -35,7 +35,7 @@
 			</button>
 			<button onclick="switchSettingsTab('other')" id="tab-other"
 				class="settings-tab-btn px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-white dark:hover:bg-zinc-900 border border-transparent hover:border-zinc-200 dark:hover:border-zinc-800">
-				Other
+				other
 			</button>
 		</div>
 
@@ -80,18 +80,22 @@
 				</div>
 			</div>
 
-			<!-- Other / System Settings -->
+			<!-- Connections Settings -->
 			<div id="settings-other" class="settings-panel hidden space-y-6">
 				<div class="space-y-4">
 					<h3 class="text-sm font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 mb-2">
-						System & Library
+						App Connections & System
 					</h3>
 
 					<div
 						class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 flex items-center justify-between">
 						<div>
-							<div class="font-bold text-zinc-900 dark:text-white">Auto Select Last Active Database</div>
-							<div class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">Skip database selection screen on
+							<div class="font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+								<i data-lucide="database" class="w-4 h-4 text-indigo-500"></i>
+								Auto Select Last Active Database
+							</div>
+							<div class="text-xs text-zinc-500 dark:text-zinc-400 mt-1 ml-6">Skip database selection
+								screen on
 								startup
 							</div>
 						</div>
@@ -104,50 +108,157 @@
 						</label>
 					</div>
 
-					<div
-						class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 flex items-center justify-between">
-						<div>
-							<div class="font-bold text-zinc-900 dark:text-white">Open Window on Launch</div>
-							<div class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">Open main window when starting
-								from Tray</div>
+					<!-- API Keys Section -->
+					<div class="border-t border-zinc-200 dark:border-zinc-800 pt-6 mt-6">
+						<h3
+							class="text-sm font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 mb-4 flex items-center gap-2">
+							<i data-lucide="key" class="w-4 h-4 text-amber-500"></i>
+							External Data Connections
+						</h3>
+						<div
+							class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 space-y-6">
+							<div>
+								<div class="flex items-center justify-between mb-2">
+									<label
+										class="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider block">
+										TMDB API Key
+									</label>
+									<span
+										class="px-2 py-0.5 bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-bold rounded uppercase">Required
+										for Movies</span>
+								</div>
+								<div class="flex gap-2">
+									<input type="password" id="setting-tmdbApiKey"
+										placeholder="Enter your TMDB API key..."
+										class="flex-1 bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm px-3 py-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:text-white placeholder-zinc-400 font-mono transition-all">
+									<button onclick="window.saveTmdbApiKey()"
+										class="px-6 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-xs font-bold transition-all shadow-md shadow-indigo-500/10 active:scale-95">
+										Save Key
+									</button>
+								</div>
+								<div
+									class="flex items-start gap-2 mt-3 p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-lg border border-zinc-100 dark:border-zinc-800">
+									<i data-lucide="info" class="w-4 h-4 text-indigo-500 mt-0.5"></i>
+									<p class="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
+										TMDB provides high-quality metadata for movies. Get your free API key at
+										<a href="https://www.themoviedb.org/settings/api" target="_blank"
+											class="text-indigo-500 hover:underline font-bold">themoviedb.org</a>.
+										<span class="block mt-1 text-zinc-400 italic">Anime, Manga, Books, and Series
+											are available for free without a key.</span>
+									</p>
+								</div>
+							</div>
 						</div>
-						<label class="relative inline-flex items-center cursor-pointer">
-							<input type="checkbox" class="sr-only peer" id="setting-openWindowOnStart"
-								onchange="window.toggleOpenWindowOnStart(this.checked)">
+					</div>
+
+					<!-- Priority Search Section -->
+					<div class="border-t border-zinc-200 dark:border-zinc-800 pt-6 mt-6">
+						<h3
+							class="text-sm font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 mb-4 flex items-center gap-2">
+							<i data-lucide="list-filter" class="w-4 h-4 text-emerald-500"></i>
+							Primary Search Sources
+						</h3>
+						<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+							<!-- Anime Priority -->
 							<div
-								class="w-11 h-6 bg-zinc-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600">
+								class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4">
+								<div class="flex items-center gap-2 mb-3">
+									<i data-lucide="sparkles" class="w-4 h-4 text-pink-500"></i>
+									<span
+										class="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400">Anime</span>
+								</div>
+								<select id="priority-anime" onchange="window.savePrioritySearch('Anime', this.value)"
+									class="w-full bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs font-bold text-zinc-700 dark:text-zinc-300 py-2 px-3 outline-none focus:ring-2 focus:ring-indigo-500">
+									<option value="anilist" selected>AniList (Default)</option>
+									<option value="tmdb">TMDB</option>
+									<option value="tvmaze">TVMaze</option>
+								</select>
 							</div>
-						</label>
+
+							<!-- Series Priority -->
+							<div
+								class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4">
+								<div class="flex items-center gap-2 mb-3">
+									<i data-lucide="tv" class="w-4 h-4 text-blue-500"></i>
+									<span
+										class="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400">Series</span>
+								</div>
+								<select id="priority-series" onchange="window.savePrioritySearch('Series', this.value)"
+									class="w-full bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs font-bold text-zinc-700 dark:text-zinc-300 py-2 px-3 outline-none focus:ring-2 focus:ring-indigo-500">
+									<option value="tmdb" selected>TMDB (Default)</option>
+									<option value="tvmaze">TVMaze</option>
+									<option value="anilist">AniList</option>
+								</select>
+							</div>
+
+							<!-- Movie Priority -->
+							<div
+								class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4">
+								<div class="flex items-center gap-2 mb-3">
+									<i data-lucide="film" class="w-4 h-4 text-purple-500"></i>
+									<span
+										class="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400">Movies</span>
+								</div>
+								<select id="priority-movie" onchange="window.savePrioritySearch('Movie', this.value)"
+									class="w-full bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs font-bold text-zinc-700 dark:text-zinc-300 py-2 px-3 outline-none focus:ring-2 focus:ring-indigo-500">
+									<option value="tmdb" selected>TMDB (Default)</option>
+									<option value="anilist">AniList</option>
+								</select>
+							</div>
+						</div>
 					</div>
 
-					<div
-						class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 flex items-center justify-between">
-						<div>
-							<div class="font-bold text-zinc-900 dark:text-white">Tray Click Behavior</div>
-							<div class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">Action when clicking the system
-								tray icon</div>
-						</div>
-						<select id="setting-trayClickAction" onchange="window.setTrayClickAction(this.value)"
-							class="bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:text-white">
-							<option value="native">Open App Window</option>
-							<option value="browser">Open in Browser</option>
-						</select>
-					</div>
+					<div class="border-t border-zinc-200 dark:border-zinc-800 pt-6 mt-6">
+						<h3
+							class="text-sm font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 mb-4 flex items-center gap-2">
+							<i data-lucide="monitor" class="w-4 h-4 text-indigo-500"></i>
+							System Behavior
+						</h3>
+						<div class="space-y-3">
+							<div
+								class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 flex items-center justify-between">
+								<div>
+									<div class="font-bold text-zinc-900 dark:text-white">Open Window on Launch</div>
+									<div class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">Open main window when
+										starting from Tray</div>
+								</div>
+								<label class="relative inline-flex items-center cursor-pointer">
+									<input type="checkbox" class="sr-only peer" id="setting-openWindowOnStart"
+										onchange="window.toggleOpenWindowOnStart(this.checked)">
+									<div
+										class="w-11 h-6 bg-zinc-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600">
+									</div>
+								</label>
+							</div>
 
-					<div
-						class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 flex items-center justify-between">
-						<div>
-							<div class="font-bold text-zinc-900 dark:text-white">Close Window Behavior</div>
-							<div class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">What happens when you close the
-								window
+							<div
+								class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 flex items-center justify-between">
+								<div>
+									<div class="font-bold text-zinc-900 dark:text-white">Tray Click Behavior</div>
+									<div class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">Action when clicking the
+										system tray icon</div>
+								</div>
+								<select id="setting-trayClickAction" onchange="window.setTrayClickAction(this.value)"
+									class="bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:text-white">
+									<option value="native">Open App Window</option>
+									<option value="browser">Open in Browser</option>
+								</select>
+							</div>
+
+							<div
+								class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 flex items-center justify-between">
+								<div>
+									<div class="font-bold text-zinc-900 dark:text-white">Close Window Behavior</div>
+									<div class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">What happens when you
+										close the window</div>
+								</div>
+								<select id="setting-closeBehavior" onchange="window.setCloseBehavior(this.value)"
+									class="bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:text-white">
+									<option value="minimize">Minimize to Tray</option>
+									<option value="exit">Exit Completely</option>
+								</select>
 							</div>
 						</div>
-						<select id="setting-closeBehavior" onchange="window.setCloseBehavior(this.value)"
-							class="bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:text-white">
-							<option value="minimize">Minimize to Tray</option>
-							<option value="exit">Exit Completely</option>
-
-						</select>
 					</div>
 
 					<div
@@ -160,37 +271,6 @@
 							class="px-3 py-1.5 bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-lg text-xs font-bold hover:bg-indigo-500 hover:text-white transition-all shadow-sm">
 							Switch Database
 						</button>
-					</div>
-
-					<!-- API Keys Section -->
-					<div class="border-t border-zinc-200 dark:border-zinc-800 pt-6 mt-6">
-						<h3
-							class="text-sm font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 mb-4 flex items-center gap-2">
-							<i data-lucide="key" class="w-4 h-4"></i>
-							API Keys
-						</h3>
-						<div
-							class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 space-y-4">
-							<div>
-								<label
-									class="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-2 block">
-									TMDB API Key <span class="normal-case font-normal">(for Movies & Series)</span>
-								</label>
-								<div class="flex gap-2">
-									<input type="password" id="setting-tmdbApiKey"
-										placeholder="Enter your TMDB API key..."
-										class="flex-1 bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:text-white placeholder-zinc-400 font-mono">
-									<button onclick="window.saveTmdbApiKey()"
-										class="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-xs font-bold transition-colors">
-										Save
-									</button>
-								</div>
-								<p class="text-[10px] text-zinc-400 mt-2">
-									Get a free key from <a href="https://www.themoviedb.org/settings/api"
-										target="_blank" class="text-indigo-500 hover:underline">themoviedb.org</a>
-								</p>
-							</div>
-						</div>
 					</div>
 				</div>
 			</div>
