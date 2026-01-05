@@ -641,7 +641,12 @@ export function updateChild(idx, field, val) {
  * @param {number} idx - Index of the child.
  * @param {number} rating - New rating value (1-4).
  */
-export function updateChildRating(idx, rating) { state.currentChildren[idx].rating = rating; renderChildren(); }
+export function updateChildRating(idx, rating) {
+	const current = state.currentChildren[idx].rating;
+	// Toggle: If clicking the same rating, set to 0 (Unrated)
+	state.currentChildren[idx].rating = (current === rating) ? 0 : rating;
+	renderChildren();
+}
 
 /**
  * Toggles the hasDetails flag on a child item to show/hide metadata fields.

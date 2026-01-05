@@ -415,28 +415,52 @@ class TMDBClient(BaseAPIClient):
 
         # Runtime
         runtime = data.get("runtime")  # Movies
-        if not runtime and data.get("episode_run_time"):
+        if not runtime:
+            # Check episode run times (list)
             runtimes = data.get("episode_run_time", [])
             if runtimes:
                 runtime = sum(runtimes) // len(runtimes)
-            else:
-                runtime = None
+            
+            # Fallback 1: Last episode to air
+            if not runtime:
+                last_ep = data.get("last_episode_to_air") or {}
+                if last_ep.get("runtime"):
+                    runtime = last_ep.get("runtime")
+            
+            # Fallback 2: Next episode to air
+            if not runtime:
+                next_ep = data.get("next_episode_to_air") or {}
+                if next_ep.get("runtime"):
+                    runtime = next_ep.get("runtime")
 
         # Episode/Season count for Series
         episodes = data.get("number_of_episodes")
         seasons = data.get("number_of_seasons")
 
         seasons_list = []
-        if media_type == "Series" and data.get("seasons"):
-            for s in data["seasons"]:
-                if s.get("season_number") == 0: continue 
-                
-                seasons_list.append({
-                    "number": s.get("season_number"),
-                    "episodes": s.get("episode_count"),
-                    "duration": runtime,
-                    "release_date": s.get("air_date")
-                })
+        if media_type == "Series":
+            # If we have season data from API, use it
+            if data.get("seasons"):
+                for s in data["seasons"]:
+                    if s.get("season_number") == 0: continue 
+                    
+                    seasons_list.append({
+                        "number": s.get("season_number"),
+                        "episodes": s.get("episode_count") or 0,
+                        "duration": runtime or 0,
+                        "release_date": s.get("air_date")
+                    })
+            
+            # Fallback: If no season details but we have a season count, generate placeholders
+            # This handles cases where API returns "number_of_seasons" but empty "seasons" list or we want to ensure count matches
+            elif seasons and seasons > 0:
+                for i in range(1, seasons + 1):
+                    seasons_list.append({
+                        "number": i,
+                        "episodes": 0,
+                        "duration": runtime or 0,
+                        "release_date": None
+                    })
 
         return {
             "id": str(data["id"]),
@@ -655,13 +679,40 @@ class TVMazeAPI(BaseAPIClient):
         seasons_data = []
         total_episodes = 0
         embedded = show.get("_embedded", {})
+        
+        # Check if we need to fetch episodes manually (if any season lacks episodeOrder)
+        needs_manual_count = False
         for s in embedded.get("seasons", []):
+            if s.get("episodeOrder") is None:
+                needs_manual_count = True
+                break
+        
+        episode_counts = {}
+        if needs_manual_count:
+            try:
+                ep_resp = requests.get(f"{self.BASE_URL}/shows/{external_id}/episodes", timeout=10)
+                ep_resp.raise_for_status()
+                all_eps = ep_resp.json()
+                for ep in all_eps:
+                    s_num = ep.get("season")
+                    if s_num:
+                        episode_counts[s_num] = episode_counts.get(s_num, 0) + 1
+            except Exception as e:
+                logger.warning(f"Failed to fetch manual episode counts for TVMaze: {e}")
+
+        for s in embedded.get("seasons", []):
+            s_num = s.get("number")
             ep_count = s.get("episodeOrder")
+            
+            # Use manual count if explicit order is missing
+            if ep_count is None and s_num in episode_counts:
+                ep_count = episode_counts[s_num]
+            
             if ep_count:
                 total_episodes += ep_count
                 
             seasons_data.append({
-                "number": s.get("number"),
+                "number": s_num,
                 "episodes": ep_count, 
                 "duration": show.get("averageRuntime"),
                 "release_date": s.get("premiereDate")
