@@ -28,7 +28,6 @@ logger = logging.getLogger(__name__)
 def get_items():
     """Retrieve all library items, sorted by recently updated."""
     items = data_manager.get_items()
-    # Sort by updatedAt descending for the frontend
     items.sort(key=lambda x: x.get("updatedAt", ""), reverse=True)
     return jsonify(items)
 
@@ -44,12 +43,10 @@ def get_db_status():
     from app.utils.config_manager import load_config
     
     available = list_available_databases()
-    # Update cache if needed
     current_app.config["AVAILABLE_DBS"] = available
     
-    # Check if a config file actually exists with a selection
     config = load_config()
-    has_config = 'last_db' in config or 'active_db' in config # Check explicit keys
+    has_config = 'last_db' in config or 'active_db' in config
     
     return jsonify({
         "active": current_app.config.get("ACTIVE_DB"),
@@ -76,14 +73,11 @@ def select_database():
         new_path = get_sqlite_db_path(db_name)
         new_uri = f"sqlite:///{new_path}"
         
-        # Update SQLAlchemy configuration
         current_app.config["SQLALCHEMY_DATABASE_URI"] = new_uri
         
-        # Dispose of current engine and session
         db.engine.dispose()
         db.session.remove()
         
-        # Reconfigure database engine
         new_engine = create_engine(new_uri)
         if hasattr(db, 'engines'):
             db.engines.clear()
@@ -114,7 +108,6 @@ def create_database():
     if not db_name:
         return jsonify({"status": "error", "message": "Database name is required"}), 400
 
-    # Sanitize inputs (basic alphanumeric check)
     if not db_name.replace('_', '').replace('-', '').isalnum():
         return jsonify({"status": "error", "message": "Invalid characters in database name"}), 400
     
@@ -434,14 +427,12 @@ def external_search():
         service = _get_external_api_service()
         source = request.args.get("source")
         
-        # Check TMDB API key for Movies (only if not forcing another source)
         if media_type == "Movie" and not source and not service.tmdb.api_key:
             return jsonify({
                 "error": "TMDB API key not configured",
                 "message": "Please add your TMDB API key in Settings to search for movies."
             }), 400
             
-        # Also check if explicit TMDB source requested without key
         if source == "tmdb" and not service.tmdb.api_key:
              return jsonify({
                 "error": "TMDB API key not configured",
@@ -479,8 +470,8 @@ def external_details():
     if media_type not in MEDIA_TYPES:
         return jsonify({"error": f"Invalid media type. Must be one of: {', '.join(MEDIA_TYPES)}"}), 400
     
-    if source not in ("anilist", "tmdb", "openlibrary", "tvmaze"):
-        return jsonify({"error": "Invalid source. Must be one of: anilist, tmdb, openlibrary, tvmaze"}), 400
+    if source not in ("anilist", "tmdb", "openlibrary", "tvmaze", "mangadex", "googlebooks", "comicvine"):
+        return jsonify({"error": "Invalid source"}), 400
     
     try:
         service = _get_external_api_service()
@@ -515,17 +506,32 @@ def update_external_api_key():
     try:
         data = request.get_json()
         tmdb_key = data.get("tmdb")
+        googlebooks_key = data.get("googlebooks")
+        comicvine_key = data.get("comicvine")
+        
+        service = _get_external_api_service()
+        
+        # Load current config to update
+        from app.utils.config_manager import load_config, save_config
+        config = load_config()
+        api_keys = config.get('apiKeys', {})
         
         if tmdb_key:
-            service = _get_external_api_service()
             service.set_tmdb_api_key(tmdb_key)
-            
-            # Also persist to config
-            from app.utils.config_manager import load_config, save_config
-            config = load_config()
-            api_keys = config.get('apiKeys', {})
             api_keys['tmdb'] = tmdb_key
-            save_config({'apiKeys': api_keys})
+            
+        if googlebooks_key:
+            # Add method to service if needed, or just update config for next init
+            if hasattr(service, 'update_keys'):
+                service.update_keys(googlebooks=googlebooks_key)
+            api_keys['googlebooks'] = googlebooks_key
+            
+        if comicvine_key:
+            if hasattr(service, 'update_keys'):
+                service.update_keys(comicvine=comicvine_key)
+            api_keys['comicvine'] = comicvine_key
+            
+        save_config({'apiKeys': api_keys})
         
         return jsonify({"status": "success"})
     except Exception as e:

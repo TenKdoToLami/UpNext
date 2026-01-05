@@ -28,7 +28,6 @@ export function openSettingsModal() {
 	const modal = document.getElementById('settingsModal');
 	if (modal) {
 		modal.classList.remove('hidden');
-		// Force reflow
 		void modal.offsetWidth;
 		modal.classList.remove('opacity-0');
 
@@ -41,8 +40,8 @@ export function openSettingsModal() {
 		// Ensure state is up to date and render
 		renderSettings();
 
-		// Load API key status for the Other tab
-		loadApiKeyStatus();
+		// Load External Config (Keys & Priorities)
+		loadExternalConfig();
 
 		// Reset to default tab (Features)
 		switchSettingsTab('features');
@@ -69,27 +68,84 @@ export async function saveSettingsAndClose() {
 	const btn = document.querySelector('button[onclick="window.saveSettingsAndClose()"]');
 	if (btn) btn.innerHTML = '<i class="animate-spin" data-lucide="loader-2"></i> Saving...';
 
-	// Persist Changes
-	if (pendingAppSettings) {
-		await saveAppSettings(pendingAppSettings);
+	// Cancel any pending auto-save for app settings to avoid race
+	if (typeof saveSettingsTimeout !== 'undefined' && saveSettingsTimeout) {
+		clearTimeout(saveSettingsTimeout);
 	}
 
-	// Apply Changes to UI (Main.js should import and expose applyStateToUI, or we trigger it here if possible)
-	// Since applyStateToUI is in main.js and it's not exported yet, we might need to handle this.
-	// Ideally, we trigger a global event or call a shared function.
-	// For now, assuming applyStateToUI is global or we can access it via window if main.js exposes it?
-	// Actually main.js is the consumer, so we can return/resolve, or dispatch event.
-	// But since this replaces logic in "main.js", we can export a function that main.js calls?
-	// Better: We dispatch a custom event that main.js listens to, OR generic "render everything".
+	// 1. Save API Keys First (Sequential to ensure service updates)
+	// Gather keys from inputs
+	const keysToUpdate = {};
+	const tmdbKey = document.getElementById('setting-tmdbApiKey')?.value?.trim();
+	const googleBooksKey = document.getElementById('setting-googlebooksApiKey')?.value?.trim();
+	const comicVineKey = document.getElementById('setting-comicvineApiKey')?.value?.trim();
 
-	// For now, let's assume we can trigger the UI refresh.
-	// Simplest way: Call the global render functions directly.
+	if (tmdbKey) keysToUpdate.tmdb = tmdbKey;
+	if (googleBooksKey) keysToUpdate.googlebooks = googleBooksKey;
+	if (comicVineKey) keysToUpdate.comicvine = comicVineKey;
+
+	try {
+		if (Object.keys(keysToUpdate).length > 0) {
+			await fetch('/api/external/update-key', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(keysToUpdate)
+			});
+
+			// clear inputs
+			if (tmdbKey) document.getElementById('setting-tmdbApiKey').value = '';
+			if (googleBooksKey) document.getElementById('setting-googlebooksApiKey').value = '';
+			if (comicVineKey) document.getElementById('setting-comicvineApiKey').value = '';
+		}
+	} catch (err) {
+		console.error("Key save failed", err);
+		showToast("Failed to save API keys", "error");
+	}
+
+	// 2. Save Config (AppSettings + Priorities) in ONE Batch
+	const configUpdate = {};
+
+	// App Settings
+	if (pendingAppSettings) {
+		configUpdate.appSettings = pendingAppSettings;
+		// Update local state immediately
+		state.appSettings = { ...state.appSettings, ...pendingAppSettings };
+	}
+
+	// Priorities
+	const prioritiesObj = {};
+	['Anime', 'Manga', 'Book', 'Series', 'Movie'].forEach(type => {
+		const radio = document.querySelector(`input[name="priority-${type.toLowerCase()}"]:checked`);
+		if (radio) {
+			prioritiesObj[type] = radio.value;
+		}
+	});
+	if (Object.keys(prioritiesObj).length > 0) {
+		configUpdate.searchPriorities = prioritiesObj;
+	}
+
+	// Send Config Update
+	if (Object.keys(configUpdate).length > 0) {
+		try {
+			await fetch('/api/config', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(configUpdate)
+			});
+		} catch (err) {
+			console.error("Config save failed", err);
+			showToast("Failed to save settings", "error");
+		}
+	}
+
+	// Apply Changes to UI
 	applySettingsToGlobalUI();
 
 	// Close Modal
 	setTimeout(() => {
 		closeSettingsModal();
 		if (btn) btn.innerHTML = 'Save Changes';
+		showToast('Settings saved successfully', 'success');
 	}, 500);
 }
 
@@ -609,15 +665,27 @@ export function setCloseBehavior(value) {
 }
 
 /**
- * Saves the TMDB API key.
+ * Saves all API keys.
  * Called when the user clicks Save in the API Keys section.
  */
-export async function saveTmdbApiKey() {
-	const input = document.getElementById('setting-tmdbApiKey');
-	const key = input?.value?.trim();
+export async function saveApiKeys() {
+	const tmdbKey = document.getElementById('setting-tmdbApiKey')?.value?.trim();
+	const googleBooksKey = document.getElementById('setting-googlebooksApiKey')?.value?.trim();
+	const comicVineKey = document.getElementById('setting-comicvineApiKey')?.value?.trim();
 
-	if (!key) {
-		showToast('Please enter a valid API key', 'warning');
+	// Construct payload with only non-empty values (unless clearing?)
+	// Actually, user might want to clear a key.
+	// If input is empty but placeholder indicates a key exists, we shouldn't overwrite unless intentional?
+	// Standard practice: If value is present, update. If empty, ignore unless explicit clear action.
+	// However, here we just send what's in the box if it's not empty?
+	// Better: Send map of keys. Backend update_keys updates provided keys.
+	const keysToUpdate = {};
+	if (tmdbKey) keysToUpdate.tmdb = tmdbKey;
+	if (googleBooksKey) keysToUpdate.googlebooks = googleBooksKey;
+	if (comicVineKey) keysToUpdate.comicvine = comicVineKey;
+
+	if (Object.keys(keysToUpdate).length === 0) {
+		showToast('No API keys entered', 'warning');
 		return;
 	}
 
@@ -625,40 +693,89 @@ export async function saveTmdbApiKey() {
 		const response = await fetch('/api/external/update-key', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ tmdb: key })
+			body: JSON.stringify(keysToUpdate)
 		});
 
 		if (response.ok) {
-			showToast('TMDB API key saved successfully', 'success');
-			// Clear input for security (masked display)
-			input.value = '';
-			input.placeholder = '••••••••••••••••';
+			showToast('API keys saved successfully', 'success');
+
+			// Mask inputs
+			if (tmdbKey) {
+				const el = document.getElementById('setting-tmdbApiKey');
+				el.value = '';
+				el.placeholder = '••••••••••••••••';
+			}
+			if (googleBooksKey) {
+				const el = document.getElementById('setting-googlebooksApiKey');
+				el.value = '';
+				el.placeholder = '••••••••••••••••';
+			}
+			if (comicVineKey) {
+				const el = document.getElementById('setting-comicvineApiKey');
+				el.value = '';
+				el.placeholder = '••••••••••••••••';
+			}
+
 		} else {
-			showToast('Failed to save API key', 'error');
+			showToast('Failed to save API keys', 'error');
 		}
 	} catch (error) {
-		console.error('Failed to save TMDB API key:', error);
-		showToast('Failed to save API key', 'error');
+		console.error('Failed to save API keys:', error);
+		showToast('Failed to save API keys', 'error');
 	}
 }
 
 /**
- * Loads the TMDB API key status when settings modal opens.
+ * Legacy wrapper for TMDB specific save (keeping for backward compat if needed, or remove)
+ * We can redirect to generic save.
  */
-export async function loadApiKeyStatus() {
+export async function saveTmdbApiKey() {
+	return saveApiKeys();
+}
+
+/**
+ * Loads the external configuration (API keys & Search Priorities) when settings modal opens.
+ */
+export async function loadExternalConfig() {
 	try {
 		const response = await fetch('/api/config');
 		if (response.ok) {
 			const config = await response.json();
-			const hasKey = !!(config.apiKeys?.tmdb);
-			const input = document.getElementById('setting-tmdbApiKey');
-			if (input) {
-				input.value = '';
-				input.placeholder = hasKey ? '••••••••••••••••' : 'Enter your TMDB API key...';
+
+			// 1. API Keys
+			const keys = config.apiKeys || {};
+			const tmdbInput = document.getElementById('setting-tmdbApiKey');
+			if (tmdbInput) {
+				tmdbInput.value = '';
+				tmdbInput.placeholder = keys.tmdb ? '••••••••••••••••' : 'Enter your TMDB API key...';
 			}
+
+			const gbInput = document.getElementById('setting-googlebooksApiKey');
+			if (gbInput) {
+				gbInput.value = '';
+				gbInput.placeholder = keys.googlebooks ? '••••••••••••••••' : 'Enter your Google Books API key...';
+			}
+
+			const cvInput = document.getElementById('setting-comicvineApiKey');
+			if (cvInput) {
+				cvInput.value = '';
+				cvInput.placeholder = keys.comicvine ? '••••••••••••••••' : 'Enter your Comic Vine API key...';
+			}
+
+			// 2. Search Priorities
+			const priorities = config.searchPriorities || {};
+			// Priorities: Anime, Manga, Book, Series, Movie
+			['Anime', 'Manga', 'Book', 'Series', 'Movie'].forEach(type => {
+				const val = priorities[type];
+				if (val) {
+					// Find the radio with this value and check it
+					const radio = document.querySelector(`input[name="priority-${type.toLowerCase()}"][value="${val}"]`);
+					if (radio) radio.checked = true;
+				}
+			});
 		}
 	} catch (error) {
-		console.error('Failed to load API key status:', error);
+		console.error('Failed to load external config:', error);
 	}
 }
 

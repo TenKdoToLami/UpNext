@@ -12,18 +12,18 @@ import { saveTag } from './api_service.js';
 import { resetWizardFields } from './wizard_logic.js';
 
 
-// Source icons and colors
 const SOURCE_CONFIG = {
     anilist: { name: 'AniList', icon: 'sparkles', color: 'text-blue-400' },
     tmdb: { name: 'TMDB', icon: 'film', color: 'text-green-400' },
     openlibrary: { name: 'Open Library', icon: 'book-open', color: 'text-amber-400' },
-    tvmaze: { name: 'TVMaze', icon: 'tv', color: 'text-teal-400' }
+    tvmaze: { name: 'TVMaze', icon: 'tv', color: 'text-teal-400' },
+    mangadex: { name: 'MangaDex', icon: 'book', color: 'text-orange-400' },
+    googlebooks: { name: 'Google Books', icon: 'search', color: 'text-blue-500' },
+    comicvine: { name: 'Comic Vine', icon: 'zap', color: 'text-yellow-400' }
 };
 
-// Debounce timer
 let searchDebounceTimer = null;
 
-// Current search state
 let currentSearchType = '';
 let currentSearchSource = '';
 let searchPriorities = {};
@@ -34,7 +34,6 @@ let currentResults = [];
  * @param {string} mediaType - The media type to search for (Anime, Manga, Book, Movie, Series)
  */
 export function openExternalSearchModal(mediaType) {
-    // Clear fields from Basic Info onwards before starting a new search
     if (resetWizardFields) resetWizardFields(3);
 
     currentSearchType = mediaType;
@@ -49,33 +48,27 @@ export function openExternalSearchModal(mediaType) {
     const input = document.getElementById('externalSearchInput');
     const resultsContainer = document.getElementById('externalSearchResults');
 
-    // Reset state
     if (typeDisplay) typeDisplay.textContent = mediaType;
     if (input) input.value = '';
     if (resultsContainer) resultsContainer.innerHTML = renderEmptyState();
 
-    // Show modal
     modalEl.classList.remove('hidden');
     modalEl.classList.add('flex');
 
-    // Focus input
     setTimeout(() => input?.focus(), 100);
 
-
-    // Fetch configuration to determine priority source
     fetch('/api/config')
         .then(res => res.json())
         .then(config => {
             searchPriorities = config.searchPriorities || {};
 
-            // Determine effective source
             currentSearchSource = searchPriorities[mediaType] || null;
 
             if (!currentSearchSource) {
-                // Defaults matching backend logic
-                if (['Anime', 'Manga'].includes(mediaType)) currentSearchSource = 'anilist';
+                if (mediaType === 'Anime') currentSearchSource = 'anilist';
+                else if (mediaType === 'Manga') currentSearchSource = 'mangadex';
                 else if (mediaType === 'Movie') currentSearchSource = 'tmdb';
-                else if (mediaType === 'Series') currentSearchSource = 'tmdb'; // Default to TMDB, will fallback to TVMaze in backend if no key but UI considers TMDB primary
+                else if (mediaType === 'Series') currentSearchSource = 'tmdb';
                 else if (mediaType === 'Book') currentSearchSource = 'openlibrary';
             }
 
@@ -124,18 +117,8 @@ function createSearchModal() {
 					</button>
 				</div>
 				
-				<!-- Search Controls Header -->
-                <button onclick="window.toggleSearchInput()" 
-                    class="w-full flex items-center justify-between px-4 py-2 bg-zinc-800/30 hover:bg-zinc-800/50 border-b border-zinc-800 transition-colors group">
-                    <div class="flex items-center gap-2 text-zinc-500 group-hover:text-zinc-300 transition-colors">
-                         <i data-lucide="filter" class="w-3 h-3"></i>
-                         <span class="text-[10px] font-bold uppercase tracking-wider">Search Parameters</span>
-                    </div>
-                    <i id="searchInputArrow" data-lucide="chevron-up" class="w-3 h-3 text-zinc-600 group-hover:text-zinc-400 transition-transform"></i>
-                </button>
-
 				<!-- Search Input -->
-				<div id="externalSearchInputContainer" class="p-4 border-b border-zinc-800 transition-all origin-top">
+				<div id="externalSearchInputContainer" class="p-4 border-b border-zinc-800 transition-all origin-top duration-300">
 					<div class="relative">
 						<i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500"></i>
 						<input 
@@ -150,6 +133,15 @@ function createSearchModal() {
 						</div>
 					</div>
 				</div>
+
+				<!-- Search Controls Header (Searching In Status) -->
+                <div 
+                    class="w-full flex items-center justify-between px-4 py-2 bg-zinc-800/30 border-b border-zinc-800 transition-colors">
+                    <div class="flex items-center gap-2 text-zinc-500">
+                         <i data-lucide="filter" class="w-3 h-3"></i>
+                         <span class="text-[10px] font-bold uppercase tracking-wider">Search Parameters</span>
+                    </div>
+                </div>
 				
 				<!-- Results -->
 				<div id="externalSearchResults" class="max-h-[400px] overflow-y-auto custom-scrollbar p-4">
@@ -243,7 +235,8 @@ async function performSearch(query) {
         if (currentResults.length === 0) {
             resultsContainer.innerHTML = renderNoResults(query) + renderSecondarySearchOptions(query);
         } else {
-            resultsContainer.innerHTML = renderResults(currentResults);
+            // Updated to use the correct function name for grouped results
+            renderSearchResults(currentResults);
         }
 
     } catch (error) {
@@ -258,17 +251,25 @@ async function performSearch(query) {
 /**
  * Handles secondary search (e.g. Anime in TMDB, Series in AniList)
  */
-window.performSecondarySearch = async function (source) {
+/**
+ * Handles secondary search (e.g. Anime in TMDB, Series in AniList)
+ * Triggered by expanding the details element.
+ */
+window.performSecondarySearch = async function (source, detailsEl) {
+    // Only fetch if opening
+    if (!detailsEl.open) return;
+
+    // Check if already loaded to prevent refetch
+    const resultsContainer = document.getElementById(`secondary-results-${source}`);
+    if (resultsContainer && resultsContainer.children.length > 0) return;
+
     const query = document.getElementById('externalSearchInput').value.trim();
     if (!query) return;
 
     const spinner = document.getElementById(`secondary-spinner-${source}`);
-    const button = document.getElementById(`secondary-btn-${source}`);
-    const resultsContainer = document.getElementById(`secondary-results-${source}`);
 
     // UI Loading state
     if (spinner) spinner.classList.remove('hidden');
-    if (button) button.classList.add('opacity-50', 'pointer-events-none');
 
     try {
         const response = await fetch(`/api/external/search?q=${encodeURIComponent(query)}&type=${encodeURIComponent(currentSearchType)}&source=${source}`);
@@ -289,11 +290,15 @@ window.performSecondarySearch = async function (source) {
             currentResults = [...currentResults, ...newResults];
 
             if (resultsContainer) {
-                resultsContainer.innerHTML = `
-                    <div class="space-y-2 mt-2">
-                        ${newResults.map((item, i) => renderResultCard(item, startIdx + i)).join('')}
-                    </div>
-                `;
+                resultsContainer.innerHTML = ''; // Clear container
+                const listWrapper = document.createElement('div');
+                listWrapper.className = 'space-y-2 pb-2';
+
+                newResults.forEach(item => {
+                    listWrapper.appendChild(createResultItem(item));
+                });
+
+                resultsContainer.appendChild(listWrapper);
             }
         }
 
@@ -302,10 +307,10 @@ window.performSecondarySearch = async function (source) {
         if (resultsContainer) resultsContainer.innerHTML = `<div class="p-3 text-red-400 text-xs text-center">Connection error</div>`;
     } finally {
         if (spinner) spinner.classList.add('hidden');
-        if (button) button.classList.add('hidden'); // Hide button after search
         safeCreateIcons();
     }
 };
+
 
 function renderSecondarySearchOptions(query) {
     if (!query) return '';
@@ -317,8 +322,8 @@ function renderSecondarySearchOptions(query) {
         'Anime': ['anilist', 'tmdb', 'tvmaze'],
         'Series': ['tmdb', 'tvmaze', 'anilist'],
         'Movie': ['tmdb', 'anilist'],
-        'Manga': ['anilist'],
-        'Book': ['openlibrary']
+        'Manga': ['mangadex', 'anilist', 'comicvine'],
+        'Book': ['openlibrary', 'googlebooks', 'comicvine']
     };
 
     const candidates = sourcesForType[currentSearchType] || [];
@@ -332,23 +337,24 @@ function renderSecondarySearchOptions(query) {
 
     return `
         <div class="mt-6 pt-4 border-t border-zinc-800">
-            <div class="text-[10px] uppercase font-bold text-zinc-500 mb-3 tracking-wider text-center">Search Also In</div>
-            <div class="space-y-4">
+            <div class="space-y-3">
                 ${secondarySources.map(src => `
-                    <div class="bg-zinc-900/30 rounded-xl overflow-hidden border border-zinc-800/50">
-                        <button id="secondary-btn-${src.id}" onclick="window.performSecondarySearch('${src.id}')" 
-                            class="w-full flex items-center justify-between p-3 hover:bg-zinc-800 transition-colors group">
-                            <div class="flex items-center gap-2 text-zinc-400 group-hover:text-zinc-300">
+                    <details class="group/item bg-zinc-900/30 rounded-xl overflow-hidden border border-zinc-800/50" 
+                        ontoggle="window.performSecondarySearch('${src.id}', this)">
+                        <summary class="list-none w-full flex items-center justify-between p-3 hover:bg-zinc-800 transition-colors cursor-pointer select-none">
+                            <div class="flex items-center gap-2 text-zinc-400 group-hover/item:text-zinc-300">
                                 <i data-lucide="${src.icon}" class="w-4 h-4"></i>
                                 <span class="text-xs font-medium">Search in ${src.name}</span>
                             </div>
-                            <div id="secondary-spinner-${src.id}" class="hidden animate-spin">
-                                <i data-lucide="loader-2" class="w-3 h-3 text-indigo-500"></i>
+                            <div class="flex items-center gap-2">
+                                <div id="secondary-spinner-${src.id}" class="hidden animate-spin">
+                                    <i data-lucide="loader-2" class="w-3 h-3 text-indigo-500"></i>
+                                </div>
+                                <i data-lucide="chevron-down" class="w-4 h-4 text-zinc-600 group-hover/item:text-zinc-500 transition-transform group-open/item:rotate-180"></i>
                             </div>
-                            <i data-lucide="chevron-down" class="w-4 h-4 text-zinc-600 group-hover:text-zinc-500 transition-transform"></i>
-                        </button>
-                        <div id="secondary-results-${src.id}" class="empty:hidden"></div>
-                    </div>
+                        </summary>
+                        <div id="secondary-results-${src.id}" class="px-2 empty:hidden border-t border-zinc-800/50"></div>
+                    </details>
                 `).join('')}
             </div>
         </div>
@@ -425,80 +431,146 @@ function renderApiKeyMissing() {
 /**
  * Renders search results.
  */
-function renderResults(results) {
-    return `
-			${results.map((item, index) => renderResultCard(item, index)).join('')}
-		</div>
-        ${renderSecondarySearchOptions(document.getElementById('externalSearchInput').value)}
-	`;
+/**
+ * Renders the search results grouped by source.
+ */
+function renderSearchResults(results) {
+    const container = document.getElementById('externalSearchResults');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    if (results.length === 0) {
+        container.innerHTML = renderEmptyState();
+        return;
+    }
+
+    // Group items by source
+    const grouped = results.reduce((acc, item) => {
+        const src = item.source || 'unknown';
+        if (!acc[src]) acc[src] = [];
+        acc[src].push(item);
+        return acc;
+    }, {});
+
+    // Config for ordering groups if desired, or just key order
+    const sourceKeys = Object.keys(grouped);
+
+    sourceKeys.forEach(sourceKey => {
+        const items = grouped[sourceKey];
+        const config = SOURCE_CONFIG[sourceKey] || { name: 'Unknown', icon: 'help-circle', color: 'text-zinc-500' };
+
+        const groupEl = document.createElement('div');
+        groupEl.className = 'mb-4 overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/50';
+
+        const headerId = `group-header-${sourceKey}`;
+        const contentId = `group-content-${sourceKey}`;
+
+        const header = document.createElement('div');
+        header.className = 'flex items-center justify-between p-3 bg-zinc-800/50 cursor-pointer hover:bg-zinc-800 transition-colors select-none';
+        header.onclick = () => {
+            const content = document.getElementById(contentId);
+            const chevron = document.getElementById(`chevron-${sourceKey}`);
+            if (content.classList.contains('hidden')) {
+                content.classList.remove('hidden');
+                chevron.classList.remove('-rotate-90');
+            } else {
+                content.classList.add('hidden');
+                chevron.classList.add('-rotate-90');
+            }
+        };
+
+        header.innerHTML = `
+            <div class="flex items-center gap-2">
+                <i data-lucide="${config.icon}" class="w-4 h-4 ${config.color}"></i>
+                <span class="text-sm font-medium text-zinc-300">${config.name}</span>
+                <span class="text-xs text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded-full">${items.length}</span>
+            </div>
+             <i id="chevron-${sourceKey}" data-lucide="chevron-down" class="w-4 h-4 text-zinc-500 transition-transform"></i>
+        `;
+
+        const content = document.createElement('div');
+        content.id = contentId;
+        content.className = 'divide-y divide-zinc-800/50';
+
+        items.forEach(item => {
+            content.appendChild(createResultItem(item));
+        });
+
+        groupEl.appendChild(header);
+        groupEl.appendChild(content);
+        container.appendChild(groupEl);
+    });
+
+    if (window.lucide) window.lucide.createIcons();
+
+    const secondaryHtml = renderSecondarySearchOptions(document.getElementById('externalSearchInput')?.value || '');
+    if (secondaryHtml) {
+        const div = document.createElement('div');
+        div.innerHTML = secondaryHtml;
+        container.appendChild(div);
+        if (window.lucide) window.lucide.createIcons();
+    }
 }
 
-/**
- * Renders a single result card.
- */
-function renderResultCard(item, index) {
-    const sourceConfig = SOURCE_CONFIG[item.source] || { name: item.source, icon: 'globe', color: 'text-zinc-400' };
-    const coverUrl = item.cover_url || '';
-    const year = item.year || '';
-    const descPreview = item.description_preview || '';
+function createResultItem(item) {
+    const el = document.createElement('div');
+    el.className = 'p-3 hover:bg-zinc-800/50 transition-colors cursor-pointer group flex gap-4';
+    el.onclick = () => selectExternalResult(item.id, item.source, document.getElementById('externalSearchType').textContent);
 
-    return `
-		<button 
-			onclick="window.selectExternalResult(${index})"
-			class="w-full flex gap-4 p-3 bg-zinc-800/50 hover:bg-zinc-800 border border-zinc-700/50 hover:border-zinc-600 rounded-xl transition-all text-left group"
-		>
-			<!-- Cover Image -->
-			<div class="w-16 h-24 rounded-lg overflow-hidden bg-zinc-700 flex-shrink-0">
-				${coverUrl
-            ? `<img src="${coverUrl}" alt="${item.title}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<div class=\\'flex items-center justify-center w-full h-full\\'><i data-lucide=\\'image-off\\' class=\\'w-6 h-6 text-zinc-600\\'></i></div>'">`
-            : `<div class="flex items-center justify-center w-full h-full"><i data-lucide="image" class="w-6 h-6 text-zinc-600"></i></div>`
-        }
-			</div>
-			
-			<!-- Info -->
-			<div class="flex-1 min-w-0">
-				<div class="flex items-start justify-between gap-2">
-					<h4 class="font-semibold text-white truncate group-hover:text-indigo-400 transition-colors">${item.title}</h4>
-					<span class="flex items-center gap-1 px-2 py-0.5 rounded-full bg-zinc-700/50 text-xs ${sourceConfig.color} flex-shrink-0">
-						<i data-lucide="${sourceConfig.icon}" class="w-3 h-3"></i>
-						${sourceConfig.name}
-					</span>
-				</div>
-				
-				${year ? `<p class="text-zinc-400 text-sm mt-0.5">${year}</p>` : ''}
-				
-				${descPreview ? `<p class="text-zinc-500 text-xs mt-1 line-clamp-2">${descPreview}</p>` : ''}
-				
-				<!-- Additional metadata -->
-				<div class="flex items-center gap-3 mt-2 text-xs text-zinc-500">
-					${item.episodes ? `<span class="flex items-center gap-1"><i data-lucide="play" class="w-3 h-3"></i>${item.episodes} eps</span>` : ''}
-					${item.chapters ? `<span class="flex items-center gap-1"><i data-lucide="book-open" class="w-3 h-3"></i>${item.chapters} ch</span>` : ''}
-					${item.volumes ? `<span class="flex items-center gap-1"><i data-lucide="layers" class="w-3 h-3"></i>${item.volumes} vols</span>` : ''}
-					${item.page_count ? `<span class="flex items-center gap-1"><i data-lucide="file-text" class="w-3 h-3"></i>${item.page_count} pages</span>` : ''}
-				</div>
-			</div>
-			
-			<!-- Select indicator -->
-			<div class="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
-				<i data-lucide="chevron-right" class="w-5 h-5 text-indigo-400"></i>
-			</div>
-		</button>
-	`;
+    const config = SOURCE_CONFIG[item.source] || SOURCE_CONFIG.anilist;
+    const year = item.year ? `<span class="text-zinc-500">• ${item.year}</span>` : '';
+    const itemsLabel = item.episodes ? `${item.episodes} eps` : (item.chapters ? `${item.chapters} ch` : '');
+    const meta = itemsLabel ? `<span class="bg-zinc-800 text-zinc-400 px-1.5 py-0.5 rounded text-[10px]">${itemsLabel}</span>` : '';
+
+    let coverHtml = '';
+    if (item.cover_url) {
+        coverHtml = `<img src="${item.cover_url}" referrerpolicy="no-referrer" alt="${item.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">`;
+    } else {
+        coverHtml = `<div class="w-full h-full bg-zinc-800 flex items-center justify-center"><i data-lucide="image-off" class="w-6 h-6 text-zinc-600"></i></div>`;
+    }
+
+    el.innerHTML = `
+        <div class="w-12 h-16 rounded-md overflow-hidden bg-zinc-800 shrink-0 border border-zinc-700/50">
+             ${coverHtml}
+        </div>
+        <div class="flex-1 min-w-0 flex flex-col justify-center">
+            <h4 class="text-sm font-medium text-zinc-200 group-hover:text-white truncate transition-colors">${item.title}</h4>
+            <div class="flex items-center gap-2 text-xs mt-1">
+                 <span class="${config.color} font-medium text-[10px]">${config.name}</span>
+                 ${year}
+                 ${meta}
+            </div>
+            ${item.original_title ? `<p class="text-[10px] text-zinc-500 truncate mt-0.5">${item.original_title}</p>` : ''}
+        </div>
+        <div class="flex items-center pr-2 opacity-0 group-hover:opacity-100 transition-opacity -translate-x-2 group-hover:translate-x-0 duration-300">
+            <i data-lucide="arrow-right" class="w-4 h-4 text-indigo-400"></i>
+        </div>
+    `;
+    return el;
 }
 
 /**
  * Selects an external search result and imports its data.
  * @param {number} index - Index of the result in currentResults
  */
-export async function selectExternalResult(index) {
-    const item = currentResults[index];
-    if (!item) return;
+/**
+ * Selects an external search result and imports its data.
+ * @param {string} id - External ID
+ * @param {string} source - Source name
+ * @param {string} type - Media Type
+ */
+export async function selectExternalResult(id, source, type) {
+    if (state.isSelecting) return;
+    state.isSelecting = true;
 
     showToast('Fetching full details...', 'info');
 
+    if (spinner) spinner.classList.remove('hidden');
+
     try {
         const response = await fetch(
-            `/api/external/details?id=${encodeURIComponent(item.id)}&type=${encodeURIComponent(currentSearchType)}&source=${encodeURIComponent(item.source)}`
+            `/api/external/details?id=${encodeURIComponent(id)}&type=${encodeURIComponent(type)}&source=${encodeURIComponent(source)}`
         );
         const data = await response.json();
 
@@ -509,17 +581,18 @@ export async function selectExternalResult(index) {
 
         const details = data.item;
 
-        // Close modal
         closeExternalSearchModal();
 
-        // Import to wizard
         prefillWizardFromExternal(details);
 
-        showToast(`Imported "${details.title}" from ${SOURCE_CONFIG[item.source]?.name || item.source}`, 'success');
+        showToast(`Imported "${details.title}" from ${SOURCE_CONFIG[source]?.name || source}`, 'success');
 
     } catch (error) {
         console.error('Failed to fetch details:', error);
         showToast('Failed to fetch item details', 'error');
+    } finally {
+        state.isSelecting = false;
+        if (spinner) spinner.classList.add('hidden');
     }
 }
 
@@ -528,58 +601,51 @@ export async function selectExternalResult(index) {
  * @param {Object} data - Normalized item data from external API
  */
 function prefillWizardFromExternal(data) {
-    // Title
     const titleInput = document.getElementById('title');
     if (titleInput && data.title) {
         titleInput.value = data.title;
     }
 
-    // Description - Clean up HTML tags from API responses
     const descInput = document.getElementById('description');
     if (descInput && data.description) {
         let cleanDesc = data.description
-            .replace(/<br\s*\/?>/gi, '\n')  // Replace <br> with newlines
-            .replace(/<\/?i>/gi, '')         // Remove <i> tags
-            .replace(/<\/?em>/gi, '')        // Remove <em> tags
-            .replace(/<\/?b>/gi, '')         // Remove <b> tags
-            .replace(/<\/?strong>/gi, '')   // Remove <strong> tags
-            .replace(/<[^>]+>/g, '')         // Remove any remaining HTML tags
+            .replace(/<br\s*\/?>/gi, '\n')
+            .replace(/<\/?i>/gi, '')
+            .replace(/<\/?em>/gi, '')
+            .replace(/<\/?b>/gi, '')
+            .replace(/<\/?strong>/gi, '')
+            .replace(/<[^>]+>/g, '')
             .trim();
         descInput.value = cleanDesc;
     }
 
-    // Cover URL - Load into the wizard's cover preview
     if (data.cover_url) {
         const previewImg = document.getElementById('previewImg');
         const placeholder = document.getElementById('previewPlaceholder');
 
         if (previewImg) {
+            previewImg.setAttribute('referrerpolicy', 'no-referrer');
             previewImg.src = data.cover_url;
             previewImg.classList.remove('hidden');
             if (placeholder) placeholder.classList.add('hidden');
 
-            // Store URL for later use (e.g., when saving)
             previewImg.dataset.externalUrl = data.cover_url;
         }
     }
 
-    // Authors
     if (data.authors && data.authors.length > 0) {
-        // Import into state.currentAuthors
         if (!state.currentAuthors) state.currentAuthors = [];
         data.authors.forEach(author => {
             if (!state.currentAuthors.includes(author)) {
                 state.currentAuthors.push(author);
             }
         });
-        // Trigger re-render if function exists
         if (window.updateModalTags) {
             window.updateModalTags();
             safeCreateIcons();
         }
     }
 
-    // Studios (for Anime, add to authors)
     if (data.studios && data.studios.length > 0 && currentSearchType === 'Anime') {
         if (!state.currentAuthors) state.currentAuthors = [];
         data.studios.forEach(studio => {
@@ -593,7 +659,6 @@ function prefillWizardFromExternal(data) {
         }
     }
 
-    // Alternate titles
     if (data.alternate_titles && data.alternate_titles.length > 0) {
         if (!state.currentAlternateTitles) state.currentAlternateTitles = [];
         data.alternate_titles.forEach(alt => {
@@ -607,14 +672,11 @@ function prefillWizardFromExternal(data) {
         }
     }
 
-    // Tags
     if (data.tags && data.tags.length > 0) {
         if (!state.currentTags) state.currentTags = [];
         data.tags.forEach(tag => {
-            // Check if tag exists, if not save it
             if (!state.allTags[tag]) {
                 const color = getRandomPastelHex();
-                // Optimistically update state
                 state.allTags[tag] = { name: tag, color: color, description: '' };
                 saveTag(tag, color).catch(err => console.error("Failed to auto-save tag:", tag, err));
             }
@@ -628,14 +690,11 @@ function prefillWizardFromExternal(data) {
         }
     }
 
-    // Genres as tags
     if (data.genres && data.genres.length > 0) {
         if (!state.currentTags) state.currentTags = [];
         data.genres.slice(0, 5).forEach(genre => {
-            // Check if tag exists, if not save it
             if (!state.allTags[genre]) {
                 const color = getRandomPastelHex();
-                // Optimistically update state
                 state.allTags[genre] = { name: genre, color: color, description: '' };
                 saveTag(genre, color).catch(err => console.error("Failed to auto-save genre tag:", genre, err));
             }
@@ -649,13 +708,11 @@ function prefillWizardFromExternal(data) {
         }
     }
 
-    // Release date
     const releaseDateInput = document.getElementById('releaseDate');
     if (releaseDateInput && data.release_date) {
         releaseDateInput.value = data.release_date;
     }
 
-    // Technical stats
     const episodeInput = document.getElementById('episodeCount');
     if (episodeInput && data.episodes) {
         episodeInput.value = data.episodes;
@@ -682,14 +739,12 @@ function prefillWizardFromExternal(data) {
         pageInput.dispatchEvent(new Event('input', { bubbles: true }));
     }
 
-    // Auto-populate Seasons for Anime/Series
     if (['Anime', 'Series'].includes(currentSearchType)) {
         if (!state.currentChildren) state.currentChildren = [];
 
         if (data.seasons && data.seasons.length > 0) {
             data.seasons.forEach(s => {
                 const title = `Season ${s.number}`;
-                // Check if this season already exists
                 let season = state.currentChildren.find(c =>
                     c.title.toLowerCase() === title.toLowerCase() ||
                     c.title.toLowerCase() === `season ${s.number}`.toLowerCase()
@@ -765,6 +820,14 @@ function prefillWizardFromExternal(data) {
                 sourceName = 'TMDB';
             } else if (data.source && data.source.toLowerCase() === 'openlibrary') {
                 sourceName = 'Open Library';
+            } else if (data.source && data.source.toLowerCase() === 'mangadex') {
+                sourceName = 'MangaDex';
+            } else if (data.source && data.source.toLowerCase() === 'jikan') {
+                sourceName = 'MyAnimeList';
+            } else if (data.source && data.source.toLowerCase() === 'googlebooks') {
+                sourceName = 'Google Books';
+            } else if (data.source && data.source.toLowerCase() === 'comicvine') {
+                sourceName = 'Comic Vine';
             } else if (currentSearchType === 'Book') {
                 sourceName = 'Open Library';
             } else if (currentSearchType === 'Anime' || currentSearchType === 'Manga') {
@@ -785,8 +848,28 @@ function prefillWizardFromExternal(data) {
     }
 }
 
+/**
+ * Toggles the visibility of the search input.
+ */
+export function toggleSearchInput() {
+    const container = document.getElementById('externalSearchInputContainer');
+    const arrow = document.getElementById('searchInputArrow');
+
+    if (container) {
+        if (container.classList.contains('hidden')) {
+            container.classList.remove('hidden');
+            if (arrow) arrow.classList.remove('rotate-180');
+        } else {
+            container.classList.add('hidden');
+            if (arrow) arrow.classList.add('rotate-180');
+        }
+    }
+}
+
 // Expose functions to window for inline handlers
 window.openExternalSearchModal = openExternalSearchModal;
 window.closeExternalSearchModal = closeExternalSearchModal;
 window.handleExternalSearchInput = handleExternalSearchInput;
 window.selectExternalResult = selectExternalResult;
+window.toggleSearchInput = toggleSearchInput;
+window.performSecondarySearch = performSecondarySearch;

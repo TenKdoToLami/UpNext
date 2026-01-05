@@ -29,19 +29,32 @@ def save_config(new_data: Dict[str, Any]) -> None:
     """
     Updates the configuration file with new data. 
     Merges with existing data to prevent data loss.
+    Uses atomic writing to prevent corruption/race conditions.
 
     Args:
         new_data (Dict[str, Any]): Dictionary of keys/values to update.
     """
     try:
+        # Retry logic for reading in case of transients (though atomic write should fix most)
         current_config = load_config()
         current_config.update(new_data)
         
-        with open(CONFIG_FILE, 'w') as f:
+        # Atomic write: write to temp file then rename
+        tmp_file = CONFIG_FILE + '.tmp'
+        with open(tmp_file, 'w') as f:
             json.dump(current_config, f, indent=4)
+            f.flush()
+            os.fsync(f.fileno()) # Ensure data is on disk
+            
+        os.replace(tmp_file, CONFIG_FILE)
         logger.info("Configuration saved.")
     except Exception as e:
         logger.error(f"Failed to save config: {e}")
+        if os.path.exists(CONFIG_FILE + '.tmp'):
+            try:
+                os.remove(CONFIG_FILE + '.tmp')
+            except:
+                pass
 
 def save_window_geometry(window: Any) -> None:
     """Helper to save just the window geometry."""

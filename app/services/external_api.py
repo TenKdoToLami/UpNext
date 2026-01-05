@@ -193,22 +193,18 @@ class AniListClient(BaseAPIClient):
 
         results = []
         for item in data["Page"].get("media", []):
-            # Get best available title
             titles = item.get("title", {})
             title = titles.get("english") or titles.get("romaji") or titles.get("native") or "Unknown"
             
-            # Get year
             start_date = item.get("startDate", {})
             year = start_date.get("year")
 
-            # Get studios/authors
             studios_data = item.get("studios") or {}
             studios = [s["name"] for s in studios_data.get("nodes") or [] if s and s.get("name")]
             
             staff_data = item.get("staff") or {}
             staff = [s["name"]["full"] for s in staff_data.get("nodes") or [] if s and s.get("name") and s["name"].get("full")]
 
-            # Truncate description for preview
             desc = item.get("description", "") or ""
             desc_preview = desc[:200] + "..." if len(desc) > 200 else desc
 
@@ -269,7 +265,6 @@ class AniListClient(BaseAPIClient):
         staff_data = item.get("staff") or {}
         staff = [s["name"]["full"] for s in staff_data.get("nodes") or [] if s and s.get("name") and s["name"].get("full")]
 
-        # Tags (top 5 by rank)
         tags = sorted(item.get("tags", []), key=lambda t: t.get("rank", 0), reverse=True)
         tag_names = [t["name"] for t in tags[:5] if t and t.get("name")]
 
@@ -354,11 +349,9 @@ class TMDBClient(BaseAPIClient):
             if len(date_str) >= 4 and date_str[:4].isdigit():
                 year = int(date_str[:4])
 
-            # Poster URL
             poster_path = item.get("poster_path")
             cover_url = f"{self.IMAGE_BASE}/w500{poster_path}" if poster_path else None
 
-            # Description preview
             desc = item.get("overview", "") or ""
             desc_preview = desc[:200] + "..." if len(desc) > 200 else desc
 
@@ -430,12 +423,9 @@ class TMDBClient(BaseAPIClient):
         episodes = data.get("number_of_episodes")
         seasons = data.get("number_of_seasons")
 
-        # Seasons list for Series
         seasons_list = []
         if media_type == "Series" and data.get("seasons"):
             for s in data["seasons"]:
-                # Many series have a Season 0 for specials; we can include it or skip it.
-                # User usually wants numbered seasons.
                 if s.get("season_number") == 0: continue 
                 
                 seasons_list.append({
@@ -502,23 +492,17 @@ class OpenLibraryClient(BaseAPIClient):
 
         results = []
         for item in data.get("docs", []):
-            # Cover URL from cover ID
             cover_id = item.get("cover_i")
             cover_url = f"{self.COVERS_URL}/id/{cover_id}-L.jpg" if cover_id else None
 
-            # Authors
             authors = item.get("author_name", [])[:3]
 
-            # Subjects as tags (limit to popular ones)
             subjects = item.get("subject", [])[:5]
 
-            # Publishers
             publishers = item.get("publisher", [])[:2]
 
-            # ISBNs
             isbns = item.get("isbn", [])[:3]
 
-            # Edition count
             edition_count = item.get("edition_count")
 
             results.append({
@@ -590,14 +574,12 @@ class OpenLibraryClient(BaseAPIClient):
                 year_match = re.search(r'\d{4}', created)
                 if year_match: release_date = f"{year_match.group()}-01-01"
 
-        # Subjects as tags
         subjects = data.get("subjects", [])[:10]
         if subjects and isinstance(subjects[0], dict):
             subjects = [s.get("name", str(s)) for s in subjects]
         else:
             subjects = [str(s) for s in subjects]
 
-        # Page count improvements
         page_count = data.get("number_of_pages") or data.get("pagination")
         if not page_count and "number_of_pages_median" in data:
             page_count = data["number_of_pages_median"]
@@ -636,9 +618,9 @@ class TVMazeAPI(BaseAPIClient):
         results = []
         for entry in data:
             show = entry.get("show", {})
+            show = entry.get("show", {})
             if not show: continue
             
-            # Extract year from premiered date (YYYY-MM-DD)
             premiered = show.get("premiered")
             year = premiered[:4] if premiered and len(premiered) >= 4 else None
             
@@ -667,7 +649,6 @@ class TVMazeAPI(BaseAPIClient):
         summary = show.get("summary") or ""
         summary = re.sub(r'<[^>]+>', '', summary)
 
-        # Prepare seasons list and calculate total episodes
         seasons_data = []
         total_episodes = 0
         embedded = show.get("_embedded", {})
@@ -679,7 +660,7 @@ class TVMazeAPI(BaseAPIClient):
             seasons_data.append({
                 "number": s.get("number"),
                 "episodes": ep_count, 
-                "duration": show.get("averageRuntime"), # TVMaze stores runtime at show level
+                "duration": show.get("averageRuntime"),
                 "release_date": s.get("premiereDate")
             })
 
@@ -699,6 +680,342 @@ class TVMazeAPI(BaseAPIClient):
             "volumes": len(seasons_data) if seasons_data else None,
         }
 
+class MangaDexClient(BaseAPIClient):
+    """
+    MangaDex API client for Manga.
+    No API key required for public read access.
+    """
+    BASE_URL = "https://api.mangadex.org"
+    COVERS_URL = "https://uploads.mangadex.org/covers"
+
+    def _request(self, endpoint: str, params: Optional[Dict] = None) -> Optional[Dict]:
+        try:
+            response = requests.get(
+                f"{self.BASE_URL}{endpoint}",
+                params=params,
+                headers={"User-Agent": "UpNext/1.0"},
+                timeout=10
+            )
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            logger.error(f"MangaDex API request failed: {e}")
+            return None
+
+    def search(self, query: str, media_type: Optional[str] = None) -> List[Dict[str, Any]]:
+        if media_type and media_type != "Manga":
+            pass
+
+        params = {
+            "title": query,
+            "limit": 10,
+            "includes[]": ["cover_art", "author", "artist"],
+            "order[relevance]": "desc",
+            "contentRating[]": ["safe", "suggestive", "erotica"]
+        }
+        
+        try:
+            data = self._request("/manga", params)
+        except Exception as e:
+            logger.error(f"MangaDex search error: {e}")
+            return []
+        if not data or "data" not in data:
+            return []
+
+        results = []
+        for item in data["data"]:
+            attrs = item.get("attributes", {})
+            
+            # Title (prefer English, fallback to romaji/others)
+            titles = attrs.get("title", {})
+            title = titles.get("en") or titles.get("ja-ro") or next(iter(titles.values()), "Unknown")
+            
+            # Description
+            desc_map = attrs.get("description", {})
+            desc = desc_map.get("en") or next(iter(desc_map.values()), "")
+            desc_preview = (desc[:200] + "...") if len(desc) > 200 else desc
+
+            # Cover URL
+            cover_file = None
+            for rel in item.get("relationships", []):
+                if rel["type"] == "cover_art" and "attributes" in rel:
+                    cover_file = rel["attributes"].get("fileName")
+                    break
+            
+            cover_url = None
+            if cover_file:
+                cover_url = f"{self.COVERS_URL}/{item['id']}/{cover_file}.256.jpg" # Use 256px thumbnail for list view
+
+            # Authors
+            authors = []
+            for rel in item.get("relationships", []):
+                if rel["type"] in ["author", "artist"] and "attributes" in rel:
+                    name = rel["attributes"].get("name")
+                    if name and name not in authors:
+                        authors.append(name)
+
+            results.append({
+                "id": item["id"],
+                "source": "mangadex",
+                "title": title,
+                "cover_url": cover_url,
+                "description_preview": desc_preview,
+                "year": attrs.get("year"),
+                "status": attrs.get("status"),
+                "authors": authors
+            })
+            
+        return results
+
+    def get_details(self, external_id: str) -> Optional[Dict[str, Any]]:
+        data = self._request(f"/manga/{external_id}", {"includes[]": ["cover_art", "author", "artist"]})
+        if not data or "data" not in data:
+            return None
+
+        item = data["data"]
+        attrs = item.get("attributes", {})
+        
+        # Title
+        titles = attrs.get("title", {})
+        title = titles.get("en") or titles.get("ja-ro") or next(iter(titles.values()), "Unknown")
+        
+        # Alt titles
+        alt_titles = []
+        for t_map in attrs.get("altTitles", []):
+            val = next(iter(t_map.values()), "")
+            if val: alt_titles.append(val)
+            
+        # Description
+        desc_map = attrs.get("description", {})
+        desc = desc_map.get("en") or next(iter(desc_map.values()), "")
+        
+        # Cover
+        cover_file = None
+        for rel in item.get("relationships", []):
+            if rel["type"] == "cover_art" and "attributes" in rel:
+                cover_file = rel["attributes"].get("fileName")
+                break
+        cover_url = f"{self.COVERS_URL}/{item['id']}/{cover_file}" if cover_file else None
+
+        # Authors
+        authors = []
+        for rel in item.get("relationships", []):
+            if rel["type"] in ["author", "artist"] and "attributes" in rel:
+                name = rel["attributes"].get("name")
+                if name and name not in authors:
+                    authors.append(name)
+                    
+        # Tags
+        tags = []
+        for t in attrs.get("tags", []):
+            tags.append(t["attributes"]["name"]["en"])
+
+        # Status/year
+        status = attrs.get("status")
+        year = attrs.get("year")
+        release_date = f"{year}-01-01" if year else None
+
+        return {
+            "id": item["id"],
+            "source": "mangadex",
+            "title": title,
+            "alternate_titles": alt_titles[:5],
+            "cover_url": cover_url,
+            "description": desc,
+            "release_date": release_date,
+            "authors": authors,
+            "tags": tags[:10],
+            "status": status,
+            "external_link": f"https://mangadex.org/title/{item['id']}"
+        }
+class GoogleBooksClient(BaseAPIClient):
+    """
+    Google Books API client.
+    """
+    BASE_URL = "https://www.googleapis.com/books/v1"
+
+    def __init__(self, api_key: Optional[str] = None):
+        self.api_key = api_key
+
+    def _request(self, endpoint: str, params: Optional[Dict] = None) -> Optional[Dict]:
+        params = params or {}
+        if self.api_key:
+            params["key"] = self.api_key
+        
+        try:
+            response = requests.get(
+                f"{self.BASE_URL}{endpoint}",
+                params=params,
+                timeout=10
+            )
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            logger.error(f"Google Books API request failed: {e}")
+            return None
+
+    def search(self, query: str, media_type: Optional[str] = None) -> List[Dict[str, Any]]:
+        # Restrict to English results
+        data = self._request("/volumes", {"q": query, "maxResults": 10, "langRestrict": "en"})
+        if not data or "items" not in data:
+            return []
+
+        results = []
+        for item in data["items"]:
+            info = item.get("volumeInfo", {})
+            
+            # High quality cover if available
+            img_links = info.get("imageLinks", {})
+            cover_url = img_links.get("thumbnail") or img_links.get("smallThumbnail")
+            if cover_url:
+                cover_url = cover_url.replace("http://", "https://")
+
+            date_str = info.get("publishedDate", "")
+            year = int(date_str[:4]) if len(date_str) >= 4 else None
+
+            results.append({
+                "id": item["id"],
+                "source": "googlebooks",
+                "title": info.get("title", "Unknown"),
+                "cover_url": cover_url,
+                "year": year,
+                "description_preview": (info.get("description") or "")[:200],
+                "authors": info.get("authors", []),
+                "page_count": info.get("pageCount")
+            })
+        return results
+
+    def get_details(self, external_id: str) -> Optional[Dict[str, Any]]:
+        data = self._request(f"/volumes/{external_id}")
+        if not data:
+            return None
+
+        info = data.get("volumeInfo", {})
+        
+        img_links = info.get("imageLinks", {})
+        cover_url = img_links.get("extraLarge") or img_links.get("large") or img_links.get("medium") or img_links.get("thumbnail")
+        if cover_url: cover_url = cover_url.replace("http://", "https://")
+
+        return {
+            "id": data["id"],
+            "source": "googlebooks",
+            "title": info.get("title", "Unknown"),
+            "alternate_titles": [info.get("subtitle")] if info.get("subtitle") else [],
+            "cover_url": cover_url,
+            "description": info.get("description", ""),
+            "release_date": info.get("publishedDate"),
+            "authors": info.get("authors", []),
+            "publisher": info.get("publisher"),
+            "page_count": info.get("pageCount"),
+            "categories": info.get("categories", []),
+            "external_link": info.get("infoLink")
+        }
+
+
+class ComicVineClient(BaseAPIClient):
+    """
+    Comic Vine API client for Comics/Graphic Novels.
+    Requires API Key.
+    """
+    BASE_URL = "https://comicvine.gamespot.com/api"
+
+    def __init__(self, api_key: Optional[str] = None):
+        self.api_key = api_key
+
+    def _request(self, endpoint: str, params: Optional[Dict] = None) -> Optional[Dict]:
+        if not self.api_key:
+            return None
+
+        params = params or {}
+        params["api_key"] = self.api_key
+        params["format"] = "json"
+        
+        # Rate limit heuristic: 1 req/sec
+        time.sleep(1.0)
+
+        try:
+            response = requests.get(
+                f"{self.BASE_URL}{endpoint}",
+                params=params,
+                headers={"User-Agent": "UpNext/1.0"},
+                timeout=10
+            )
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            logger.error(f"Comic Vine API request failed: {e}")
+            return None
+
+    def search(self, query: str, media_type: Optional[str] = None) -> List[Dict[str, Any]]:
+        # We assume media_type=Book (or maybe Manga if user really wants)
+        # We search 'volumes' resource for series/books
+        data = self._request("/search", {"query": query, "resources": "volume", "limit": 10})
+        if not data or "results" not in data:
+            return []
+
+        results = []
+        for item in data["results"]:
+            info = item
+            
+            # Year
+            year = item.get("start_year")
+            
+            # Description
+            desc = item.get("deck") or item.get("description") or ""
+            desc = re.sub(r'<[^>]+>', '', desc)
+            
+            results.append({
+                "id": str(item["id"]),
+                "source": "comicvine",
+                "title": item.get("name", "Unknown"),
+                "cover_url": item.get("image", {}).get("medium_url"),
+                "year": int(year) if year and str(year).isdigit() else None,
+                "description_preview": desc[:200] + "..." if len(desc) > 200 else desc,
+                "publisher": item.get("publisher", {}).get("name"),
+                "issues": item.get("count_of_issues")
+            })
+            
+        return results
+
+    def get_details(self, external_id: str) -> Optional[Dict[str, Any]]:
+        # Comic Vine detail resource ID needs type prefix "4050-" for volumes
+        # Search returns ID like 12345, detail needs 4050-12345
+        resource_id = f"4050-{external_id}"
+        
+        data = self._request(f"/volume/{resource_id}/")
+        if not data or "results" not in data:
+            return None
+
+        item = data["results"]
+        
+        # Calculate approximate release date
+        year = item.get("start_year")
+        release_date = f"{year}-01-01" if year else None
+
+        # Clean description
+        desc = item.get("description") or item.get("deck") or ""
+        desc = re.sub(r'<[^>]+>', '', desc) # Remove HTML tags
+
+        # Map Publisher to Authors list (User Request)
+        authors = []
+        publisher = item.get("publisher", {}).get("name")
+        if publisher:
+            authors.append(publisher)
+
+        return {
+            "id": external_id, # Use raw ID
+            "source": "comicvine",
+            "title": item.get("name", "Unknown"),
+            "cover_url": item.get("image", {}).get("original_url") or item.get("image", {}).get("medium_url"),
+            "description": desc,
+            "release_date": release_date,
+            "publisher": publisher,
+            "authors": authors, # Mapped from publisher
+            "volumes": 1, # It's a volume
+            "episodes": item.get("count_of_issues"), # Issues count
+            "external_link": item.get("site_detail_url")
+        }
+
 
 class ExternalAPIService:
     """
@@ -708,10 +1025,19 @@ class ExternalAPIService:
     """
 
     def __init__(self, tmdb_api_key: Optional[str] = None):
+        from app.utils.config_manager import load_config
+        config = load_config()
+        api_keys = config.get('apiKeys', {})
+        
         self.anilist = AniListClient()
-        self.tmdb = TMDBClient(api_key=tmdb_api_key)
+        self.tmdb = TMDBClient(api_key=tmdb_api_key or api_keys.get('tmdb'))
         self.tvmaze = TVMazeAPI()
         self.openlibrary = OpenLibraryClient()
+        
+        # New Clients
+        self.mangadex = MangaDexClient()
+        self.googlebooks = GoogleBooksClient(api_key=api_keys.get('googlebooks'))
+        self.comicvine = ComicVineClient(api_key=api_keys.get('comicvine'))
 
     def search(self, query: str, media_type: str, source: Optional[str] = None) -> List[Dict[str, Any]]:
         """
@@ -731,6 +1057,7 @@ class ExternalAPIService:
         query = query.strip()
 
         # Explicit source request
+        # Explicit source request
         if source:
             if source == 'tmdb':
                 # Map Anime to Series for TMDB search
@@ -738,17 +1065,24 @@ class ExternalAPIService:
                 if tmdb_type not in ('Movie', 'Series'): return []
                 return self.tmdb.search(query, tmdb_type)
             elif source == 'tvmaze':
-                # TVMaze only supports Series/Anime (as shows)
                 if media_type not in ('Series', 'Anime'): return []
-                return self.tvmaze.search(query, 'Series')
+                try:
+                    return self.tvmaze.search(query, 'Series')
+                except Exception:
+                    return []
             elif source == 'anilist':
-                # Anime/Manga only
                 if media_type not in ('Anime', 'Manga', 'Movie', 'Series'): return []
-                # Try to fuzzy map Movie/Series to Anime if requested
                 search_type = 'Anime' if media_type in ('Movie', 'Series') else media_type
                 return self.anilist.search(query, search_type)
             elif source == 'openlibrary':
                 return self.openlibrary.search(query)
+            elif source == 'mangadex':
+                return self.mangadex.search(query, media_type)
+            elif source == 'googlebooks':
+                return self.googlebooks.search(query, media_type)
+            elif source == 'comicvine':
+                # Map Manga to 'Book' concept or just pass through if client handles it (it handles generic queries)
+                return self.comicvine.search(query, media_type)
             return []
 
         # Default routing logic with priority config
@@ -757,50 +1091,37 @@ class ExternalAPIService:
         priorities = config.get('searchPriorities', {})
         
         # Get priority for this media type, defaulting to standard behavior
+        # Get priority for this media type
         priority_source = priorities.get(media_type)
 
         if media_type == "Anime":
-            if priority_source == 'tmdb':
-                 return self.tmdb.search(query, 'Series')
-            elif priority_source == 'tvmaze':
-                 return self.tvmaze.search(query, 'Series')
-            # Default to AniList
+            if priority_source == 'tmdb': return self.tmdb.search(query, 'Series')
+            elif priority_source == 'tvmaze': return self.tvmaze.search(query, 'Series')
             return self.anilist.search(query, media_type)
             
         elif media_type == "Manga":
-            return self.anilist.search(query, media_type)
+            if priority_source == 'anilist': return self.anilist.search(query, media_type)
+            # Default to MangaDex
+            return self.mangadex.search(query, media_type)
             
         elif media_type == "Movie":
-            if priority_source == 'anilist':
-                return self.anilist.search(query, 'Anime') # Treat as Anime Movie
-            # Default to TMDB
+            if priority_source == 'anilist': return self.anilist.search(query, 'Anime')
             return self.tmdb.search(query, media_type)
             
         elif media_type == "Series":
-            # Priority override
-            if priority_source == 'anilist':
-                return self.anilist.search(query, 'Anime') # Treat as Anime Series
-            elif priority_source == 'tvmaze':
-                return self.tvmaze.search(query, media_type)
-            elif priority_source == 'tmdb':
-                # Force TMDB if API key exists, otherwise fallback to TVMaze?
-                # User selected TMDB explicitly, so try TMDB.
-                # But if no key, self.tmdb.search might fail or return empty if we don't handle it?
-                # Actually earlier code handled no-key by falling back.
-                # If priority is effectively set to TMDB (default), we keep old logic?
-                if self.tmdb.api_key:
-                    return self.tmdb.search(query, media_type)
-                # If they explicitly chose TMDB but have no key, it might be better to fall back or return error?
-                # Let's keep the fallback for robustness unless they have a key.
-                return self.tvmaze.search(query, media_type)
+            if priority_source == 'anilist': return self.anilist.search(query, 'Anime')
+            elif priority_source == 'tvmaze': return self.tvmaze.search(query, media_type)
+            elif priority_source == 'tmdb' and self.tmdb.api_key: return self.tmdb.search(query, media_type)
             
-            # Default fallback logic (no priority set or 'tmdb' default)
-            if self.tmdb.api_key:
-                return self.tmdb.search(query, media_type)
+            # Default fallback
+            if self.tmdb.api_key: return self.tmdb.search(query, media_type)
             return self.tvmaze.search(query, media_type)
 
         elif media_type == "Book":
+            if priority_source == 'googlebooks': return self.googlebooks.search(query, media_type)
+            elif priority_source == 'comicvine': return self.comicvine.search(query, media_type)
             return self.openlibrary.search(query)
+            
         else:
             logger.warning(f"Unknown media type for search: {media_type}")
             return []
@@ -825,6 +1146,12 @@ class ExternalAPIService:
             return self.tvmaze.get_details(external_id)
         elif source == "openlibrary":
             return self.openlibrary.get_details(external_id)
+        elif source == 'mangadex':
+            return self.mangadex.get_details(external_id)
+        elif source == "googlebooks":
+            return self.googlebooks.get_details(external_id)
+        elif source == "comicvine":
+            return self.comicvine.get_details(external_id)
         else:
             logger.warning(f"Unknown source: {source}")
             return None
@@ -832,3 +1159,9 @@ class ExternalAPIService:
     def set_tmdb_api_key(self, api_key: str):
         """Update the TMDB API key at runtime."""
         self.tmdb.api_key = api_key
+        
+    def update_keys(self, **keys):
+        """Update API keys at runtime."""
+        if 'tmdb' in keys: self.tmdb.api_key = keys['tmdb']
+        if 'googlebooks' in keys: self.googlebooks.api_key = keys['googlebooks']
+        if 'comicvine' in keys: self.comicvine.api_key = keys['comicvine']

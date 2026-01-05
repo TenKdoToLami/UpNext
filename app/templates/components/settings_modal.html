@@ -1,11 +1,9 @@
-<!-- SETTINGS MODAL -->
 <div id="settingsModal"
 	class="fixed inset-0 z-[95] flex items-center justify-center bg-zinc-500/30 dark:bg-black/90 backdrop-blur-md hidden opacity-0 transition-opacity duration-200"
 	onclick="if(event.target === this) closeSettingsModal()">
 	<div class="bg-white dark:bg-[#0c0c0e] border border-zinc-200 dark:border-zinc-800 rounded-3xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col shadow-2xl transform scale-95 transition-all duration-200 animate-enter"
 		id="settingsModalContent">
 
-		<!-- Header -->
 		<div
 			class="px-8 py-6 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center bg-white dark:bg-[#0c0c0e]">
 			<h2
@@ -18,7 +16,6 @@
 			</button>
 		</div>
 
-		<!-- Custom Tabs -->
 		<div
 			class="flex items-center gap-4 px-8 pt-6 pb-2 bg-zinc-50 dark:bg-zinc-950/30 border-b border-zinc-200 dark:border-zinc-800 overflow-x-auto scrollbar-none">
 			<button onclick="switchSettingsTab('features')" id="tab-features"
@@ -39,15 +36,12 @@
 			</button>
 		</div>
 
-		<!-- Body -->
 		<div class="p-8 overflow-y-auto custom-scrollbar flex-1 space-y-8 bg-zinc-50 dark:bg-zinc-950/30">
 
-			<!-- Features Settings (Merged Interface) -->
 			<div id="settings-features" class="settings-panel space-y-6">
 				<div id="settings-features-container" class="space-y-6"></div>
 			</div>
 
-			<!-- Content Settings -->
 			<div id="settings-content" class="settings-panel hidden space-y-6">
 				<div class="space-y-6">
 					<div>
@@ -68,7 +62,6 @@
 				</div>
 			</div>
 
-			<!-- Tags Settings -->
 			<div id="settings-tags" class="settings-panel hidden space-y-6">
 				<div class="space-y-4">
 					<div class="flex items-center justify-between">
@@ -80,7 +73,6 @@
 				</div>
 			</div>
 
-			<!-- Connections Settings -->
 			<div id="settings-other" class="settings-panel hidden space-y-6">
 				<div class="space-y-4">
 					<h3 class="text-sm font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 mb-2">
@@ -108,7 +100,6 @@
 						</label>
 					</div>
 
-					<!-- API Keys Section -->
 					<div class="border-t border-zinc-200 dark:border-zinc-800 pt-6 mt-6">
 						<h3
 							class="text-sm font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 mb-4 flex items-center gap-2">
@@ -131,35 +122,65 @@
 									<input type="password" id="setting-tmdbApiKey"
 										placeholder="Enter your TMDB API key..."
 										class="flex-1 bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm px-3 py-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:text-white placeholder-zinc-400 font-mono transition-all">
-									<button onclick="window.saveTmdbApiKey()"
-										class="px-6 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-xs font-bold transition-all shadow-md shadow-indigo-500/10 active:scale-95">
-										Save Key
-									</button>
 								</div>
-								<div
-									class="flex items-start gap-2 mt-3 p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-lg border border-zinc-100 dark:border-zinc-800">
-									<i data-lucide="info" class="w-4 h-4 text-indigo-500 mt-0.5"></i>
-									<p class="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
-										TMDB provides high-quality metadata for movies. Get your free API key at
-										<a href="https://www.themoviedb.org/settings/api" target="_blank"
-											class="text-indigo-500 hover:underline font-bold">themoviedb.org</a>.
-										<span class="block mt-1 text-zinc-400 italic">Anime, Manga, Books, and Series
-											are available for free without a key.</span>
-									</p>
-								</div>
+								<p class="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1">
+									Get free key at <a href="https://www.themoviedb.org/settings/api" target="_blank"
+										class="text-indigo-500 hover:underline">themoviedb.org</a>.
+								</p>
 							</div>
+
+							<div>
+								<div class="flex items-center justify-between mb-2">
+									<label
+										class="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider block">
+										Comic Vine API Key
+									</label>
+									<span
+										class="px-2 py-0.5 bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-bold rounded uppercase">Required
+										for Comics</span>
+								</div>
+								<div class="flex gap-2">
+									<input type="password" id="setting-comicvineApiKey"
+										placeholder="Enter your Comic Vine API key..."
+										class="flex-1 bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm px-3 py-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:text-white placeholder-zinc-400 font-mono transition-all">
+								</div>
+								<p class="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1">
+									Get free key at <a href="https://comicvine.gamespot.com/api/" target="_blank"
+										class="text-indigo-500 hover:underline">comicvine.gamespot.com</a>.
+								</p>
+							</div>
+
+							<div>
+								<div class="flex items-center justify-between mb-2">
+									<label
+										class="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider block">
+										Google Books API Key
+									</label>
+									<span
+										class="px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 text-[10px] font-bold rounded uppercase">Optional</span>
+								</div>
+								<div class="flex gap-2">
+									<input type="password" id="setting-googlebooksApiKey"
+										placeholder="Enter your Google Books API key..."
+										class="flex-1 bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm px-3 py-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:text-white placeholder-zinc-400 font-mono transition-all">
+								</div>
+								<p class="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1">
+									Increases rate limits for Google Books search. Get it at <a
+										href="https://console.cloud.google.com/apis/credentials" target="_blank"
+										class="text-indigo-500 hover:underline">Google Cloud Console</a>.
+								</p>
+							</div>
+
 						</div>
 					</div>
 
-					<!-- Priority Search Section -->
 					<div class="border-t border-zinc-200 dark:border-zinc-800 pt-6 mt-6">
 						<h3
 							class="text-sm font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 mb-4 flex items-center gap-2">
 							<i data-lucide="list-filter" class="w-4 h-4 text-emerald-500"></i>
 							Primary Search Sources
 						</h3>
-						<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-							<!-- Anime Priority -->
+						<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
 							<div
 								class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4">
 								<div class="flex items-center gap-2 mb-3">
@@ -167,15 +188,85 @@
 									<span
 										class="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400">Anime</span>
 								</div>
-								<select id="priority-anime" onchange="window.savePrioritySearch('Anime', this.value)"
-									class="w-full bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs font-bold text-zinc-700 dark:text-zinc-300 py-2 px-3 outline-none focus:ring-2 focus:ring-indigo-500">
-									<option value="anilist" selected>AniList (Default)</option>
-									<option value="tmdb">TMDB</option>
-									<option value="tvmaze">TVMaze</option>
-								</select>
+								<div class="space-y-2" id="priority-anime-container">
+									<label class="flex items-center gap-2 cursor-pointer group">
+										<input type="radio" name="priority-anime" value="anilist"
+											class="text-indigo-600 focus:ring-indigo-500 bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700"
+											checked>
+										<span
+											class="text-sm text-zinc-700 dark:text-zinc-300 font-medium group-hover:text-indigo-500 transition-colors">AniList</span>
+									</label>
+									<label class="flex items-center gap-2 cursor-pointer group">
+										<input type="radio" name="priority-anime" value="tmdb"
+											class="text-indigo-600 focus:ring-indigo-500 bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700">
+										<span
+											class="text-sm text-zinc-700 dark:text-zinc-300 font-medium group-hover:text-indigo-500 transition-colors">TMDB</span>
+									</label>
+									<label class="flex items-center gap-2 cursor-pointer group">
+										<input type="radio" name="priority-anime" value="tvmaze"
+											class="text-indigo-600 focus:ring-indigo-500 bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700">
+										<span
+											class="text-sm text-zinc-700 dark:text-zinc-300 font-medium group-hover:text-indigo-500 transition-colors">TVMaze</span>
+									</label>
+								</div>
 							</div>
 
-							<!-- Series Priority -->
+							<div
+								class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4">
+								<div class="flex items-center gap-2 mb-3">
+									<i data-lucide="book" class="w-4 h-4 text-orange-500"></i>
+									<span
+										class="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400">Manga</span>
+								</div>
+								<div class="space-y-2" id="priority-manga-container">
+									<label class="flex items-center gap-2 cursor-pointer group">
+										<input type="radio" name="priority-manga" value="mangadex"
+											class="text-indigo-600 focus:ring-indigo-500 bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700"
+											checked>
+										<span
+											class="text-sm text-zinc-700 dark:text-zinc-300 font-medium group-hover:text-indigo-500 transition-colors">MangaDex</span>
+									</label>
+									<label class="flex items-center gap-2 cursor-pointer group">
+										<input type="radio" name="priority-manga" value="anilist"
+											class="text-indigo-600 focus:ring-indigo-500 bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700">
+										<span
+											class="text-sm text-zinc-700 dark:text-zinc-300 font-medium group-hover:text-indigo-500 transition-colors">AniList</span>
+									</label>
+								</div>
+							</div>
+
+							<div
+								class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4">
+								<div class="flex items-center gap-2 mb-3">
+									<i data-lucide="book-open" class="w-4 h-4 text-emerald-500"></i>
+									<span
+										class="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400">Books</span>
+								</div>
+								<div class="space-y-2" id="priority-book-container">
+									<label class="flex items-center gap-2 cursor-pointer group">
+										<input type="radio" name="priority-book" value="openlibrary"
+											class="text-indigo-600 focus:ring-indigo-500 bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700"
+											checked>
+										<span
+											class="text-sm text-zinc-700 dark:text-zinc-300 font-medium group-hover:text-indigo-500 transition-colors">OpenLibrary</span>
+									</label>
+									<label class="flex items-center gap-2 cursor-pointer group">
+										<input type="radio" name="priority-book" value="googlebooks"
+											class="text-indigo-600 focus:ring-indigo-500 bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700">
+										<span
+											class="text-sm text-zinc-700 dark:text-zinc-300 font-medium group-hover:text-indigo-500 transition-colors">Google
+											Books</span>
+									</label>
+									<label class="flex items-center gap-2 cursor-pointer group">
+										<input type="radio" name="priority-book" value="comicvine"
+											class="text-indigo-600 focus:ring-indigo-500 bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700">
+										<span
+											class="text-sm text-zinc-700 dark:text-zinc-300 font-medium group-hover:text-indigo-500 transition-colors">Comic
+											Vine</span>
+									</label>
+								</div>
+							</div>
+
 							<div
 								class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4">
 								<div class="flex items-center gap-2 mb-3">
@@ -183,15 +274,29 @@
 									<span
 										class="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400">Series</span>
 								</div>
-								<select id="priority-series" onchange="window.savePrioritySearch('Series', this.value)"
-									class="w-full bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs font-bold text-zinc-700 dark:text-zinc-300 py-2 px-3 outline-none focus:ring-2 focus:ring-indigo-500">
-									<option value="tmdb" selected>TMDB (Default)</option>
-									<option value="tvmaze">TVMaze</option>
-									<option value="anilist">AniList</option>
-								</select>
+								<div class="space-y-2" id="priority-series-container">
+									<label class="flex items-center gap-2 cursor-pointer group">
+										<input type="radio" name="priority-series" value="tmdb"
+											class="text-indigo-600 focus:ring-indigo-500 bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700"
+											checked>
+										<span
+											class="text-sm text-zinc-700 dark:text-zinc-300 font-medium group-hover:text-indigo-500 transition-colors">TMDB</span>
+									</label>
+									<label class="flex items-center gap-2 cursor-pointer group">
+										<input type="radio" name="priority-series" value="tvmaze"
+											class="text-indigo-600 focus:ring-indigo-500 bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700">
+										<span
+											class="text-sm text-zinc-700 dark:text-zinc-300 font-medium group-hover:text-indigo-500 transition-colors">TVMaze</span>
+									</label>
+									<label class="flex items-center gap-2 cursor-pointer group">
+										<input type="radio" name="priority-series" value="anilist"
+											class="text-indigo-600 focus:ring-indigo-500 bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700">
+										<span
+											class="text-sm text-zinc-700 dark:text-zinc-300 font-medium group-hover:text-indigo-500 transition-colors">AniList</span>
+									</label>
+								</div>
 							</div>
 
-							<!-- Movie Priority -->
 							<div
 								class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4">
 								<div class="flex items-center gap-2 mb-3">
@@ -199,11 +304,21 @@
 									<span
 										class="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400">Movies</span>
 								</div>
-								<select id="priority-movie" onchange="window.savePrioritySearch('Movie', this.value)"
-									class="w-full bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs font-bold text-zinc-700 dark:text-zinc-300 py-2 px-3 outline-none focus:ring-2 focus:ring-indigo-500">
-									<option value="tmdb" selected>TMDB (Default)</option>
-									<option value="anilist">AniList</option>
-								</select>
+								<div class="space-y-2" id="priority-movie-container">
+									<label class="flex items-center gap-2 cursor-pointer group">
+										<input type="radio" name="priority-movie" value="tmdb"
+											class="text-indigo-600 focus:ring-indigo-500 bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700"
+											checked>
+										<span
+											class="text-sm text-zinc-700 dark:text-zinc-300 font-medium group-hover:text-indigo-500 transition-colors">TMDB</span>
+									</label>
+									<label class="flex items-center gap-2 cursor-pointer group">
+										<input type="radio" name="priority-movie" value="anilist"
+											class="text-indigo-600 focus:ring-indigo-500 bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700">
+										<span
+											class="text-sm text-zinc-700 dark:text-zinc-300 font-medium group-hover:text-indigo-500 transition-colors">AniList</span>
+									</label>
+								</div>
 							</div>
 						</div>
 					</div>
@@ -277,7 +392,6 @@
 
 		</div>
 
-		<!-- Footer -->
 		<div
 			class="px-8 py-4 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#0c0c0e] flex justify-end gap-3">
 			<button onclick="closeSettingsModal()"
