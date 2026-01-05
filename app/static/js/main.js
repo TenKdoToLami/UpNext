@@ -12,12 +12,13 @@ import { RATING_LABELS, TEXT_COLORS } from './constants.js';
 import {
     openModal, closeModal, nextStep, prevStep, jumpToStep,
     populateAutocomplete, addSpecificLink, addLink, removeLink, updateLink, pasteLink,
-    removeAuthor, addChild, removeChildIdx, updateChild, updateChildRating,
+    removeAuthor, addChild, removeChildIdx, updateChild, updateChildRating, renderChildren,
     removeAltTitle, checkEnterKey, renderDetailView, updateDetailTruncation, updateRatingVisuals,
     renderAbbrTags, removeAbbreviation, toggleAbbrField, generateAbbreviation, renderLinks,
     renderGenericTags, removeTag, incrementRereadCount, decrementRereadCount,
     toggleChildDetails, incrementChildField, decrementChildField,
-    toggleTotalsOverride, updateTotalsUIForType
+    toggleTotalsOverride, updateTotalsUIForType,
+    updateModalTags, renderAltTitles, syncTotalsToChild
 } from './main_helpers.js';
 import { updateWizardUI, selectType, selectStatus } from './wizard_logic.js';
 import { scrollToSection, updateSidebarVisibility } from './edit_mode.js';
@@ -32,8 +33,10 @@ import {
     switchSettingsTab, toggleFeature, toggleHiddenField,
     toggleGroupCollapse, toggleMediaType, toggleStatus, toggleAutoLaunchSetting,
     toggleOpenWindowOnStart, setTrayClickAction, setCloseBehavior,
-    saveTagColor, saveTagDesc, addNewTagHandler, renameTagHandler, deleteTagHandler
+    saveTagColor, saveTagDesc, addNewTagHandler, renameTagHandler, deleteTagHandler,
+    saveTmdbApiKey
 } from './settings_logic.js';
+import { openExternalSearchModal, closeExternalSearchModal } from './external_search.js';
 
 // =============================================================================
 // GLOBAL WINDOW BINDINGS
@@ -66,6 +69,7 @@ window.addChild = addChild;
 window.removeChildIdx = removeChildIdx;
 window.updateChild = updateChild;
 window.updateChildRating = updateChildRating;
+window.renderChildren = renderChildren;
 window.removeAltTitle = removeAltTitle;
 window.checkEnterKey = checkEnterKey;
 window.renderDetailView = renderDetailView;
@@ -84,6 +88,9 @@ window.incrementChildField = incrementChildField;
 window.decrementChildField = decrementChildField;
 window.toggleTotalsOverride = toggleTotalsOverride;
 window.updateTotalsUIForType = updateTotalsUIForType;
+window.updateModalTags = updateModalTags;
+window.renderAltTitles = renderAltTitles;
+window.syncTotalsToChild = syncTotalsToChild;
 
 // Export Utils Bindings
 window.openExportModal = openExportModal;
@@ -117,6 +124,13 @@ window.addNewTagHandler = addNewTagHandler;
 window.renameTagHandler = renameTagHandler;
 window.deleteTagHandler = deleteTagHandler;
 
+// External Search Bindings
+window.openExternalSearchModal = openExternalSearchModal;
+window.closeExternalSearchModal = closeExternalSearchModal;
+
+// API Key Bindings
+window.saveTmdbApiKey = saveTmdbApiKey;
+
 // =============================================================================
 // THEME MANAGEMENT
 // =============================================================================
@@ -147,11 +161,7 @@ function updateThemeIcon() {
 
 /**
  * Checks if multiple databases exist and prompts user if needed.
- * Updated to support Auto-Launch and Create New DB.
- */
-/**
- * Checks if multiple databases exist and prompts user if needed.
- * Updated to support Auto-Launch, Create New DB, and Forced Restart.
+ * Supports Auto-Launch, Create New DB, and Forced Restart.
  */
 async function checkDatabaseSelection() {
     try {
@@ -161,7 +171,6 @@ async function checkDatabaseSelection() {
         const forcedRestart = sessionStorage.getItem('forceDbSelect');
         if (forcedRestart) {
             sessionStorage.removeItem('forceDbSelect');
-            console.log("Forced DB selection restart detected.");
         }
 
         // Check Auto-Launch Preference
@@ -173,7 +182,6 @@ async function checkDatabaseSelection() {
         const shouldSkip = !forcedRestart && ((available.length <= 1) || (autoLaunch && active && available.includes(active)));
 
         if (shouldSkip) {
-            console.log("Auto-launching or default database:", active || available[0]);
             loadItems();
             return;
         }
@@ -305,7 +313,6 @@ window.handleCreateDb = async () => {
     }
 };
 
-/** Toggles auto-launch setting. */
 /** Toggles auto-launch setting. */
 window.toggleAutoLaunch = async (checked) => {
     if (!state.appSettings) state.appSettings = {};
@@ -714,8 +721,12 @@ window.previewImage = (input) => {
 // =============================================================================
 
 /** Saves the current entry form. */
+/**
+ * Collects data from all wizard steps and saves the entry.
+ * Handles image cropping auto-save and calendar event creation.
+ * @returns {Promise<void>}
+ */
 let isWizardSaving = false;
-
 window.saveEntry = async () => {
     if (isWizardSaving) return;
 
@@ -790,7 +801,16 @@ window.saveEntry = async () => {
         formData.append('data', JSON.stringify(data));
 
         const file = document.getElementById('coverImage').files[0];
-        if (file) formData.append('image', file);
+        if (file) {
+            formData.append('image', file);
+        } else {
+            // Check for external cover URL from API import
+            const previewImg = document.getElementById('previewImg');
+            const externalUrl = previewImg?.dataset?.externalUrl;
+            if (externalUrl) {
+                formData.append('cover_url', externalUrl);
+            }
+        }
 
         const savedItem = await saveItem(formData);
 
@@ -1002,7 +1022,9 @@ async function checkOverdueReleases() {
 }
 
 /**
- * Initializes the application when DOM is ready.
+ * Initializes the application.
+ * Performs state loading, DB selection check, and global event binding.
+ * @returns {Promise<void>}
  */
 async function initApp() {
     await loadUIState();

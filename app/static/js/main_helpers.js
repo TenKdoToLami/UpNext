@@ -10,7 +10,10 @@ import {
 	STATUS_ICON_MAP, STATUS_COLOR_MAP, ICON_MAP,
 	RATING_LABELS, RATING_COLORS, TEXT_COLORS, STAR_FILLS, FEATURE_GROUPS
 } from './constants.js';
-import { safeCreateIcons, safeVal, safeText, safeHtml, safeCheck, checkOverflow } from './dom_utils.js';
+import {
+	safeCreateIcons, safeVal, safeText, safeHtml, safeCheck, checkOverflow,
+	hslToHex, getRandomPastelHex
+} from './dom_utils.js';
 import {
 	initWizard, validateStep, animateStepChange, getNextValidStep, getPrevValidStep
 } from './wizard_logic.js';
@@ -116,7 +119,6 @@ function resetFormState() {
 	safeHtml('childrenContainer', '');
 	safeCheck('isHidden', false);
 	safeCheck('disableAbbr', true);
-	// Initialize UI state based on checked default
 	toggleAbbrField(true);
 	safeHtml('abbrTagsContainer', '<input id="abbrInput" class="bg-transparent text-sm outline-none flex-1 min-w-[80px] text-zinc-700 dark:text-zinc-200 p-1 placeholder-zinc-400" placeholder="Auto-filled from title...">');
 	setTimeout(() => {
@@ -153,11 +155,10 @@ function resetFormState() {
 export async function nextStep() {
 	if (!validateStep(state.currentStep)) return;
 
-	// Step 3 Special Logic: If Image Editor is visible, save crop before proceeding
-	if (state.currentStep === 3) {
+	// Step 4 Special Logic: If Image Editor is visible, save crop before proceeding
+	if (state.currentStep === 4) {
 		const editorArea = document.getElementById('imageEditorArea');
 		if (editorArea && !editorArea.classList.contains('hidden')) {
-			// Await the crop save operation to ensure the file input is updated before moving on
 			try {
 				if (window.imageEditor && window.imageEditor.saveCropPromise) {
 					await window.imageEditor.saveCropPromise();
@@ -175,7 +176,9 @@ export async function nextStep() {
 	state.currentStep = next;
 }
 
-/** Returns to the previous valid wizard step. */
+/**
+ * Returns to the previous valid wizard step.
+ */
 export function prevStep() {
 	const prev = getPrevValidStep(state.currentStep);
 	if (prev < 1) return;
@@ -264,27 +267,6 @@ export function removeAuthor(val) {
 	updateModalTags();
 }
 
-/**
- * Converts HSL to Hex.
- */
-function hslToHex(h, s, l) {
-	l /= 100;
-	const a = s * Math.min(l, 1 - l) / 100;
-	const f = n => {
-		const k = (n + h / 30) % 12;
-		const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
-		return Math.round(255 * color).toString(16).padStart(2, '0');
-	};
-	return `#${f(0)}${f(8)}${f(4)}`;
-}
-
-/**
- * Generates a random pastel hex color.
- */
-function getRandomPastelHex() {
-	const hue = Math.floor(Math.random() * 360);
-	return hslToHex(hue, 70, 85);
-}
 
 
 
@@ -718,34 +700,85 @@ export function decrementChildField(idx, field, step = 1) {
 export function updateChildrenTotals() {
 	const type = document.getElementById('type')?.value || '';
 	const overrideCheckbox = document.getElementById('overrideTotals');
-
-	if (overrideCheckbox?.checked) return; // Don't auto-update if manual override
+	const isManual = overrideCheckbox?.checked;
 
 	const children = state.currentChildren.filter(c => c.hasDetails);
-
-	// Volume count is always the number of children (only for types with children)
-	const volumeCount = document.getElementById('volumeCount');
-	if (volumeCount) volumeCount.value = state.currentChildren.length || '';
+	let totalEpisodes = 0, totalDuration = 0, totalChapters = 0, totalWords = 0;
 
 	if (type === 'Book') {
-		// Sum chapters and calculate total words
-		const totalChapters = children.reduce((sum, c) => sum + (c.chapters || 0), 0);
-		const totalWords = children.reduce((sum, c) => sum + ((c.chapters || 0) * (c.avgWords || 0)), 0);
-
-		const chapterInput = document.getElementById('chapterCount');
-		const wordInput = document.getElementById('wordCount');
-		if (chapterInput) chapterInput.value = totalChapters || '';
-		if (wordInput) wordInput.value = totalWords || '';
+		totalChapters = children.reduce((sum, c) => sum + (c.chapters || 0), 0);
+		totalWords = children.reduce((sum, c) => sum + ((c.chapters || 0) * (c.avgWords || 0)), 0);
 	} else if (['Anime', 'Series'].includes(type)) {
-		// Sum episodes and calculate total duration
-		const totalEpisodes = children.reduce((sum, c) => sum + (c.episodes || 0), 0);
-		const totalDuration = children.reduce((sum, c) => sum + ((c.episodes || 0) * (c.duration || 0)), 0);
-
-		const episodeInput = document.getElementById('episodeCount');
-		const durationInput = document.getElementById('avgDurationMinutes');
-		if (episodeInput) episodeInput.value = totalEpisodes || '';
-		if (durationInput) durationInput.value = totalDuration || '';
+		totalEpisodes = children.reduce((sum, c) => sum + (c.episodes || 0), 0);
+		totalDuration = children.reduce((sum, c) => sum + ((c.episodes || 0) * (c.duration || 0)), 0);
 	}
+
+	const epIn = document.getElementById('episodeCount');
+	const durIn = document.getElementById('avgDurationMinutes');
+	const chIn = document.getElementById('chapterCount');
+	const wIn = document.getElementById('wordCount');
+	const vIn = document.getElementById('volumeCount');
+
+	if (!isManual) {
+		if (epIn) epIn.value = totalEpisodes || '';
+		if (durIn) durIn.value = totalDuration || '';
+		if (chIn) chIn.value = totalChapters || '';
+		if (wIn) wIn.value = totalWords || '';
+		if (vIn) vIn.value = state.currentChildren.length || '';
+	}
+
+	const canAutoEdit = state.currentChildren.length <= 1;
+	[epIn, durIn, chIn, wIn].forEach(input => {
+		if (!input) return;
+		if (isManual) {
+			input.readOnly = false;
+		} else {
+			input.readOnly = !canAutoEdit;
+			if (canAutoEdit) {
+				input.classList.remove('bg-zinc-100', 'dark:bg-zinc-800', 'text-zinc-500', 'dark:text-zinc-400');
+				input.classList.add('bg-white', 'dark:bg-zinc-900', 'text-zinc-700', 'dark:text-zinc-200');
+			} else {
+				input.classList.add('bg-zinc-100', 'dark:bg-zinc-800', 'text-zinc-500', 'dark:text-zinc-400');
+				input.classList.remove('bg-white', 'dark:bg-zinc-900', 'text-zinc-700', 'dark:text-zinc-200');
+			}
+		}
+	});
+}
+
+/**
+ * Synchronizes manually entered totals back to the first season/volume.
+ * @param {string} field - Field to sync (episodes, duration, chapters, words)
+ * @param {number} value - New value
+ */
+export function syncTotalsToChild(field, value) {
+	const overrideCheckbox = document.getElementById('overrideTotals');
+	if (overrideCheckbox?.checked || state.currentChildren.length > 1) return;
+
+	const type = document.getElementById('type').value;
+	const isBook = ['Book', 'Manga'].includes(type);
+	const prefix = isBook ? 'Volume' : 'Season';
+
+	if (state.currentChildren.length === 0) {
+		state.currentChildren.push({
+			id: crypto.randomUUID(),
+			title: `${prefix} 1`,
+			rating: 0,
+			hasDetails: true
+		});
+	}
+
+	const child = state.currentChildren[0];
+	child.hasDetails = true;
+
+	if (field === 'episodes') child.episodes = value;
+	if (field === 'duration') child.duration = value;
+	if (field === 'chapters') child.chapters = value;
+	if (field === 'words' && isBook) {
+		const chapters = child.chapters || 1;
+		child.avgWords = Math.round(value / chapters);
+	}
+
+	renderChildren();
 }
 
 /**
@@ -779,11 +812,12 @@ export function updateTotalsUIForType() {
 	// Movie: duration only (editable)
 	// Manga: chapters only (editable)
 	// Book: chapters + words (auto-calculated if tech stats enabled)
-	// Anime/Series: episodes + duration (auto-calculated if tech stats enabled)
+	// Anime	// Book: chapters + words (auto-calculated if tech stats enabled)
 	const showEpisodes = ['Anime', 'Series'].includes(type);
 	const showDuration = ['Anime', 'Series', 'Movie'].includes(type);
 	const showChapters = ['Book', 'Manga'].includes(type);
 	const showWords = type === 'Book';
+	const showPageCount = type === 'Book';
 
 	// Toggle field visibility
 	document.querySelectorAll('.series-total').forEach(el => {
@@ -798,6 +832,25 @@ export function updateTotalsUIForType() {
 	document.querySelectorAll('.book-only-total').forEach(el => {
 		el.classList.toggle('hidden', !showWords);
 	});
+	document.querySelectorAll('.page-count-total').forEach(el => {
+		el.classList.toggle('hidden', !showPageCount);
+	});
+
+	// Attach word count auto-calc listener
+	const pageInput = document.getElementById('pageCount');
+	if (pageInput && !pageInput.dataset.listenerAttached) {
+		pageInput.addEventListener('input', () => {
+			const overrideCheckbox = document.getElementById('overrideTotals');
+			if (overrideCheckbox && overrideCheckbox.checked) return;
+
+			const pages = parseInt(pageInput.value) || 0;
+			const wordInput = document.getElementById('wordCount');
+			if (wordInput) {
+				wordInput.value = pages > 0 ? pages * 250 : '';
+			}
+		});
+		pageInput.dataset.listenerAttached = 'true';
+	}
 
 	// For Movie/Manga: editable inputs, no "Calculated Totals" header
 	// For others: show totals only if technical_stats is enabled

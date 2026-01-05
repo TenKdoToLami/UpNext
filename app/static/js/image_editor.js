@@ -82,7 +82,7 @@ export function initImageEditor(file, onSave) {
  * @param {boolean} showEditor 
  */
 function toggleEditorUI(showEditor) {
-	const uploadStep = document.getElementById('step-3'); // Assuming step-3 is the container
+	const uploadStep = document.getElementById('step-4'); // Cover is now step-4
 	const uploadArea = document.getElementById('imageUploadArea'); // To be added to HTML
 	const editorArea = document.getElementById('imageEditorArea'); // To be added to HTML
 

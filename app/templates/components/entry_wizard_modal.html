@@ -19,7 +19,6 @@
 			<div id="editSidebar"
 				class="hidden w-64 shrink-0 bg-white dark:bg-[#0c0c0e] border-r border-zinc-200 dark:border-zinc-800 flex-col overflow-y-auto custom-scrollbar py-6 pl-6 pr-2">
 				<nav class="space-y-1" id="editSidebarNav">
-					<!-- Links populated by JS -->
 				</nav>
 			</div>
 
@@ -49,11 +48,10 @@
 						</div>
 					</div>
 
-					<!-- Step 3: Cover Image -->
-					<div id="step-3"
+					<!-- Step 4: Cover Image -->
+					<div id="step-4"
 						class="wizard-step absolute inset-0 p-8 flex flex-col items-center justify-center text-center space-y-6 hidden">
 
-						<!-- UPLOAD AREA -->
 						<div id="imageUploadArea" class="w-full max-w-md space-y-4 animate-enter px-4">
 							<div id="dropZone"
 								class="w-full h-80 bg-white dark:bg-zinc-900 border-2 border-dashed border-zinc-300 dark:border-zinc-700 rounded-3xl mx-auto flex flex-col items-center justify-center gap-4 relative group cursor-pointer transition-all hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 hover:scale-[1.02]"
@@ -94,7 +92,6 @@
 							</div>
 						</div>
 
-						<!-- EDITOR AREA (Hidden by default) -->
 						<div id="imageEditorArea" class="w-full h-full flex flex-col hidden animate-enter">
 							<!-- Canvas Container -->
 							<div
@@ -171,13 +168,22 @@
 						</div>
 					</div>
 
-					<!-- Step 4: Basic Info -->
-					<div id="step-4"
+					<!-- Step 3: Basic Info -->
+					<div id="step-3"
 						class="wizard-step absolute inset-0 p-8 flex flex-col hidden overflow-y-auto custom-scrollbar">
 						<div class="space-y-6">
 							<div class="space-y-2" id="titleContainer">
-								<label class="text-xs font-bold text-zinc-500 uppercase tracking-wider ml-1">Title <span
-										class="text-red-500">*</span></label>
+								<div class="flex items-center justify-between">
+									<label class="text-xs font-bold text-zinc-500 uppercase tracking-wider ml-1">Title
+										<span class="text-red-500">*</span></label>
+									<button type="button"
+										onclick="window.openExternalSearchModal(document.getElementById('type').value)"
+										class="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-500 rounded-lg text-xs font-bold transition-all group">
+										<i data-lucide="globe"
+											class="w-3.5 h-3.5 group-hover:rotate-12 transition-transform"></i>
+										Search Online
+									</button>
+								</div>
 								<input type="text" id="title" required
 									class="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-5 py-4 text-xl font-heading font-bold text-zinc-900 dark:text-white outline-none focus:border-zinc-400 dark:focus:border-white/20 focus:ring-1 focus:ring-zinc-400 dark:focus:ring-white/20 placeholder:text-zinc-400 dark:placeholder:text-zinc-700 transition-all"
 									placeholder="Enter title...">
@@ -506,6 +512,7 @@
 										class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider ml-1">Total
 										Episodes</label>
 									<input type="number" id="episodeCount" min="0" readonly
+										oninput="window.syncTotalsToChild('episodes', parseInt(this.value))"
 										class="w-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-500 dark:text-zinc-400 outline-none transition-all placeholder-zinc-400"
 										placeholder="Auto">
 								</div>
@@ -514,6 +521,7 @@
 										class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider ml-1">Total
 										Duration (min)</label>
 									<input type="number" id="avgDurationMinutes" min="0" readonly
+										oninput="window.syncTotalsToChild('duration', parseInt(this.value))"
 										class="w-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-500 dark:text-zinc-400 outline-none transition-all placeholder-zinc-400"
 										placeholder="Auto">
 								</div>
@@ -522,6 +530,7 @@
 										class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider ml-1">Total
 										Chapters</label>
 									<input type="number" id="chapterCount" min="0" readonly
+										oninput="window.syncTotalsToChild('chapters', parseInt(this.value))"
 										class="w-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-500 dark:text-zinc-400 outline-none transition-all placeholder-zinc-400"
 										placeholder="Auto">
 								</div>
@@ -530,6 +539,7 @@
 										class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider ml-1">Total
 										Words</label>
 									<input type="number" id="wordCount" min="0" readonly
+										oninput="window.syncTotalsToChild('words', parseInt(this.value))"
 										class="w-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-500 dark:text-zinc-400 outline-none transition-all placeholder-zinc-400"
 										placeholder="Auto">
 								</div>

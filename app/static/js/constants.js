@@ -125,8 +125,8 @@ export const TYPE_COLOR_MAP = {
 export const STEP_TITLES = {
 	1: 'Media Type',
 	2: 'Status',
-	3: 'Cover Image',
-	4: 'Basic Information',
+	3: 'Basic Information',
+	4: 'Cover Image',
 	5: 'Synopsis / Description',
 	6: 'External Links',
 	7: 'Current Progress',
@@ -141,7 +141,7 @@ export const STEP_TITLES = {
 export const LINK_SUGGESTIONS = {
 	'Anime': ['My Anime List', 'Anilist', 'CSFD', 'Fandom'],
 	'Manga': ['Mangadex', 'Anilist', 'Manga Updates', 'Fandom'],
-	'Book': ['Goodreads', 'Amazon', 'Author', 'Fandom'],
+	'Book': ['Goodreads', 'Amazon', 'OpenLibrary', 'Author', 'Fandom'],
 	'Movie': ['IMDB', 'Rotten Tomatoes', 'CSFD', 'Fandom'],
 	'Series': ['IMDB', 'Rotten Tomatoes', 'CSFD', 'Fandom']
 };

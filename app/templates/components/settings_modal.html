@@ -44,7 +44,6 @@
 
 			<!-- Features Settings (Merged Interface) -->
 			<div id="settings-features" class="settings-panel space-y-6">
-				<!-- Javascript populates this -->
 				<div id="settings-features-container" class="space-y-6"></div>
 			</div>
 
@@ -56,7 +55,6 @@
 							Active Media Types
 						</h3>
 						<div class="grid grid-cols-2 gap-3" id="typeVisibilityContainer">
-							<!-- Populated by JS -->
 						</div>
 					</div>
 
@@ -65,7 +63,6 @@
 							Active Statuses
 						</h3>
 						<div class="grid grid-cols-2 gap-3" id="statusVisibilityContainer">
-							<!-- Populated by JS -->
 						</div>
 					</div>
 				</div>
@@ -79,7 +76,6 @@
 							Tags</h3>
 					</div>
 					<div id="settings-tags-container" class="space-y-3">
-						<!-- Populated by JS -->
 					</div>
 				</div>
 			</div>
@@ -164,6 +160,37 @@
 							class="px-3 py-1.5 bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-lg text-xs font-bold hover:bg-indigo-500 hover:text-white transition-all shadow-sm">
 							Switch Database
 						</button>
+					</div>
+
+					<!-- API Keys Section -->
+					<div class="border-t border-zinc-200 dark:border-zinc-800 pt-6 mt-6">
+						<h3
+							class="text-sm font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 mb-4 flex items-center gap-2">
+							<i data-lucide="key" class="w-4 h-4"></i>
+							API Keys
+						</h3>
+						<div
+							class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 space-y-4">
+							<div>
+								<label
+									class="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-2 block">
+									TMDB API Key <span class="normal-case font-normal">(for Movies & Series)</span>
+								</label>
+								<div class="flex gap-2">
+									<input type="password" id="setting-tmdbApiKey"
+										placeholder="Enter your TMDB API key..."
+										class="flex-1 bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:text-white placeholder-zinc-400 font-mono">
+									<button onclick="window.saveTmdbApiKey()"
+										class="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-xs font-bold transition-colors">
+										Save
+									</button>
+								</div>
+								<p class="text-[10px] text-zinc-400 mt-2">
+									Get a free key from <a href="https://www.themoviedb.org/settings/api"
+										target="_blank" class="text-indigo-500 hover:underline">themoviedb.org</a>
+								</p>
+							</div>
+						</div>
 					</div>
 				</div>
 			</div>

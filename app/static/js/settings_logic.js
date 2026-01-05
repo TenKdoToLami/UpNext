@@ -5,7 +5,7 @@
  */
 
 import { state, saveAppSettings } from './state.js';
-import { safeCreateIcons } from './dom_utils.js';
+import { safeCreateIcons, hslToHex } from './dom_utils.js';
 import { renderGrid, renderFilters } from './render_utils.js';
 import { showToast } from './toast.js';
 import { MEDIA_TYPES, STATUS_TYPES, STATUS_ICON_MAP, TYPE_COLOR_MAP, ICON_MAP, FEATURE_GROUPS } from './constants.js';
@@ -40,6 +40,9 @@ export function openSettingsModal() {
 
 		// Ensure state is up to date and render
 		renderSettings();
+
+		// Load API key status for the Other tab
+		loadApiKeyStatus();
 
 		// Reset to default tab (Features)
 		switchSettingsTab('features');
@@ -606,6 +609,60 @@ export function setCloseBehavior(value) {
 }
 
 /**
+ * Saves the TMDB API key.
+ * Called when the user clicks Save in the API Keys section.
+ */
+export async function saveTmdbApiKey() {
+	const input = document.getElementById('setting-tmdbApiKey');
+	const key = input?.value?.trim();
+
+	if (!key) {
+		showToast('Please enter a valid API key', 'warning');
+		return;
+	}
+
+	try {
+		const response = await fetch('/api/external/update-key', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ tmdb: key })
+		});
+
+		if (response.ok) {
+			showToast('TMDB API key saved successfully', 'success');
+			// Clear input for security (masked display)
+			input.value = '';
+			input.placeholder = '••••••••••••••••';
+		} else {
+			showToast('Failed to save API key', 'error');
+		}
+	} catch (error) {
+		console.error('Failed to save TMDB API key:', error);
+		showToast('Failed to save API key', 'error');
+	}
+}
+
+/**
+ * Loads the TMDB API key status when settings modal opens.
+ */
+export async function loadApiKeyStatus() {
+	try {
+		const response = await fetch('/api/config');
+		if (response.ok) {
+			const config = await response.json();
+			const hasKey = !!(config.apiKeys?.tmdb);
+			const input = document.getElementById('setting-tmdbApiKey');
+			if (input) {
+				input.value = '';
+				input.placeholder = hasKey ? '••••••••••••••••' : 'Enter your TMDB API key...';
+			}
+		}
+	} catch (error) {
+		console.error('Failed to load API key status:', error);
+	}
+}
+
+/**
  * Saves a tag color change.
  * @param {string} name 
  * @param {string} color 
@@ -724,13 +781,3 @@ function showConfirm(title, message, confirmText = 'Confirm', type = 'danger') {
 	});
 }
 
-function hslToHex(h, s, l) {
-	l /= 100;
-	const a = s * Math.min(l, 1 - l) / 100;
-	const f = n => {
-		const k = (n + h / 30) % 12;
-		const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
-		return Math.round(255 * color).toString(16).padStart(2, '0');
-	};
-	return `#${f(0)}${f(8)}${f(4)}`;
-}

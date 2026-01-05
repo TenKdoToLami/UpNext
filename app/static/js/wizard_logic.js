@@ -21,7 +21,7 @@ import { initImageEditor } from './image_editor.js';
 // Global Handlers for Drag & Drop
 window.handleDragOver = (e) => {
 	e.preventDefault();
-	e.stopPropagation(); // Good practice
+	e.stopPropagation();
 	document.getElementById('dropZone').classList.add('border-indigo-500', 'bg-indigo-50', 'dark:bg-indigo-500/10');
 };
 
@@ -101,9 +101,7 @@ function processImageFile(file) {
 		return;
 	}
 
-	// Start Editor
 	initImageEditor(file, (croppedBlob) => {
-		// Callback when crop is applied
 		handleCroppedImage(croppedBlob, file.name);
 	});
 }
@@ -146,9 +144,8 @@ function handleCroppedImage(blob, originalName) {
 // =============================================================================
 
 /**
- * Determines which steps should be skipped based on current form values and settings.
- * A step is skipped if all its constituent fields are hidden in settings.
- * @returns {number[]} Array of step numbers to skip
+ * Determines which wizard steps should be skipped based on user settings and current form values.
+ * @returns {number[]} Array of skipped step numbers
  */
 export function getSkippedSteps() {
 	const type = document.getElementById('type')?.value || '';
@@ -173,15 +170,15 @@ export function getSkippedSteps() {
 		skipped.push(1);
 	}
 
-	// Step 3 (Cover Image): Skip if cover_image is hidden
-	if (!isFieldVisible('cover_image')) {
-		skipped.push(3);
-	}
+	// Step 3 (Basic Info): Skip if ALL fields are hidden
+	const step3Fields = ['title', 'authors', 'tags', 'universe', 'release_date', 'technical_stats', 'alternate_titles', 'abbreviations', 'series'];
+	const step3Visible = step3Fields.some(f => isFieldVisible(f));
+	if (!step3Visible) skipped.push(3);
 
-	// Step 4 (Basic Info): Skip if ALL fields are hidden
-	const step4Fields = ['title', 'authors', 'tags', 'universe', 'release_date', 'technical_stats', 'alternate_titles', 'abbreviations', 'series'];
-	const step4Visible = step4Fields.some(f => isFieldVisible(f));
-	if (!step4Visible) skipped.push(4);
+	// Step 4 (Cover Image): Skip if cover_image is hidden
+	if (!isFieldVisible('cover_image')) {
+		skipped.push(4);
+	}
 
 	// Step 5 (Description): Skip if description is hidden
 	if (!isFieldVisible('description')) {
@@ -234,8 +231,8 @@ export function getSkippedSteps() {
 }
 
 /**
- * Gets the next valid step number, skipping hidden steps.
- * @param {number} current - Current step number
+ * Calculates the next valid step, skipping hidden ones.
+ * @param {number} current - Current step
  * @returns {number} Next valid step number
  */
 export function getNextValidStep(current) {
@@ -248,8 +245,8 @@ export function getNextValidStep(current) {
 }
 
 /**
- * Gets the previous valid step number, skipping hidden steps.
- * @param {number} current - Current step number
+ * Calculates the previous valid step, skipping hidden ones.
+ * @param {number} current - Current step
  * @returns {number} Previous valid step number
  */
 export function getPrevValidStep(current) {
@@ -267,8 +264,8 @@ export function getPrevValidStep(current) {
 
 /**
  * Animates the transition between wizard steps.
- * @param {number} from - Current step number
- * @param {number} to - Target step number
+ * @param {number} from - Current step
+ * @param {number} to - Target step
  * @param {'left'|'right'} direction - Animation direction
  */
 export function animateStepChange(from, to, direction) {
@@ -295,22 +292,25 @@ export function animateStepChange(from, to, direction) {
 	// Update state
 	if (to > state.maxReachedStep) state.maxReachedStep = to;
 
-	// Update UI
-	document.getElementById('modalTitle').innerText = STEP_TITLES[to] || 'New Entry';
 	updateDots(to);
 	updateNavigationButtons(to);
 
 	// Update links on step 6
 	if (to === 6) updateDynamicLinks();
+	// Render children on step 10
+	if (to === 10 && window.renderChildren) window.renderChildren();
 
 	document.getElementById('stepIndicator').innerText = `Step ${to} / ${state.TOTAL_STEPS}`;
 
-	// Cleanup after animation
 	setTimeout(() => {
 		fromEl.classList.add('hidden');
 		fromEl.style.display = 'none';
 		removeAnimationClasses(fromEl);
 		removeAnimationClasses(toEl);
+
+		// Reset scroll position
+		const wrapper = document.getElementById('formScrollWrapper');
+		if (wrapper) wrapper.scrollTop = 0;
 
 		// Focus first input on new step
 		const input = toEl.querySelector('input, textarea');
@@ -353,8 +353,6 @@ export function showStep(step) {
 	stepEl.classList.add('animate-enter');
 	setTimeout(() => stepEl.classList.remove('animate-enter'), 400);
 
-	// Update UI
-	document.getElementById('modalTitle').innerText = STEP_TITLES[step] || 'New Entry';
 	updateDots(step);
 	updateNavigationButtons(step);
 }
@@ -423,9 +421,9 @@ function createDotHtml(step, currentStep) {
 // =============================================================================
 
 /**
- * Validates the current step before proceeding.
- * @param {number} step - Step to validate
- * @returns {boolean} True if valid
+ * Validates the current wizard step before proceeding.
+ * @param {number} step - Step number to validate
+ * @returns {boolean} True if step is valid
  */
 export function validateStep(step) {
 	switch (step) {
@@ -441,7 +439,7 @@ export function validateStep(step) {
 				return false;
 			}
 			break;
-		case 4: // Basic Info
+		case 3: // Basic Info
 			if (isFieldVisible('title') && !document.getElementById('title').value.trim()) {
 				showToast('Title is required to proceed.', 'warning');
 				return false;
@@ -480,7 +478,7 @@ export function updateFormUI() {
 	};
 
 	// Mark steps as skippable based on settings
-	markStepSkipped('step-3', !isFieldVisible('cover_image'));
+	markStepSkipped('step-4', !isFieldVisible('cover_image'));
 	markStepSkipped('step-5', !isFieldVisible('description'));
 	markStepSkipped('step-6', !isFieldVisible('external_links'));
 
@@ -716,8 +714,8 @@ export function selectType(t) {
 	const current = document.getElementById('type').value;
 	if (current === t && state.isEditMode) return;
 
-	if (!state.isEditMode) {
-		resetWizardFields();
+	if (!state.isEditMode || t !== current) {
+		resetWizardFields(1);
 		state.maxReachedStep = 1;
 		document.getElementById('status').value = '';
 
@@ -1073,8 +1071,8 @@ function restoreStepClasses() {
 
 	restore('step-1', centerClasses);
 	restore('step-2', centerClasses);
-	restore('step-3', centerClasses); // Cover
-	restore('step-4', topClasses);    // Basic Info
+	restore('step-3', topClasses);    // Basic Info
+	restore('step-4', centerClasses); // Cover
 	restore('step-5', centerClasses); // Description (TextArea fits well in center)
 	restore('step-6', topClasses);
 	restore('step-7', centerClasses); // Progress (Small inputs)
@@ -1085,72 +1083,117 @@ function restoreStepClasses() {
 }
 
 /**
- * Resets all wizard fields to defaults (used when changing media type).
+ * Resets wizard fields starting from a specific step (used when changing media type or search online).
+ * @param {number} [startStep=1] - Step to start resetting from
  */
-export function resetWizardFields() {
-	safeVal('progress', '');
-	safeVal('coverUrl', '');
-	safeHtml('coverPreview', '<div class="text-zinc-500 font-medium">No Image Selected</div>');
-	safeVal('coverImage', '');
-	safeVal('title', '');
-	safeVal('description', '');
-	safeVal('notes', '');
-	safeVal('review', '');
-	safeVal('rating', 2);
+export function resetWizardFields(startStep = 1) {
+	// Step 2: Status
+	if (startStep <= 2) {
+		safeVal('status', '');
+	}
 
-	// Reset visuals
-	if (window.updateRatingVisuals) window.updateRatingVisuals(2);
+	// Step 3: Basic Information
+	if (startStep <= 3) {
+		safeVal('title', '');
+		state.currentAuthors = [];
+		state.currentAlternateTitles = [];
+		state.currentTags = [];
+		state.currentAbbreviations = [];
+		safeVal('universe', '');
+		safeVal('series', '');
+		safeVal('seriesNumber', '');
+		safeVal('releaseDate', '');
 
-	state.currentAuthors = [];
-	state.currentAlternateTitles = [];
-	state.currentChildren = [];
-	state.currentLinks = [];
+		// Reset Inputs with Tags
+		safeHtml('authorTagsContainer', '<input id="authorInput" list="authorOptions" class="bg-transparent text-sm outline-none flex-1 min-w-[80px] text-zinc-700 dark:text-zinc-200 p-1 placeholder-zinc-400" placeholder="Type & Enter...">');
+		safeHtml('tagTagsContainer', '<input id="tagInput" list="tagOptions" class="bg-transparent text-sm outline-none flex-1 min-w-[80px] text-zinc-700 dark:text-zinc-200 p-1 placeholder-zinc-400" placeholder="Add Tags...">');
+		safeHtml('altTitleTagsContainer', '<input id="altTitleInput" class="bg-transparent text-sm outline-none flex-1 min-w-[80px] text-zinc-700 dark:text-zinc-200 p-1 placeholder-zinc-400" placeholder="Type & Enter...">');
+		safeHtml('abbrTagsContainer', '<input id="abbrInput" class="bg-transparent text-sm outline-none flex-1 min-w-[80px] text-zinc-700 dark:text-zinc-200 p-1 placeholder-zinc-400" placeholder="Auto-filled from title...">');
 
-	// Reset author input
-	safeHtml('authorTagsContainer', '<input id="authorInput" list="authorOptions" class="bg-transparent text-sm outline-none flex-1 min-w-[80px] text-zinc-700 dark:text-zinc-200 p-1 placeholder-zinc-400" placeholder="Type & Enter...">');
-	setTimeout(() => {
-		const authInput = document.getElementById('authorInput');
-		if (authInput && window.checkEnterKey) authInput.addEventListener('keydown', (e) => window.checkEnterKey(e, 'author'));
-	}, 0);
+		// Re-attach listeners for dynamically recreated inputs
+		setTimeout(() => {
+			['authorInput', 'tagInput', 'altTitleInput', 'abbrInput'].forEach(id => {
+				const input = document.getElementById(id);
+				const type = id.replace('Input', '');
+				if (input && window.checkEnterKey) input.addEventListener('keydown', (e) => window.checkEnterKey(e, type === 'abbr' ? 'abbr' : (type === 'altTitle' ? 'altTitle' : type)));
+			});
+		}, 0);
+	}
 
-	safeVal('universe', '');
-	safeVal('series', '');
-	safeVal('seriesNumber', '');
-	safeHtml('childrenContainer', '');
-	safeHtml('dynamicLinkButtons', '');
-	safeHtml('linksContainer', '');
+	// Step 4: Cover Image
+	if (startStep <= 4) {
+		safeVal('coverUrl', '');
+		safeHtml('coverPreview', '<div class="text-zinc-500 font-medium">No Image Selected</div>');
+		safeVal('coverImage', '');
+		// Reset Preview UI elements (from handleCroppedImage)
+		const prevImg = document.getElementById('previewImg');
+		if (prevImg) {
+			prevImg.src = '';
+			prevImg.classList.add('hidden');
+		}
+		const placeholder = document.getElementById('previewPlaceholder');
+		if (placeholder) placeholder.classList.remove('hidden');
+		const nameEl = document.getElementById('currentCoverName');
+		if (nameEl) nameEl.innerText = '';
+	}
 
-	// Reset alt-title input
-	setTimeout(() => {
-		const altInput = document.getElementById('altTitleInput');
-		if (altInput && window.checkEnterKey) altInput.addEventListener('keydown', (e) => window.checkEnterKey(e, 'altTitle'));
-	}, 0);
+	// Step 5: Description
+	if (startStep <= 5) {
+		safeVal('description', '');
+	}
 
-	safeCheck('disableAbbr', true);
-	// Initialize UI state based on checked default
-	if (window.toggleAbbrField) window.toggleAbbrField(true);
-	safeHtml('abbrTagsContainer', '<input id="abbrInput" class="bg-transparent text-sm outline-none flex-1 min-w-[80px] text-zinc-700 dark:text-zinc-200 p-1 placeholder-zinc-400" placeholder="Auto-filled from title...">');
-	setTimeout(() => {
-		const abbrInput = document.getElementById('abbrInput');
-		if (abbrInput && window.checkEnterKey) abbrInput.addEventListener('keydown', (e) => window.checkEnterKey(e, 'abbr'));
-	}, 0);
+	// Step 6: External Links
+	if (startStep <= 6) {
+		state.currentLinks = [];
+		safeHtml('linksContainer', '');
+		safeHtml('dynamicLinkButtons', '');
+	}
 
-	// Reset New Fields
-	state.currentTags = [];
-	safeVal('releaseDate', '');
-	safeVal('episodeCount', '');
-	safeVal('volumeCount', '');
-	safeVal('wordCount', '');
-	safeVal('chapterCount', '');
-	safeVal('avgDurationMinutes', '');
-	safeVal('rereadCount', '');
-	safeVal('completedAt', '');
+	// Step 7: Progress
+	if (startStep <= 7) {
+		safeVal('progress', '');
+	}
 
-	safeHtml('tagTagsContainer', '<input id="tagInput" list="tagOptions" class="bg-transparent text-sm outline-none flex-1 min-w-[80px] text-zinc-700 dark:text-zinc-200 p-1 placeholder-zinc-400" placeholder="Add Tags...">');
-	setTimeout(() => {
-		const tagInput = document.getElementById('tagInput');
-		if (tagInput && window.checkEnterKey) tagInput.addEventListener('keydown', (e) => window.checkEnterKey(e, 'tag'));
-	}, 0);
+	// Step 8: Review & Rating
+	if (startStep <= 8) {
+		safeVal('review', '');
+		safeVal('rating', 2);
+		safeVal('rereadCount', 0);
+		safeVal('completedAt', '');
+		if (window.updateRatingVisuals) window.updateRatingVisuals(2);
+	}
+
+	// Step 9: Notes
+	if (startStep <= 9) {
+		safeVal('notes', '');
+	}
+
+	// Step 10: Seasons / Volumes / Stats
+	if (startStep <= 10) {
+		state.currentChildren = [];
+		safeHtml('childrenContainer', '');
+		safeVal('episodeCount', '');
+		safeVal('volumeCount', '');
+		safeVal('chapterCount', '');
+		safeVal('wordCount', '');
+		safeVal('avgDurationMinutes', '');
+		safeCheck('overrideTotals', false);
+		if (window.toggleTotalsOverride) window.toggleTotalsOverride(false);
+	}
+
+	// Step 11: Privacy Setting
+	if (startStep <= 11) {
+		safeCheck('isHidden', false);
+	}
+
+	// Step 12: Calendar Event
+	if (startStep <= 12) {
+		safeCheck('addToCalendar', false);
+		safeVal('calDate', '');
+		safeVal('calContent', '');
+		safeCheck('calRecurring', false);
+		if (window.toggleCalendarFields) window.toggleCalendarFields(false);
+	}
 }
 
 

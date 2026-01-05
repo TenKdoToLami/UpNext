@@ -102,8 +102,8 @@ export function renderSidebarNav() {
 	const sections = [
 		{ id: 'step-1', label: 'Media Type', icon: 'monitor' },
 		{ id: 'step-2', label: 'Status', icon: 'activity' },
-		{ id: 'step-3', label: 'Cover Image', icon: 'image' },
-		{ id: 'step-4', label: 'Basic Info', icon: 'file-text' },
+		{ id: 'step-3', label: 'Basic Info', icon: 'file-text' },
+		{ id: 'step-4', label: 'Cover Image', icon: 'image' },
 		{ id: 'step-5', label: 'Description', icon: 'align-left' },
 		{ id: 'step-6', label: 'External Links', icon: 'link' },
 		{ id: 'step-7', label: 'Progress', icon: 'bookmark' },

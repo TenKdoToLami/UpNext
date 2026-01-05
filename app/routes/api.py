@@ -224,6 +224,24 @@ def save_item():
             form_data["cover_image"] = image_file.read()
             form_data["cover_mime"] = image_file.mimetype
             form_data["cover_url"] = ""  # Real image overrides external URL
+        else:
+            # Check for external cover URL (from API import)
+            cover_url = request.form.get("cover_url")
+            if cover_url:
+                try:
+                    import requests as req
+                    response = req.get(cover_url, timeout=10, headers={
+                        "User-Agent": "UpNext/1.0 (Media Tracker App)"
+                    })
+                    if response.status_code == 200:
+                        form_data["cover_image"] = response.content
+                        form_data["cover_mime"] = response.headers.get(
+                            "Content-Type", "image/jpeg"
+                        )
+                        form_data["cover_url"] = cover_url
+                        logger.info(f"Downloaded cover from: {cover_url}")
+                except Exception as e:
+                    logger.warning(f"Failed to download cover from {cover_url}: {e}")
 
         if item_id:
             # Update existing record
@@ -259,7 +277,6 @@ def save_item():
 def delete_item(item_id):
     """Delete an item by its ID."""
     try:
-        # Check existence first if needed, though delete_item handles it
         if data_manager.delete_item(item_id):
             return jsonify({"status": "success"})
         
@@ -384,3 +401,135 @@ def rename_tag():
             
     db.session.commit()
     return jsonify(new_tag.to_dict()), 200
+
+
+# =============================================================================
+# EXTERNAL API ENDPOINTS
+# =============================================================================
+
+# Lazy-loaded singleton for external API service
+_external_api_service = None
+
+def _get_external_api_service():
+    """Get or create the external API service singleton."""
+    global _external_api_service
+    if _external_api_service is None:
+        from app.services.external_api import ExternalAPIService
+        from app.utils.config_manager import load_config
+        
+        config = load_config()
+        tmdb_key = config.get('apiKeys', {}).get('tmdb', '')
+        _external_api_service = ExternalAPIService(tmdb_api_key=tmdb_key)
+    return _external_api_service
+
+
+@bp.route("/external/search", methods=["GET"])
+def external_search():
+    """
+    Search external APIs for media metadata.
+    
+    Query params:
+        q: Search query string (required)
+        type: Media type - Anime, Manga, Book, Movie, Series (required)
+    
+    Returns:
+        List of search results with normalized structure.
+    """
+    query = request.args.get("q", "").strip()
+    media_type = request.args.get("type", "")
+    
+    if not query:
+        return jsonify({"error": "Query parameter 'q' is required"}), 400
+    
+    if media_type not in MEDIA_TYPES:
+        return jsonify({"error": f"Invalid media type. Must be one of: {', '.join(MEDIA_TYPES)}"}), 400
+    
+    try:
+        service = _get_external_api_service()
+        
+        # Check TMDB API key for Movies/Series
+        if media_type in ("Movie", "Series") and not service.tmdb.api_key:
+            return jsonify({
+                "error": "TMDB API key not configured",
+                "message": "Please add your TMDB API key in Settings to search for movies and series."
+            }), 400
+        
+        results = service.search(query, media_type)
+        return jsonify({"results": results})
+    
+    except Exception as e:
+        logger.error(f"External search failed: {e}", exc_info=True)
+        return jsonify({"error": "Search failed", "message": str(e)}), 500
+
+
+@bp.route("/external/details", methods=["GET"])
+def external_details():
+    """
+    Get full details for a specific item from an external API.
+    
+    Query params:
+        id: External ID of the item (required)
+        type: Media type - Anime, Manga, Book, Movie, Series (required)
+        source: API source - anilist, tmdb, openlibrary (required)
+    
+    Returns:
+        Full item details normalized for UpNext wizard pre-fill.
+    """
+    external_id = request.args.get("id", "").strip()
+    media_type = request.args.get("type", "")
+    source = request.args.get("source", "").lower()
+    
+    if not external_id:
+        return jsonify({"error": "Query parameter 'id' is required"}), 400
+    
+    if media_type not in MEDIA_TYPES:
+        return jsonify({"error": f"Invalid media type. Must be one of: {', '.join(MEDIA_TYPES)}"}), 400
+    
+    if source not in ("anilist", "tmdb", "openlibrary"):
+        return jsonify({"error": "Invalid source. Must be one of: anilist, tmdb, openlibrary"}), 400
+    
+    try:
+        service = _get_external_api_service()
+        
+        # Check TMDB API key
+        if source == "tmdb" and not service.tmdb.api_key:
+            return jsonify({
+                "error": "TMDB API key not configured",
+                "message": "Please add your TMDB API key in Settings."
+            }), 400
+        
+        details = service.get_details(external_id, media_type, source)
+        
+        if not details:
+            return jsonify({"error": "Item not found"}), 404
+        
+        return jsonify({"item": details})
+    
+    except Exception as e:
+        logger.error(f"External details fetch failed: {e}", exc_info=True)
+        return jsonify({"error": "Failed to fetch details", "message": str(e)}), 500
+
+
+@bp.route("/external/update-key", methods=["POST"])
+def update_external_api_key():
+    """
+    Update external API keys at runtime.
+    
+    Body:
+        tmdb: TMDB API key
+    """
+    data = request.get_json()
+    tmdb_key = data.get("tmdb")
+    
+    if tmdb_key:
+        service = _get_external_api_service()
+        service.set_tmdb_api_key(tmdb_key)
+        
+        # Also persist to config
+        from app.utils.config_manager import load_config, save_config
+        config = load_config()
+        api_keys = config.get('apiKeys', {})
+        api_keys['tmdb'] = tmdb_key
+        save_config({'apiKeys': api_keys})
+    
+    return jsonify({"status": "success"})
