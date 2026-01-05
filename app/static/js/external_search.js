@@ -151,7 +151,7 @@ function createSearchModal() {
 				<!-- Footer -->
 				<div class="p-3 border-t border-zinc-800 bg-zinc-900/50">
 					<p class="text-xs text-zinc-500 text-center">
-						Powered by <span class="text-blue-400">AniList</span>, <span class="text-green-400">TMDB</span>, and <span class="text-amber-400">Open Library</span>
+						Powered by <span class="text-blue-400">AniList</span>, <span class="text-green-400">TMDB</span>, <span class="text-blue-500">TVMaze</span>, <span class="text-amber-400">Open Library</span>, <span class="text-pink-500">MangaDex</span>, <span class="text-indigo-400">Google Books</span>, and <span class="text-zinc-300">Comic Vine</span>
 					</p>
 				</div>
 			</div>
@@ -566,6 +566,7 @@ export async function selectExternalResult(id, source, type) {
 
     showToast('Fetching full details...', 'info');
 
+    const spinner = document.getElementById('externalSearchSpinner');
     if (spinner) spinner.classList.remove('hidden');
 
     try {

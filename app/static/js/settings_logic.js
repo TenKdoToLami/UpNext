@@ -115,9 +115,9 @@ export async function saveSettingsAndClose() {
 	// Priorities
 	const prioritiesObj = {};
 	['Anime', 'Manga', 'Book', 'Series', 'Movie'].forEach(type => {
-		const radio = document.querySelector(`input[name="priority-${type.toLowerCase()}"]:checked`);
-		if (radio) {
-			prioritiesObj[type] = radio.value;
+		const select = document.getElementById(`priority-${type.toLowerCase()}`);
+		if (select) {
+			prioritiesObj[type] = select.value;
 		}
 	});
 	if (Object.keys(prioritiesObj).length > 0) {
@@ -768,9 +768,8 @@ export async function loadExternalConfig() {
 			['Anime', 'Manga', 'Book', 'Series', 'Movie'].forEach(type => {
 				const val = priorities[type];
 				if (val) {
-					// Find the radio with this value and check it
-					const radio = document.querySelector(`input[name="priority-${type.toLowerCase()}"][value="${val}"]`);
-					if (radio) radio.checked = true;
+					const select = document.getElementById(`priority-${type.toLowerCase()}`);
+					if (select) select.value = val;
 				}
 			});
 		}

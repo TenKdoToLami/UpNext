@@ -180,145 +180,78 @@
 							<i data-lucide="list-filter" class="w-4 h-4 text-emerald-500"></i>
 							Primary Search Sources
 						</h3>
-						<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+						<div class="space-y-3 w-full">
 							<div
-								class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4">
-								<div class="flex items-center gap-2 mb-3">
-									<i data-lucide="sparkles" class="w-4 h-4 text-pink-500"></i>
+								class="flex items-center justify-between gap-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3">
+								<div class="flex items-center gap-3">
+									<i data-lucide="tv" class="w-4 h-4 text-violet-500"></i>
 									<span
 										class="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400">Anime</span>
 								</div>
-								<div class="space-y-2" id="priority-anime-container">
-									<label class="flex items-center gap-2 cursor-pointer group">
-										<input type="radio" name="priority-anime" value="anilist"
-											class="text-indigo-600 focus:ring-indigo-500 bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700"
-											checked>
-										<span
-											class="text-sm text-zinc-700 dark:text-zinc-300 font-medium group-hover:text-indigo-500 transition-colors">AniList</span>
-									</label>
-									<label class="flex items-center gap-2 cursor-pointer group">
-										<input type="radio" name="priority-anime" value="tmdb"
-											class="text-indigo-600 focus:ring-indigo-500 bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700">
-										<span
-											class="text-sm text-zinc-700 dark:text-zinc-300 font-medium group-hover:text-indigo-500 transition-colors">TMDB</span>
-									</label>
-									<label class="flex items-center gap-2 cursor-pointer group">
-										<input type="radio" name="priority-anime" value="tvmaze"
-											class="text-indigo-600 focus:ring-indigo-500 bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700">
-										<span
-											class="text-sm text-zinc-700 dark:text-zinc-300 font-medium group-hover:text-indigo-500 transition-colors">TVMaze</span>
-									</label>
-								</div>
+								<select id="priority-anime"
+									class="bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:text-white">
+									<option value="anilist">AniList</option>
+									<option value="tmdb">TMDB</option>
+									<option value="tvmaze">TVMaze</option>
+								</select>
 							</div>
 
 							<div
-								class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4">
-								<div class="flex items-center gap-2 mb-3">
-									<i data-lucide="book" class="w-4 h-4 text-orange-500"></i>
+								class="flex items-center justify-between gap-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3">
+								<div class="flex items-center gap-3">
+									<i data-lucide="file-text" class="w-4 h-4 text-pink-500"></i>
 									<span
 										class="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400">Manga</span>
 								</div>
-								<div class="space-y-2" id="priority-manga-container">
-									<label class="flex items-center gap-2 cursor-pointer group">
-										<input type="radio" name="priority-manga" value="mangadex"
-											class="text-indigo-600 focus:ring-indigo-500 bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700"
-											checked>
-										<span
-											class="text-sm text-zinc-700 dark:text-zinc-300 font-medium group-hover:text-indigo-500 transition-colors">MangaDex</span>
-									</label>
-									<label class="flex items-center gap-2 cursor-pointer group">
-										<input type="radio" name="priority-manga" value="anilist"
-											class="text-indigo-600 focus:ring-indigo-500 bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700">
-										<span
-											class="text-sm text-zinc-700 dark:text-zinc-300 font-medium group-hover:text-indigo-500 transition-colors">AniList</span>
-									</label>
-								</div>
+								<select id="priority-manga"
+									class="bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:text-white">
+									<option value="mangadex">MangaDex</option>
+									<option value="anilist">AniList</option>
+								</select>
 							</div>
 
 							<div
-								class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4">
-								<div class="flex items-center gap-2 mb-3">
-									<i data-lucide="book-open" class="w-4 h-4 text-emerald-500"></i>
+								class="flex items-center justify-between gap-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3">
+								<div class="flex items-center gap-3">
+									<i data-lucide="book" class="w-4 h-4 text-blue-500"></i>
 									<span
 										class="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400">Books</span>
 								</div>
-								<div class="space-y-2" id="priority-book-container">
-									<label class="flex items-center gap-2 cursor-pointer group">
-										<input type="radio" name="priority-book" value="openlibrary"
-											class="text-indigo-600 focus:ring-indigo-500 bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700"
-											checked>
-										<span
-											class="text-sm text-zinc-700 dark:text-zinc-300 font-medium group-hover:text-indigo-500 transition-colors">OpenLibrary</span>
-									</label>
-									<label class="flex items-center gap-2 cursor-pointer group">
-										<input type="radio" name="priority-book" value="googlebooks"
-											class="text-indigo-600 focus:ring-indigo-500 bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700">
-										<span
-											class="text-sm text-zinc-700 dark:text-zinc-300 font-medium group-hover:text-indigo-500 transition-colors">Google
-											Books</span>
-									</label>
-									<label class="flex items-center gap-2 cursor-pointer group">
-										<input type="radio" name="priority-book" value="comicvine"
-											class="text-indigo-600 focus:ring-indigo-500 bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700">
-										<span
-											class="text-sm text-zinc-700 dark:text-zinc-300 font-medium group-hover:text-indigo-500 transition-colors">Comic
-											Vine</span>
-									</label>
-								</div>
+								<select id="priority-book"
+									class="bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:text-white">
+									<option value="openlibrary">OpenLibrary</option>
+									<option value="googlebooks">Google Books</option>
+									<option value="comicvine">Comic Vine</option>
+								</select>
 							</div>
 
 							<div
-								class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4">
-								<div class="flex items-center gap-2 mb-3">
-									<i data-lucide="tv" class="w-4 h-4 text-blue-500"></i>
+								class="flex items-center justify-between gap-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3">
+								<div class="flex items-center gap-3">
+									<i data-lucide="tv-2" class="w-4 h-4 text-amber-500"></i>
 									<span
 										class="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400">Series</span>
 								</div>
-								<div class="space-y-2" id="priority-series-container">
-									<label class="flex items-center gap-2 cursor-pointer group">
-										<input type="radio" name="priority-series" value="tmdb"
-											class="text-indigo-600 focus:ring-indigo-500 bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700"
-											checked>
-										<span
-											class="text-sm text-zinc-700 dark:text-zinc-300 font-medium group-hover:text-indigo-500 transition-colors">TMDB</span>
-									</label>
-									<label class="flex items-center gap-2 cursor-pointer group">
-										<input type="radio" name="priority-series" value="tvmaze"
-											class="text-indigo-600 focus:ring-indigo-500 bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700">
-										<span
-											class="text-sm text-zinc-700 dark:text-zinc-300 font-medium group-hover:text-indigo-500 transition-colors">TVMaze</span>
-									</label>
-									<label class="flex items-center gap-2 cursor-pointer group">
-										<input type="radio" name="priority-series" value="anilist"
-											class="text-indigo-600 focus:ring-indigo-500 bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700">
-										<span
-											class="text-sm text-zinc-700 dark:text-zinc-300 font-medium group-hover:text-indigo-500 transition-colors">AniList</span>
-									</label>
-								</div>
+								<select id="priority-series"
+									class="bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:text-white">
+									<option value="tmdb">TMDB</option>
+									<option value="tvmaze">TVMaze</option>
+									<option value="anilist">AniList</option>
+								</select>
 							</div>
 
 							<div
-								class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4">
-								<div class="flex items-center gap-2 mb-3">
-									<i data-lucide="film" class="w-4 h-4 text-purple-500"></i>
+								class="flex items-center justify-between gap-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3">
+								<div class="flex items-center gap-3">
+									<i data-lucide="film" class="w-4 h-4 text-red-500"></i>
 									<span
 										class="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400">Movies</span>
 								</div>
-								<div class="space-y-2" id="priority-movie-container">
-									<label class="flex items-center gap-2 cursor-pointer group">
-										<input type="radio" name="priority-movie" value="tmdb"
-											class="text-indigo-600 focus:ring-indigo-500 bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700"
-											checked>
-										<span
-											class="text-sm text-zinc-700 dark:text-zinc-300 font-medium group-hover:text-indigo-500 transition-colors">TMDB</span>
-									</label>
-									<label class="flex items-center gap-2 cursor-pointer group">
-										<input type="radio" name="priority-movie" value="anilist"
-											class="text-indigo-600 focus:ring-indigo-500 bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700">
-										<span
-											class="text-sm text-zinc-700 dark:text-zinc-300 font-medium group-hover:text-indigo-500 transition-colors">AniList</span>
-									</label>
-								</div>
+								<select id="priority-movie"
+									class="bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:text-white">
+									<option value="tmdb">TMDB</option>
+									<option value="anilist">AniList</option>
+								</select>
 							</div>
 						</div>
 					</div>

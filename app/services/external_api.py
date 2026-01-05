@@ -310,7 +310,10 @@ class TMDBClient(BaseAPIClient):
 
         params = params or {}
         params["api_key"] = self.api_key
-
+        
+        # Force English language
+        params["language"] = "en-US"
+        
         try:
             response = requests.get(
                 f"{self.API_BASE}{endpoint}",
@@ -841,6 +844,9 @@ class GoogleBooksClient(BaseAPIClient):
         params = params or {}
         if self.api_key:
             params["key"] = self.api_key
+        
+        # Force English language for results
+        params["hl"] = "en"
         
         try:
             response = requests.get(
