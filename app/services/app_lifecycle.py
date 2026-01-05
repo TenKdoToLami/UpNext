@@ -326,6 +326,14 @@ def run_application_stack(create_app_func: Callable, host: str, port: int, headl
 
     def on_closing():
         """Intercept window closing to minimize to tray or exit based on preference."""
+        # Always save window geometry before closing/hiding
+        if window_ref[0]:
+            try:
+                from app.utils.config_manager import save_window_geometry
+                save_window_geometry(window_ref[0])
+            except Exception as e:
+                logger.debug(f"Failed to save window geometry: {e}")
+        
         if not tray_available[0] or not tray_icon[0]:
             return True  # Allow close if no tray
         
@@ -368,7 +376,24 @@ def run_application_stack(create_app_func: Callable, host: str, port: int, headl
     # Load Config (for other settings)
     from app.utils.config_manager import load_config
     config = load_config()
-    # Note: Window always shows on launch by default. Use --minimized CLI flag to start hidden.
+    
+    # Read saved window geometry from config (with defaults)
+    window_state = config.get('window', {})
+    initial_width = window_state.get('width', 1200)
+    initial_height = window_state.get('height', 800)
+    initial_x = window_state.get('x', None)
+    initial_y = window_state.get('y', None)
+    
+    # Determine if window should start hidden
+    # Priority: CLI --minimized flag > openWindowOnStart setting
+    # If --minimized was passed, always start hidden
+    # Otherwise, check the openWindowOnStart setting (defaults to True)
+    app_settings = config.get('appSettings', {})
+    open_on_start = app_settings.get('openWindowOnStart', True)
+    
+    # If user preference is to NOT open window on start AND tray is available, start hidden
+    if not minimized and not open_on_start and tray_available[0]:
+        minimized = True
         
     from app.build_config import ENABLE_TRAY
 
@@ -377,8 +402,10 @@ def run_application_stack(create_app_func: Callable, host: str, port: int, headl
     window = webview.create_window(
         'UpNext', 
         initial_url, 
-        width=1200, 
-        height=800, 
+        width=initial_width, 
+        height=initial_height, 
+        x=initial_x,
+        y=initial_y,
         hidden=minimized, 
         js_api=JsApi()
     )

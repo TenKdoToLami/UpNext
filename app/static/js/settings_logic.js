@@ -18,8 +18,18 @@ import { saveTag, renameTag, deleteTag } from './api_service.js';
 // Buffer for settings changes
 let pendingAppSettings = null;
 
-// Track collapsed states locally for the session (or could accept them reset on reopen)
-const collapsedGroups = new Set();
+// Track collapsed states locally for the session - all groups collapsed by default
+const collapsedGroups = new Set([
+	'core_assets',
+	'categorization',
+	'tracking',
+	'reviews',
+	'series_info',
+	'metadata',
+	'personal',
+	'calendar',
+	'stats'
+]);
 
 /**
  * Initializes the settings modal state.
