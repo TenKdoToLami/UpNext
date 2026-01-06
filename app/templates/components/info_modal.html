@@ -4,620 +4,850 @@
 	onclick="if(event.target === this) closeInfoModal()">
 	<div class="bg-white dark:bg-[#0c0c0e] border border-zinc-200 dark:border-zinc-800 rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl transform scale-95 transition-all duration-200 animate-enter"
 		id="infoModalContent">
-		<div
-			class="px-8 py-6 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center bg-white dark:bg-[#0c0c0e]">
-			<h2
-				class="text-xl font-heading font-bold text-zinc-900 dark:text-white tracking-wide flex items-center gap-2">
-				<i data-lucide="info" class="w-5 h-5 text-indigo-500 dark:text-indigo-400"></i> UpNext Guide & Project
-				Info
-			</h2>
-			<button onclick="closeInfoModal()"
-				class="text-zinc-400 hover:text-red-500 dark:hover:text-white transition-colors"><i data-lucide="x"
-					class="w-5 h-5"></i></button>
-		</div>
-		<div class="p-8 overflow-y-auto custom-scrollbar flex-1 space-y-8 bg-zinc-50 dark:bg-zinc-950/30">
-
-			<div class="space-y-4 max-h-[60vh] overflow-y-auto custom-scrollbar pr-2 text-black dark:text-zinc-200">
-				<!-- PROJECT & CREATOR -->
-				<div class="space-y-4 border-b border-zinc-200 dark:border-zinc-800 pb-4">
-					<button onclick="document.getElementById('creatorGuide').classList.toggle('hidden')"
-						class="w-full flex items-center justify-between text-left group">
-						<h3 class="text-sm font-bold uppercase tracking-widest text-indigo-500 dark:text-indigo-400">
-							Project & Creator</h3>
-						<i data-lucide="chevron-down"
-							class="w-4 h-4 text-zinc-400 group-hover:text-indigo-500 transition-colors"></i>
-					</button>
-
-					<div id="creatorGuide" class="space-y-4 animate-enter pt-2">
-						<div
-							class="bg-indigo-500/10 border border-indigo-500/20 rounded-2xl p-5 relative overflow-hidden group">
-							<div
-								class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-								<i data-lucide="zap" class="w-16 h-16 text-indigo-500"></i>
-							</div>
-							<div class="relative z-10">
-								<h4 class="text-indigo-400 font-bold mb-1 flex items-center gap-2">
-									TenKdoToLami <span
-										class="text-[10px] bg-indigo-500 text-white px-1.5 py-0.5 rounded uppercase tracking-tighter shadow-sm shadow-indigo-500/50">Lead
-										Chaotic Dev</span>
-								</h4>
-								<p class="text-[11px] text-zinc-400 leading-relaxed mb-4 italic">
-									"I coded this hot pile of mess in a fever dream of glassmorphism and Python.
-									It was <strong>majorly vibe coded</strong> and held together by pure spite and
-									beautiful CSS.
-									If it works, it's a miracle; if it doesn't, it's a feature."
-								</p>
-								<div class="flex gap-2">
-									<a href="https://github.com/TenKdoToLami" target="_blank"
-										class="flex items-center gap-2 px-3 py-2 rounded-lg bg-indigo-500 text-white text-[10px] font-bold hover:bg-indigo-600 transition-all shadow-lg shadow-indigo-500/20">
-										<i data-lucide="user" class="w-3 h-3"></i> GitHub Profile
-									</a>
-									<a href="https://github.com/TenKdoToLami/UpNext" target="_blank"
-										class="flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-800 dark:bg-zinc-700 text-white text-[10px] font-bold hover:bg-zinc-700 dark:hover:bg-zinc-600 transition-all">
-										<i data-lucide="github" class="w-3 h-3"></i> Repository
-									</a>
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-
-				<!-- LIBRARIES & DATABASES -->
-				<div class="space-y-2 border-b border-zinc-200 dark:border-zinc-800 pb-4">
-					<button onclick="document.getElementById('dbGuide').classList.toggle('hidden')"
-						class="w-full flex items-center justify-between text-left group">
-						<h3 class="text-sm font-bold uppercase tracking-widest text-emerald-500 dark:text-emerald-400">
-							Libraries & Databases</h3>
-						<i data-lucide="chevron-down"
-							class="w-4 h-4 text-zinc-400 group-hover:text-emerald-500 transition-colors"></i>
-					</button>
-
-					<div id="dbGuide" class="hidden space-y-4 animate-enter pt-2">
-						<div class="bg-emerald-500/5 border border-emerald-500/10 rounded-2xl p-4">
-							<p class="text-xs leading-relaxed opacity-90 mb-3">
-								UpNext supports multiple isolated libraries. You can maintain a public "Main" library
-								and a private "Archive" or specialized collections.
-							</p>
-							<ul class="space-y-2">
-								<li class="flex items-start gap-3">
-									<div
-										class="bg-emerald-500/20 p-1.5 rounded-lg text-emerald-600 dark:text-emerald-400">
-										<i data-lucide="library" class="w-3.5 h-3.5"></i></div>
-									<div class="text-[11px] leading-tight"><strong>Switching Libraries:</strong> Use the
-										Database icon in the header to switch between existing <code>.db</code> files
-										without restarting.</div>
-								</li>
-								<li class="flex items-start gap-3">
-									<div
-										class="bg-emerald-500/20 p-1.5 rounded-lg text-emerald-600 dark:text-emerald-400">
-										<i data-lucide="plus-circle" class="w-3.5 h-3.5"></i></div>
-									<div class="text-[11px] leading-tight"><strong>New Collections:</strong> Create new
-										databases instantly from the selection modal. They will be initialized with the
-										latest schema automatically.</div>
-								</li>
-								<li class="flex items-start gap-3">
-									<div
-										class="bg-emerald-500/20 p-1.5 rounded-lg text-emerald-600 dark:text-emerald-400">
-										<i data-lucide="zap" class="w-3.5 h-3.5"></i></div>
-									<div class="text-[11px] leading-tight"><strong>Auto-Launch:</strong> Enable "Do not
-										show on launch" in the selection modal to skip the picker and head straight to
-										your last active library.</div>
-								</li>
-							</ul>
-						</div>
-					</div>
-				</div>
-
-				<!-- RELEASE CALENDAR -->
-				<div class="space-y-2 border-b border-zinc-200 dark:border-zinc-800 pb-4">
-					<button onclick="document.getElementById('calendarGuide').classList.toggle('hidden')"
-						class="w-full flex items-center justify-between text-left group">
-						<h3 class="text-sm font-bold uppercase tracking-widest text-fuchsia-500 dark:text-fuchsia-400">
-							Release Calendar</h3>
-						<i data-lucide="chevron-down"
-							class="w-4 h-4 text-zinc-400 group-hover:text-fuchsia-500 transition-colors"></i>
-					</button>
-
-					<div id="calendarGuide" class="hidden space-y-4 animate-enter pt-2">
-						<div class="bg-fuchsia-500/5 border border-fuchsia-500/10 rounded-2xl p-4">
-							<p class="text-xs leading-relaxed opacity-90 mb-3">
-								Track upcoming releases and past airings with the integrated calendar system.
-							</p>
-							<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-								<div class="bg-zinc-100 dark:bg-zinc-900/50 p-2.5 rounded-xl border border-white/5">
-									<h4
-										class="text-[10px] font-bold uppercase text-fuchsia-500 mb-1 flex items-center gap-1">
-										<i data-lucide="repeat" class="w-3 h-3"></i> Recurring Events</h4>
-									<p class="text-[10px] opacity-70">Schedule weekly or daily releases. Perfect for
-										seasonal Anime or weekly Manga chapters.</p>
-								</div>
-								<div class="bg-zinc-100 dark:bg-zinc-900/50 p-2.5 rounded-xl border border-white/5">
-									<h4
-										class="text-[10px] font-bold uppercase text-fuchsia-500 mb-1 flex items-center gap-1">
-										<i data-lucide="clock" class="w-3 h-3"></i> Overdue Tracker</h4>
-									<p class="text-[10px] opacity-70">Releases that passed without being marked as
-										"Seen" will show up in the overdue drawer.</p>
-								</div>
-							</div>
-							<div class="mt-3 p-2.5 bg-fuchsia-500 text-white rounded-xl flex items-center gap-3">
-								<i data-lucide="info" class="w-4 h-4 shrink-0"></i>
-								<p class="text-[10px] font-bold leading-tight">Pro Tip: Use the 'Catch-up' button in the
-									Overdue modal to mark all missed events as seen at once.</p>
-							</div>
-						</div>
-					</div>
-				</div>
-
-				<!-- DYNAMIC TAGGING -->
-				<div class="space-y-2 border-b border-zinc-200 dark:border-zinc-800 pb-4">
-					<button onclick="document.getElementById('taggingGuide').classList.toggle('hidden')"
-						class="w-full flex items-center justify-between text-left group">
-						<h3 class="text-sm font-bold uppercase tracking-widest text-blue-500 dark:text-blue-400">
-							Dynamic Tags</h3>
-						<i data-lucide="chevron-down"
-							class="w-4 h-4 text-zinc-400 group-hover:text-blue-500 transition-colors"></i>
-					</button>
-
-					<div id="taggingGuide" class="hidden space-y-4 animate-enter pt-2">
-						<div class="bg-blue-500/5 border border-blue-500/10 rounded-2xl p-4">
-							<p class="text-xs leading-relaxed opacity-90 mb-3">
-								Tags in UpNext are persistent and highly customizable metadata objects.
-							</p>
-							<ul class="space-y-2">
-								<li class="flex items-start gap-3">
-									<div class="bg-blue-500/20 p-1.5 rounded-lg text-blue-600 dark:text-blue-400"><i
-											data-lucide="palette" class="w-3.5 h-3.5"></i></div>
-									<div class="text-[11px] leading-tight"><strong>Custom Colors:</strong> Set unique
-										hex codes for tags in the Settings -> Tags menu to make them pop in your
-										library.</div>
-								</li>
-								<li class="flex items-start gap-3">
-									<div class="bg-blue-500/20 p-1.5 rounded-lg text-blue-600 dark:text-blue-400"><i
-											data-lucide="text-quote" class="w-3.5 h-3.5"></i></div>
-									<div class="text-[11px] leading-tight"><strong>Descriptions:</strong> Add context to
-										your tags. Descriptions appear in the autocomplete dropdown during entry
-										creation.</div>
-								</li>
-								<li class="flex items-start gap-3">
-									<div class="bg-blue-500/20 p-1.5 rounded-lg text-blue-600 dark:text-blue-400"><i
-											data-lucide="filter" class="w-3.5 h-3.5"></i></div>
-									<div class="text-[11px] leading-tight"><strong>Tag Filtering:</strong> Search for
-										<code>tag="Name"</code> or just <code>tag=Action</code> to filter by category.
-									</div>
-								</li>
-							</ul>
-						</div>
-					</div>
-				</div>
-
-				<!-- SYSTEM SETTINGS -->
-				<div class="space-y-2 border-b border-zinc-200 dark:border-zinc-800 pb-4">
-					<button onclick="document.getElementById('settingsGuide').classList.toggle('hidden')"
-						class="w-full flex items-center justify-between text-left group">
-						<h3 class="text-sm font-bold uppercase tracking-widest text-amber-500 dark:text-amber-400">
-							System Settings</h3>
-						<i data-lucide="chevron-down"
-							class="w-4 h-4 text-zinc-400 group-hover:text-amber-500 transition-colors"></i>
-					</button>
-
-					<div id="settingsGuide" class="hidden space-y-4 animate-enter pt-2">
-						<div class="bg-amber-500/5 border border-amber-500/10 rounded-2xl p-4">
-							<p class="text-xs leading-relaxed opacity-90 mb-3">
-								Tailor the application to your specific workflow via the Settings modal.
-							</p>
-							<div class="space-y-3">
-								<div class="bg-zinc-100 dark:bg-zinc-900/50 p-3 rounded-xl border border-white/5">
-									<h4
-										class="text-[10px] font-bold uppercase text-amber-500 mb-1 flex items-center gap-2">
-										<i data-lucide="eye-off" class="w-3 h-3"></i> Field Visibility</h4>
-									<p class="text-[10px] opacity-70">Hide unused metadata fields (like reread count or
-										chapters) to keep your entry wizard and detail views clean.</p>
-								</div>
-								<div class="bg-zinc-100 dark:bg-zinc-900/50 p-3 rounded-xl border border-white/5">
-									<h4
-										class="text-[10px] font-bold uppercase text-amber-500 mb-1 flex items-center gap-2">
-										<i data-lucide="toggle-right" class="w-3 h-3"></i> Feature Toggles</h4>
-									<p class="text-[10px] opacity-70">Disable entire subsystems if you don't use them
-										(e.g., Stats, Exports, or the Calendar) to declutter the header.</p>
-								</div>
-								<div
-									class="bg-amber-500/20 p-2.5 rounded-xl border border-amber-500/30 text-[10px] font-medium text-amber-700 dark:text-amber-400 flex items-center gap-2">
-									<i data-lucide="save" class="w-3.5 h-3.5"></i>
-									<span>Changes are staged. Click "Save Changes" at the bottom to apply
-										globally.</span>
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-
-				<!-- SEARCH GUIDE -->
-				<div class="space-y-2 border-b border-zinc-200 dark:border-zinc-800 pb-4">
-					<button onclick="document.getElementById('searchGuide').classList.toggle('hidden')"
-						class="w-full flex items-center justify-between text-left group">
-						<h3 class="text-sm font-bold uppercase tracking-widest text-indigo-500 dark:text-indigo-400">
-							Search Guide</h3>
-						<i data-lucide="chevron-down"
-							class="w-4 h-4 text-zinc-400 group-hover:text-indigo-500 transition-colors"></i>
-					</button>
-
-					<div id="searchGuide" class="hidden space-y-3 text-sm animate-enter pt-2">
-						<p class="leading-relaxed opacity-90">
-							By default, the search bar finds items by <strong>Title</strong> or <strong>Alternative
-								Titles</strong>.
-						</p>
-						<div
-							class="bg-zinc-100 dark:bg-zinc-900/50 p-3 rounded-lg border border-zinc-200 dark:border-zinc-800">
-							<p class="text-xs mb-2 opacity-80">To filter by specific fields, use prefixes:</p>
-							<ul class="space-y-1.5 font-mono text-xs">
-								<li><span class="text-indigo-600 dark:text-indigo-400">series=</span>"Name"</li>
-								<li><span class="text-emerald-600 dark:text-emerald-400">universe=</span>"Name"</li>
-								<li><span class="text-amber-600 dark:text-amber-400">author=</span>"Name"</li>
-								<li><span class="text-blue-600 dark:text-blue-400">tag=</span>"Category"</li>
-							</ul>
-							<div class="mt-2 flex flex-wrap gap-2 text-[10px] opacity-80">
-								<span class="italic opacity-70">Try it:</span>
-								<button onclick="setSearch('universe=&quot;MCU&quot;')"
-									class="bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded hover:bg-emerald-500 hover:text-white transition-colors cursor-pointer text-emerald-600 dark:text-emerald-400 font-mono">universe="MCU"</button>
-								<button onclick="setSearch('type=Anime')"
-									class="bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded hover:bg-indigo-500 hover:text-white transition-colors cursor-pointer text-indigo-600 dark:text-indigo-400 font-mono">type=Anime</button>
-							</div>
-						</div>
-					</div>
-				</div>
-
-				<!-- INTERFACE CONTROLS -->
-				<div class="space-y-2 border-b border-zinc-200 dark:border-zinc-800 pb-4">
-					<button onclick="document.getElementById('interfaceGuide').classList.toggle('hidden')"
-						class="w-full flex items-center justify-between text-left group">
-						<h3 class="text-sm font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
-							Interface Controls</h3>
-						<i data-lucide="chevron-down"
-							class="w-4 h-4 text-zinc-400 group-hover:text-zinc-300 transition-colors"></i>
-					</button>
-
-					<div id="interfaceGuide" class="hidden space-y-6 text-sm animate-enter pt-2">
-						<!-- Primary Toggles -->
-						<div class="space-y-4">
-							<div
-								class="text-[10px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500 px-1 border-l-2 border-indigo-500 pl-3">
-								Toolbelt Toggles</div>
-							<ul class="grid grid-cols-[100px,1fr] gap-x-4 gap-y-4 items-center">
-								<li class="contents">
-									<div class="flex gap-2 items-center justify-center">
-										<div
-											class="bg-zinc-100 dark:bg-zinc-800 p-1.5 rounded-lg h-8 w-8 flex items-center justify-center text-zinc-500">
-											<i data-lucide="eye" class="w-4 h-4"></i>
-										</div>
-										<div
-											class="bg-indigo-500 p-1.5 rounded-lg h-8 w-8 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
-											<i data-lucide="eye" class="w-4 h-4"></i>
-										</div>
-									</div>
-									<div class="text-xs"><strong>Toggle Details:</strong> Compare Inactive vs <span
-											class="text-indigo-500 font-bold uppercase">Active</span>. Expands cards to
-										show full metadata.</div>
-								</li>
-								<li class="contents">
-									<div class="flex gap-2 items-center justify-center">
-										<div
-											class="bg-zinc-100 dark:bg-zinc-800 p-1.5 rounded-lg h-8 w-8 flex items-center justify-center text-zinc-500">
-											<i data-lucide="list-checks" class="w-4 h-4"></i>
-										</div>
-										<div
-											class="bg-emerald-500 p-1.5 rounded-lg h-8 w-8 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
-											<i data-lucide="list-checks" class="w-4 h-4"></i>
-										</div>
-									</div>
-									<div class="text-xs"><strong>Multi-Select:</strong> Normal vs <span
-											class="text-emerald-500 font-bold uppercase">Compound</span> mode. Allows
-										filtering by multiple parameters.</div>
-								</li>
-								<li class="contents">
-									<div class="flex gap-2 items-center justify-center">
-										<div
-											class="bg-zinc-100 dark:bg-zinc-800 p-1.5 rounded-lg h-8 w-8 flex items-center justify-center text-zinc-500">
-											<i data-lucide="shield-off" class="w-4 h-4"></i>
-										</div>
-										<div
-											class="bg-red-500 p-1.5 rounded-lg h-8 w-8 flex items-center justify-center text-white shadow-lg shadow-red-500/20">
-											<i data-lucide="shield-off" class="w-4 h-4"></i>
-										</div>
-									</div>
-									<div class="text-xs"><strong>Show Hidden:</strong> Unmasks private entries. Active
-										state uses high-contrast <span
-											class="text-red-500 font-bold uppercase">Red</span>.</div>
-								</li>
-							</ul>
-						</div>
-
-						<!-- Layout & Theme -->
-						<div class="space-y-4">
-							<div
-								class="text-[10px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500 px-1 border-l-2 border-zinc-400 pl-3">
-								Presentation</div>
-							<ul class="grid grid-cols-[100px,1fr] gap-x-4 gap-y-4 items-center">
-								<li class="contents">
-									<div class="flex gap-2 items-center justify-center">
-										<div
-											class="bg-zinc-800 dark:bg-zinc-100 p-1.5 rounded-lg h-8 w-8 flex items-center justify-center text-white dark:text-black shadow-md">
-											<i data-lucide="layout-grid" class="w-4 h-4"></i>
-										</div>
-										<div
-											class="bg-zinc-100 dark:bg-zinc-800 p-1.5 rounded-lg h-8 w-8 flex items-center justify-center text-zinc-400">
-											<i data-lucide="list" class="w-4 h-4"></i>
-										</div>
-									</div>
-									<div class="text-xs"><strong>View Modes:</strong> Toggle between Grid and List
-										views. Selection is shown in <span
-											class="font-bold border-b border-black dark:border-white">High
-											Contrast</span>.</div>
-								</li>
-								<li class="contents">
-									<div class="flex gap-2 items-center justify-center">
-										<div
-											class="bg-zinc-100 dark:bg-zinc-800 p-1.5 rounded-lg h-8 w-8 flex items-center justify-center text-amber-500">
-											<i data-lucide="sun" class="w-4 h-4"></i>
-										</div>
-										<div
-											class="bg-zinc-800 p-1.5 rounded-lg h-8 w-8 flex items-center justify-center text-blue-400">
-											<i data-lucide="moon" class="w-4 h-4"></i>
-										</div>
-									</div>
-									<div class="text-xs"><strong>Adaptive Theme:</strong> Seamless Light/Dark switching.
-										Icons and accents adapt for better readability.</div>
-								</li>
-							</ul>
-						</div>
-
-						<!-- Navigation -->
-						<div class="space-y-4">
-							<div
-								class="text-[10px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500 px-1 border-l-2 border-emerald-500 pl-3">
-								Interaction</div>
-							<ul class="grid grid-cols-[100px,1fr] gap-x-4 gap-y-4 items-center">
-								<li class="contents">
-									<div class="flex gap-2 items-center justify-center">
-										<div
-											class="bg-zinc-100 dark:bg-zinc-800 p-1.5 rounded-lg h-8 w-8 flex items-center justify-center text-zinc-400">
-											<i data-lucide="search" class="w-4 h-4"></i>
-										</div>
-										<div
-											class="bg-white dark:bg-zinc-950 p-1.5 rounded-lg h-8 w-8 flex items-center justify-center text-indigo-500 border border-indigo-500/20">
-											<i data-lucide="search" class="w-4 h-4"></i>
-										</div>
-									</div>
-									<div class="text-xs"><strong>Immersive Search:</strong> Click to expand. Focused
-										mode creates a full-header overlay for a clean workspace.</div>
-								</li>
-								<li class="contents">
-									<div class="flex gap-2 items-center justify-center">
-										<div
-											class="bg-zinc-100 dark:bg-zinc-800 p-1.5 rounded-lg h-8 w-8 flex items-center justify-center text-zinc-400">
-											<i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
-										</div>
-										<div
-											class="bg-zinc-200 dark:bg-zinc-700 p-1.5 rounded-lg h-8 w-8 flex items-center justify-center text-zinc-900 dark:text-white border border-zinc-300 dark:border-zinc-600">
-											<i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
-										</div>
-									</div>
-									<div class="text-xs"><strong>System Menu:</strong> Consolidates sorting and mobile
-										controls into a single, unified drawer.</div>
-								</li>
-							</ul>
-						</div>
-					</div>
-				</div>
-
-				<!-- DEFINITIONS -->
-				<div class="space-y-2 border-b border-zinc-200 dark:border-zinc-800 pb-4">
-					<button onclick="document.getElementById('definitionsGuide').classList.toggle('hidden')"
-						class="w-full flex items-center justify-between text-left group">
-						<h3 class="text-sm font-bold uppercase tracking-widest text-emerald-500 dark:text-emerald-400">
-							Definitions</h3>
-						<i data-lucide="chevron-down"
-							class="w-4 h-4 text-zinc-400 group-hover:text-emerald-500 transition-colors"></i>
-					</button>
-
-					<div id="definitionsGuide" class="hidden space-y-6 text-sm animate-enter pt-2">
-
-						<!-- Status -->
-						<div class="space-y-2">
-							<h4 class="text-xs font-bold uppercase opacity-70">Status</h4>
-							<div
-								class="bg-zinc-100 dark:bg-zinc-900/50 p-3 rounded-lg border border-zinc-200 dark:border-zinc-800">
-								<ul class="text-xs space-y-2">
-									<li class="flex justify-between"><span
-											class="font-bold text-blue-500">Planning</span> <span class="opacity-70">Not
-											started yet</span></li>
-									<li class="flex justify-between gap-4"><span
-											class="font-bold text-fuchsia-500">Anticipating</span> <span
-											class="opacity-70 text-right">Partly finished, waiting for release</span>
-									</li>
-									<li class="flex justify-between"><span class="font-bold text-amber-500">Reading /
-											Watching</span> <span class="opacity-70">In progress</span></li>
-									<li class="flex justify-between"><span
-											class="font-bold text-emerald-500">Completed</span> <span
-											class="opacity-70">Finished completely</span></li>
-									<li class="flex justify-between"><span class="font-bold text-zinc-500">On
-											Hold</span> <span class="opacity-70">Paused temporarily</span></li>
-									<li class="flex justify-between"><span class="font-bold text-red-500">Dropped</span>
-										<span class="opacity-70">Stopped permanently</span>
-									</li>
-								</ul>
-							</div>
-						</div>
-
-						<!-- Ratings -->
-						<div class="space-y-2">
-							<h4 class="text-xs font-bold uppercase opacity-70">Ratings</h4>
-							<div
-								class="bg-zinc-100 dark:bg-zinc-900/50 p-3 rounded-lg border border-zinc-200 dark:border-zinc-800">
-								<ul class="text-xs space-y-2">
-									<li class="flex justify-between items-center">
-										<span class="font-bold text-emerald-500">Masterpiece</span>
-										<div class="flex gap-0.5"><i data-lucide="star"
-												class="w-3 h-3 fill-emerald-500 text-emerald-500"></i><i
-												data-lucide="star"
-												class="w-3 h-3 fill-emerald-500 text-emerald-500"></i><i
-												data-lucide="star"
-												class="w-3 h-3 fill-emerald-500 text-emerald-500"></i><i
-												data-lucide="star"
-												class="w-3 h-3 fill-emerald-500 text-emerald-500"></i></div>
-									</li>
-									<li class="text-[10px] opacity-70 text-right -mt-1 italic">Great in all regards</li>
-
-									<li class="flex justify-between items-center mt-2">
-										<span class="font-bold text-blue-500">Good</span>
-										<div class="flex gap-0.5"><i data-lucide="star"
-												class="w-3 h-3 fill-blue-500 text-blue-500"></i><i data-lucide="star"
-												class="w-3 h-3 fill-blue-500 text-blue-500"></i><i data-lucide="star"
-												class="w-3 h-3 fill-blue-500 text-blue-500"></i><i data-lucide="star"
-												class="w-3 h-3 text-zinc-300 dark:text-zinc-700"></i></div>
-									</li>
-									<li class="text-[10px] opacity-70 text-right -mt-1 italic">Something enjoyable</li>
-
-									<li class="flex justify-between items-center mt-2">
-										<span class="font-bold text-amber-500">Ok</span>
-										<div class="flex gap-0.5"><i data-lucide="star"
-												class="w-3 h-3 fill-amber-500 text-amber-500"></i><i data-lucide="star"
-												class="w-3 h-3 fill-amber-500 text-amber-500"></i><i data-lucide="star"
-												class="w-3 h-3 text-zinc-300 dark:text-zinc-700"></i><i
-												data-lucide="star" class="w-3 h-3 text-zinc-300 dark:text-zinc-700"></i>
-										</div>
-									</li>
-									<li class="text-[10px] opacity-70 text-right -mt-1 italic">Just "meh"</li>
-
-									<li class="flex justify-between items-center mt-2">
-										<span class="font-bold text-red-500">Bad</span>
-										<div class="flex gap-0.5"><i data-lucide="star"
-												class="w-3 h-3 fill-red-500 text-red-500"></i><i data-lucide="star"
-												class="w-3 h-3 text-zinc-300 dark:text-zinc-700"></i><i
-												data-lucide="star"
-												class="w-3 h-3 text-zinc-300 dark:text-zinc-700"></i><i
-												data-lucide="star" class="w-3 h-3 text-zinc-300 dark:text-zinc-700"></i>
-										</div>
-									</li>
-									<li class="text-[10px] opacity-70 text-right -mt-1 italic">Unwatchable / Unreadable
-									</li>
-								</ul>
-							</div>
-						</div>
-
-						<!-- Media Types -->
-						<div class="space-y-2">
-							<h4 class="text-xs font-bold uppercase opacity-70">Media Types</h4>
-							<ul class="space-y-2 text-xs opacity-90">
-								<li><strong class="text-violet-500">Anime:</strong> All animated works (TV, Movies,
-									Western, Donghua).</li>
-								<li><strong class="text-pink-500">Manga:</strong> All comics (Manga, Manhwa, Manhua,
-									Graphic Novels).</li>
-								<li><strong class="text-blue-500">Book:</strong> Novels, Non-fiction, Light Novels,
-									Audiobooks.</li>
-								<li><strong class="text-red-500">Movie:</strong> Live-action films, shorts.</li>
-								<li><strong class="text-amber-500">Series:</strong> Live-action TV shows, dramas.</li>
-							</ul>
-						</div>
-
-					</div>
-				</div>
-
-				<!-- STATISTICS GUIDE -->
-				<div class="space-y-2 border-b border-zinc-200 dark:border-zinc-800 pb-4">
-					<button onclick="document.getElementById('statsGuide').classList.toggle('hidden')"
-						class="w-full flex items-center justify-between text-left group">
-						<h3 class="text-sm font-bold uppercase tracking-widest text-indigo-500 dark:text-indigo-400">
-							Library Statistics</h3>
-						<i data-lucide="chevron-down"
-							class="w-4 h-4 text-zinc-400 group-hover:text-indigo-500 transition-colors"></i>
-					</button>
-
-					<div id="statsGuide" class="hidden space-y-3 text-sm animate-enter pt-2">
-						<p class="leading-relaxed opacity-90">
-							The <strong>Library Stats</strong> portal provides advanced data visualizations:
-						</p>
-						<ul class="list-disc list-inside space-y-1 text-xs opacity-80">
-							<li><strong>Type Distribution:</strong> Visual breakdown of your media library.</li>
-							<li><strong>Status Breakdown:</strong> Track your progress from Planning to Completion.</li>
-							<li><strong>Rating Distribution:</strong> Analyze your overall tastes and verdicts.</li>
-							<li><strong>Library Growth:</strong> Follow your collection's expansion over time.</li>
-						</ul>
-					</div>
-				</div>
-
-				<!-- DATA MANAGEMENT -->
-				<div class="space-y-2 border-b border-zinc-200 dark:border-zinc-800 pb-4">
-					<button onclick="document.getElementById('dataGuide').classList.toggle('hidden')"
-						class="w-full flex items-center justify-between text-left group">
-						<h3 class="text-sm font-bold uppercase tracking-widest text-amber-500 dark:text-amber-400">Data
-							Management</h3>
-						<i data-lucide="chevron-down"
-							class="w-4 h-4 text-zinc-400 group-hover:text-amber-500 transition-colors"></i>
-					</button>
-
-					<div id="dataGuide" class="hidden flex gap-4 items-start animate-enter text-sm mt-3">
-						<div
-							class="shrink-0 bg-amber-100 dark:bg-amber-500/10 p-2 rounded-lg text-amber-600 dark:text-amber-500">
-							<i data-lucide="download" class="w-5 h-5"></i>
-						</div>
-						<div>
-							<p class="leading-relaxed opacity-90 mb-2">Backups are crucial. Use the download button in
-								the header to access export options:</p>
-							<ul class="list-disc list-inside space-y-1 text-xs opacity-80">
-								<li><strong>Full Export:</strong> Complete backup (Code + DB + Images).</li>
-								<li><strong>Visual Export:</strong> Beautiful HTML grids/lists.</li>
-								<li><strong>Raw Data:</strong> JSON/CSV/XML for data analysis.</li>
-							</ul>
-						</div>
-					</div>
-				</div>
-
-				<!-- CORE DOCUMENTATION -->
-				<div class="space-y-2 pt-2">
-					<button onclick="document.getElementById('docsGuide').classList.toggle('hidden')"
-						class="w-full flex items-center justify-between text-left group">
-						<h3 class="text-sm font-bold uppercase tracking-widest text-zinc-500">
-							Core Documentation</h3>
-						<i data-lucide="chevron-down"
-							class="w-4 h-4 text-zinc-400 group-hover:text-zinc-300 transition-colors"></i>
-					</button>
-
-					<div id="docsGuide" class="hidden space-y-3 animate-enter pt-3">
-						<div class="grid grid-cols-1 gap-3">
-							<a href="https://github.com/TenKdoToLami/UpNext/blob/main/README.md" target="_blank"
-								class="flex items-center gap-4 p-4 rounded-xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 hover:border-indigo-500 transition-all group">
-								<div
-									class="shrink-0 w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-indigo-500">
-									<i data-lucide="file-text" class="w-5 h-5"></i>
-								</div>
-								<div>
-									<h4
-										class="text-xs font-bold text-zinc-900 dark:text-white group-hover:text-indigo-500 transition-colors">
-										README.md</h4>
-									<p class="text-[10px] text-zinc-500 dark:text-zinc-400 leading-tight">Project
-										overview, features, and setup instructions.</p>
-								</div>
-							</a>
-
-							<a href="https://github.com/TenKdoToLami/UpNext/blob/main/ARCHITECTURE.md" target="_blank"
-								class="flex items-center gap-4 p-4 rounded-xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 hover:border-emerald-500 transition-all group">
-								<div
-									class="shrink-0 w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center text-emerald-500">
-									<i data-lucide="map" class="w-5 h-5"></i>
-								</div>
-								<div>
-									<h4
-										class="text-xs font-bold text-zinc-900 dark:text-white group-hover:text-emerald-500 transition-colors">
-										ARCHITECTURE.md</h4>
-									<p class="text-[10px] text-zinc-500 dark:text-zinc-400 leading-tight">Deep dive into
-										technical stack and implementation details.</p>
-								</div>
-							</a>
-						</div>
-					</div>
-				</div>
-
+		<!-- Header & Tabs -->
+		<div class="bg-white dark:bg-[#0c0c0e] border-b border-zinc-200 dark:border-zinc-800">
+			<div class="px-8 py-6 flex justify-between items-center">
+				<h2
+					class="text-xl font-heading font-bold text-zinc-900 dark:text-white tracking-wide flex items-center gap-2">
+					<i data-lucide="info" class="w-5 h-5 text-indigo-500 dark:text-indigo-400"></i> UpNext
+				</h2>
+				<button onclick="closeInfoModal()"
+					class="text-zinc-400 hover:text-red-500 dark:hover:text-white transition-colors">
+					<i data-lucide="x" class="w-5 h-5"></i>
+				</button>
 			</div>
+
+			<!-- Tab Navigation -->
+			<div class="flex px-8 gap-6 -mb-px">
+				<button onclick="switchInfoTab('general')" id="tabBtn-general"
+					class="pb-3 text-sm font-bold border-b-2 border-indigo-500 text-indigo-500 transition-colors">
+					General Guides
+				</button>
+				<button onclick="switchInfoTab('shortcuts')" id="tabBtn-shortcuts"
+					class="pb-3 text-sm font-bold border-b-2 border-transparent text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors">
+					Shortcuts & Usage
+				</button>
+			</div>
+		</div>
+
+		<!-- Content Container -->
+		<div class="p-8 overflow-y-auto custom-scrollbar flex-1 bg-zinc-50 dark:bg-zinc-950/30 relative">
+
+			<!-- Tab: General -->
+			<div id="infoTab-general" class="space-y-8 animate-enter">
+				<div class="space-y-4 max-h-[60vh] overflow-y-auto custom-scrollbar pr-2 text-black dark:text-zinc-200">
+					<!-- PROJECT & CREATOR -->
+					<div class="space-y-4 border-b border-zinc-200 dark:border-zinc-800 pb-4">
+						<button onclick="document.getElementById('creatorGuide').classList.toggle('hidden')"
+							class="w-full flex items-center justify-between text-left group">
+							<h3
+								class="text-sm font-bold uppercase tracking-widest text-indigo-500 dark:text-indigo-400">
+								Project & Creator</h3>
+							<i data-lucide="chevron-down"
+								class="w-4 h-4 text-zinc-400 group-hover:text-indigo-500 transition-colors"></i>
+						</button>
+
+						<div id="creatorGuide" class="space-y-4 animate-enter pt-2">
+							<div
+								class="bg-indigo-500/10 border border-indigo-500/20 rounded-2xl p-5 relative overflow-hidden group">
+								<div
+									class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+									<i data-lucide="zap" class="w-16 h-16 text-indigo-500"></i>
+								</div>
+								<div class="relative z-10">
+									<h4 class="text-indigo-400 font-bold mb-1 flex items-center gap-2">
+										TenKdoToLami <span
+											class="text-[10px] bg-indigo-500 text-white px-1.5 py-0.5 rounded uppercase tracking-tighter shadow-sm shadow-indigo-500/50">Lead
+											Chaotic Dev</span>
+									</h4>
+									<p class="text-[11px] text-zinc-400 leading-relaxed mb-4 italic">
+										"I coded this hot pile of mess in a fever dream of glassmorphism and Python.
+										It was <strong>majorly vibe coded</strong> and held together by pure spite and
+										beautiful CSS.
+										If it works, it's a miracle; if it doesn't, it's a feature."
+									</p>
+									<div class="flex gap-2">
+										<a href="https://github.com/TenKdoToLami" target="_blank"
+											class="flex items-center gap-2 px-3 py-2 rounded-lg bg-indigo-500 text-white text-[10px] font-bold hover:bg-indigo-600 transition-all shadow-lg shadow-indigo-500/20">
+											<i data-lucide="user" class="w-3 h-3"></i> GitHub Profile
+										</a>
+										<a href="https://github.com/TenKdoToLami/UpNext" target="_blank"
+											class="flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-800 dark:bg-zinc-700 text-white text-[10px] font-bold hover:bg-zinc-700 dark:hover:bg-zinc-600 transition-all">
+											<i data-lucide="github" class="w-3 h-3"></i> Repository
+										</a>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<!-- LIBRARIES & DATABASES -->
+					<div class="space-y-2 border-b border-zinc-200 dark:border-zinc-800 pb-4">
+						<button onclick="document.getElementById('dbGuide').classList.toggle('hidden')"
+							class="w-full flex items-center justify-between text-left group">
+							<h3
+								class="text-sm font-bold uppercase tracking-widest text-emerald-500 dark:text-emerald-400">
+								Libraries & Databases</h3>
+							<i data-lucide="chevron-down"
+								class="w-4 h-4 text-zinc-400 group-hover:text-emerald-500 transition-colors"></i>
+						</button>
+
+						<div id="dbGuide" class="hidden space-y-4 animate-enter pt-2">
+							<div class="bg-emerald-500/5 border border-emerald-500/10 rounded-2xl p-4">
+								<p class="text-xs leading-relaxed opacity-90 mb-3">
+									UpNext supports multiple isolated libraries. You can maintain a public "Main"
+									library
+									and a private "Archive" or specialized collections.
+								</p>
+								<ul class="space-y-2">
+									<li class="flex items-start gap-3">
+										<div
+											class="bg-emerald-500/20 p-1.5 rounded-lg text-emerald-600 dark:text-emerald-400">
+											<i data-lucide="library" class="w-3.5 h-3.5"></i>
+										</div>
+										<div class="text-[11px] leading-tight"><strong>Switching Libraries:</strong> Use
+											the
+											Database icon in the header to switch between existing <code>.db</code>
+											files
+											without restarting.</div>
+									</li>
+									<li class="flex items-start gap-3">
+										<div
+											class="bg-emerald-500/20 p-1.5 rounded-lg text-emerald-600 dark:text-emerald-400">
+											<i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
+										</div>
+										<div class="text-[11px] leading-tight"><strong>New Collections:</strong> Create
+											new
+											databases instantly from the selection modal. They will be initialized with
+											the
+											latest schema automatically.</div>
+									</li>
+									<li class="flex items-start gap-3">
+										<div
+											class="bg-emerald-500/20 p-1.5 rounded-lg text-emerald-600 dark:text-emerald-400">
+											<i data-lucide="zap" class="w-3.5 h-3.5"></i>
+										</div>
+										<div class="text-[11px] leading-tight"><strong>Auto-Launch:</strong> Enable "Do
+											not
+											show on launch" in the selection modal to skip the picker and head straight
+											to
+											your last active library.</div>
+									</li>
+								</ul>
+							</div>
+						</div>
+					</div>
+
+					<!-- RELEASE CALENDAR -->
+					<div class="space-y-2 border-b border-zinc-200 dark:border-zinc-800 pb-4">
+						<button onclick="document.getElementById('calendarGuide').classList.toggle('hidden')"
+							class="w-full flex items-center justify-between text-left group">
+							<h3
+								class="text-sm font-bold uppercase tracking-widest text-fuchsia-500 dark:text-fuchsia-400">
+								Release Calendar</h3>
+							<i data-lucide="chevron-down"
+								class="w-4 h-4 text-zinc-400 group-hover:text-fuchsia-500 transition-colors"></i>
+						</button>
+
+						<div id="calendarGuide" class="hidden space-y-4 animate-enter pt-2">
+							<div class="bg-fuchsia-500/5 border border-fuchsia-500/10 rounded-2xl p-4">
+								<p class="text-xs leading-relaxed opacity-90 mb-3">
+									Track upcoming releases and past airings with the integrated calendar system.
+								</p>
+								<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+									<div class="bg-zinc-100 dark:bg-zinc-900/50 p-2.5 rounded-xl border border-white/5">
+										<h4
+											class="text-[10px] font-bold uppercase text-fuchsia-500 mb-1 flex items-center gap-1">
+											<i data-lucide="repeat" class="w-3 h-3"></i> Recurring Events
+										</h4>
+										<p class="text-[10px] opacity-70">Schedule weekly or daily releases. Perfect for
+											seasonal Anime or weekly Manga chapters.</p>
+									</div>
+									<div class="bg-zinc-100 dark:bg-zinc-900/50 p-2.5 rounded-xl border border-white/5">
+										<h4
+											class="text-[10px] font-bold uppercase text-fuchsia-500 mb-1 flex items-center gap-1">
+											<i data-lucide="clock" class="w-3 h-3"></i> Overdue Tracker
+										</h4>
+										<p class="text-[10px] opacity-70">Releases that passed without being marked as
+											"Seen" will show up in the overdue drawer.</p>
+									</div>
+								</div>
+								<div class="mt-3 p-2.5 bg-fuchsia-500 text-white rounded-xl flex items-center gap-3">
+									<i data-lucide="info" class="w-4 h-4 shrink-0"></i>
+									<p class="text-[10px] font-bold leading-tight">Pro Tip: Use the 'Catch-up' button in
+										the
+										Overdue modal to mark all missed events as seen at once.</p>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<!-- DYNAMIC TAGGING -->
+					<div class="space-y-2 border-b border-zinc-200 dark:border-zinc-800 pb-4">
+						<button onclick="document.getElementById('taggingGuide').classList.toggle('hidden')"
+							class="w-full flex items-center justify-between text-left group">
+							<h3 class="text-sm font-bold uppercase tracking-widest text-blue-500 dark:text-blue-400">
+								Dynamic Tags</h3>
+							<i data-lucide="chevron-down"
+								class="w-4 h-4 text-zinc-400 group-hover:text-blue-500 transition-colors"></i>
+						</button>
+
+						<div id="taggingGuide" class="hidden space-y-4 animate-enter pt-2">
+							<div class="bg-blue-500/5 border border-blue-500/10 rounded-2xl p-4">
+								<p class="text-xs leading-relaxed opacity-90 mb-3">
+									Tags in UpNext are persistent and highly customizable metadata objects.
+								</p>
+								<ul class="space-y-2">
+									<li class="flex items-start gap-3">
+										<div class="bg-blue-500/20 p-1.5 rounded-lg text-blue-600 dark:text-blue-400"><i
+												data-lucide="palette" class="w-3.5 h-3.5"></i></div>
+										<div class="text-[11px] leading-tight"><strong>Custom Colors:</strong> Set
+											unique
+											hex codes for tags in the Settings -> Tags menu to make them pop in your
+											library.</div>
+									</li>
+									<li class="flex items-start gap-3">
+										<div class="bg-blue-500/20 p-1.5 rounded-lg text-blue-600 dark:text-blue-400"><i
+												data-lucide="text-quote" class="w-3.5 h-3.5"></i></div>
+										<div class="text-[11px] leading-tight"><strong>Descriptions:</strong> Add
+											context to
+											your tags. Descriptions appear in the autocomplete dropdown during entry
+											creation.</div>
+									</li>
+									<li class="flex items-start gap-3">
+										<div class="bg-blue-500/20 p-1.5 rounded-lg text-blue-600 dark:text-blue-400"><i
+												data-lucide="filter" class="w-3.5 h-3.5"></i></div>
+										<div class="text-[11px] leading-tight"><strong>Tag Filtering:</strong> Search
+											for
+											<code>tag="Name"</code> or just <code>tag=Action</code> to filter by
+											category.
+										</div>
+									</li>
+								</ul>
+							</div>
+						</div>
+					</div>
+
+					<!-- SYSTEM SETTINGS -->
+					<div class="space-y-2 border-b border-zinc-200 dark:border-zinc-800 pb-4">
+						<button onclick="document.getElementById('settingsGuide').classList.toggle('hidden')"
+							class="w-full flex items-center justify-between text-left group">
+							<h3 class="text-sm font-bold uppercase tracking-widest text-amber-500 dark:text-amber-400">
+								System Settings</h3>
+							<i data-lucide="chevron-down"
+								class="w-4 h-4 text-zinc-400 group-hover:text-amber-500 transition-colors"></i>
+						</button>
+
+						<div id="settingsGuide" class="hidden space-y-4 animate-enter pt-2">
+							<div class="bg-amber-500/5 border border-amber-500/10 rounded-2xl p-4">
+								<p class="text-xs leading-relaxed opacity-90 mb-3">
+									Tailor the application to your specific workflow via the Settings modal.
+								</p>
+								<div class="space-y-3">
+									<div class="bg-zinc-100 dark:bg-zinc-900/50 p-3 rounded-xl border border-white/5">
+										<h4
+											class="text-[10px] font-bold uppercase text-amber-500 mb-1 flex items-center gap-2">
+											<i data-lucide="eye-off" class="w-3 h-3"></i> Field Visibility
+										</h4>
+										<p class="text-[10px] opacity-70">Hide unused metadata fields (like reread count
+											or
+											chapters) to keep your entry wizard and detail views clean.</p>
+									</div>
+									<div class="bg-zinc-100 dark:bg-zinc-900/50 p-3 rounded-xl border border-white/5">
+										<h4
+											class="text-[10px] font-bold uppercase text-amber-500 mb-1 flex items-center gap-2">
+											<i data-lucide="toggle-right" class="w-3 h-3"></i> Feature Toggles
+										</h4>
+										<p class="text-[10px] opacity-70">Disable entire subsystems if you don't use
+											them
+											(e.g., Stats, Exports, or the Calendar) to declutter the header.</p>
+									</div>
+									<div
+										class="bg-amber-500/20 p-2.5 rounded-xl border border-amber-500/30 text-[10px] font-medium text-amber-700 dark:text-amber-400 flex items-center gap-2">
+										<i data-lucide="save" class="w-3.5 h-3.5"></i>
+										<span>Changes are staged. Click "Save Changes" at the bottom to apply
+											globally.</span>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<!-- SEARCH GUIDE -->
+					<div class="space-y-2 border-b border-zinc-200 dark:border-zinc-800 pb-4">
+						<button onclick="document.getElementById('searchGuide').classList.toggle('hidden')"
+							class="w-full flex items-center justify-between text-left group">
+							<h3
+								class="text-sm font-bold uppercase tracking-widest text-indigo-500 dark:text-indigo-400">
+								Search Guide</h3>
+							<i data-lucide="chevron-down"
+								class="w-4 h-4 text-zinc-400 group-hover:text-indigo-500 transition-colors"></i>
+						</button>
+
+						<div id="searchGuide" class="hidden space-y-3 text-sm animate-enter pt-2">
+							<p class="leading-relaxed opacity-90">
+								By default, the search bar finds items by <strong>Title</strong> or <strong>Alternative
+									Titles</strong>.
+							</p>
+							<div
+								class="bg-zinc-100 dark:bg-zinc-900/50 p-3 rounded-lg border border-zinc-200 dark:border-zinc-800">
+								<p class="text-xs mb-2 opacity-80">To filter by specific fields, use prefixes:</p>
+								<ul class="space-y-1.5 font-mono text-xs">
+									<li><span class="text-indigo-600 dark:text-indigo-400">series=</span>"Name"</li>
+									<li><span class="text-emerald-600 dark:text-emerald-400">universe=</span>"Name"</li>
+									<li><span class="text-amber-600 dark:text-amber-400">author=</span>"Name"</li>
+									<li><span class="text-blue-600 dark:text-blue-400">tag=</span>"Category"</li>
+								</ul>
+								<div class="mt-2 flex flex-wrap gap-2 text-[10px] opacity-80">
+									<span class="italic opacity-70">Try it:</span>
+									<button onclick="setSearch('universe=&quot;MCU&quot;')"
+										class="bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded hover:bg-emerald-500 hover:text-white transition-colors cursor-pointer text-emerald-600 dark:text-emerald-400 font-mono">universe="MCU"</button>
+									<button onclick="setSearch('type=Anime')"
+										class="bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded hover:bg-indigo-500 hover:text-white transition-colors cursor-pointer text-indigo-600 dark:text-indigo-400 font-mono">type=Anime</button>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<!-- INTERFACE CONTROLS -->
+					<div class="space-y-2 border-b border-zinc-200 dark:border-zinc-800 pb-4">
+						<button onclick="document.getElementById('interfaceGuide').classList.toggle('hidden')"
+							class="w-full flex items-center justify-between text-left group">
+							<h3 class="text-sm font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
+								Interface Controls</h3>
+							<i data-lucide="chevron-down"
+								class="w-4 h-4 text-zinc-400 group-hover:text-zinc-300 transition-colors"></i>
+						</button>
+
+						<div id="interfaceGuide" class="hidden space-y-6 text-sm animate-enter pt-2">
+							<!-- Primary Toggles -->
+							<div class="space-y-4">
+								<div
+									class="text-[10px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500 px-1 border-l-2 border-indigo-500 pl-3">
+									Toolbelt Toggles</div>
+								<ul class="grid grid-cols-[100px,1fr] gap-x-4 gap-y-4 items-center">
+									<li class="contents">
+										<div class="flex gap-2 items-center justify-center">
+											<div
+												class="bg-zinc-100 dark:bg-zinc-800 p-1.5 rounded-lg h-8 w-8 flex items-center justify-center text-zinc-500">
+												<i data-lucide="eye" class="w-4 h-4"></i>
+											</div>
+											<div
+												class="bg-indigo-500 p-1.5 rounded-lg h-8 w-8 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
+												<i data-lucide="eye" class="w-4 h-4"></i>
+											</div>
+										</div>
+										<div class="text-xs"><strong>Toggle Details:</strong> Compare Inactive vs <span
+												class="text-indigo-500 font-bold uppercase">Active</span>. Expands cards
+											to
+											show full metadata.</div>
+									</li>
+									<li class="contents">
+										<div class="flex gap-2 items-center justify-center">
+											<div
+												class="bg-zinc-100 dark:bg-zinc-800 p-1.5 rounded-lg h-8 w-8 flex items-center justify-center text-zinc-500">
+												<i data-lucide="list-checks" class="w-4 h-4"></i>
+											</div>
+											<div
+												class="bg-emerald-500 p-1.5 rounded-lg h-8 w-8 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
+												<i data-lucide="list-checks" class="w-4 h-4"></i>
+											</div>
+										</div>
+										<div class="text-xs"><strong>Multi-Select:</strong> Normal vs <span
+												class="text-emerald-500 font-bold uppercase">Compound</span> mode.
+											Allows
+											filtering by multiple parameters.</div>
+									</li>
+									<li class="contents">
+										<div class="flex gap-2 items-center justify-center">
+											<div
+												class="bg-zinc-100 dark:bg-zinc-800 p-1.5 rounded-lg h-8 w-8 flex items-center justify-center text-zinc-500">
+												<i data-lucide="shield-off" class="w-4 h-4"></i>
+											</div>
+											<div
+												class="bg-red-500 p-1.5 rounded-lg h-8 w-8 flex items-center justify-center text-white shadow-lg shadow-red-500/20">
+												<i data-lucide="shield-off" class="w-4 h-4"></i>
+											</div>
+										</div>
+										<div class="text-xs"><strong>Show Hidden:</strong> Unmasks private entries.
+											Active
+											state uses high-contrast <span
+												class="text-red-500 font-bold uppercase">Red</span>.</div>
+									</li>
+								</ul>
+							</div>
+
+							<!-- Layout & Theme -->
+							<div class="space-y-4">
+								<div
+									class="text-[10px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500 px-1 border-l-2 border-zinc-400 pl-3">
+									Presentation</div>
+								<ul class="grid grid-cols-[100px,1fr] gap-x-4 gap-y-4 items-center">
+									<li class="contents">
+										<div class="flex gap-2 items-center justify-center">
+											<div
+												class="bg-zinc-800 dark:bg-zinc-100 p-1.5 rounded-lg h-8 w-8 flex items-center justify-center text-white dark:text-black shadow-md">
+												<i data-lucide="layout-grid" class="w-4 h-4"></i>
+											</div>
+											<div
+												class="bg-zinc-100 dark:bg-zinc-800 p-1.5 rounded-lg h-8 w-8 flex items-center justify-center text-zinc-400">
+												<i data-lucide="list" class="w-4 h-4"></i>
+											</div>
+										</div>
+										<div class="text-xs"><strong>View Modes:</strong> Toggle between Grid and List
+											views. Selection is shown in <span
+												class="font-bold border-b border-black dark:border-white">High
+												Contrast</span>.</div>
+									</li>
+									<li class="contents">
+										<div class="flex gap-2 items-center justify-center">
+											<div
+												class="bg-zinc-100 dark:bg-zinc-800 p-1.5 rounded-lg h-8 w-8 flex items-center justify-center text-amber-500">
+												<i data-lucide="sun" class="w-4 h-4"></i>
+											</div>
+											<div
+												class="bg-zinc-800 p-1.5 rounded-lg h-8 w-8 flex items-center justify-center text-blue-400">
+												<i data-lucide="moon" class="w-4 h-4"></i>
+											</div>
+										</div>
+										<div class="text-xs"><strong>Adaptive Theme:</strong> Seamless Light/Dark
+											switching.
+											Icons and accents adapt for better readability.</div>
+									</li>
+								</ul>
+							</div>
+
+							<!-- Navigation -->
+							<div class="space-y-4">
+								<div
+									class="text-[10px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500 px-1 border-l-2 border-emerald-500 pl-3">
+									Interaction</div>
+								<ul class="grid grid-cols-[100px,1fr] gap-x-4 gap-y-4 items-center">
+									<li class="contents">
+										<div class="flex gap-2 items-center justify-center">
+											<div
+												class="bg-zinc-100 dark:bg-zinc-800 p-1.5 rounded-lg h-8 w-8 flex items-center justify-center text-zinc-400">
+												<i data-lucide="search" class="w-4 h-4"></i>
+											</div>
+											<div
+												class="bg-white dark:bg-zinc-950 p-1.5 rounded-lg h-8 w-8 flex items-center justify-center text-indigo-500 border border-indigo-500/20">
+												<i data-lucide="search" class="w-4 h-4"></i>
+											</div>
+										</div>
+										<div class="text-xs"><strong>Immersive Search:</strong> Click to expand. Focused
+											mode creates a full-header overlay for a clean workspace.</div>
+									</li>
+									<li class="contents">
+										<div class="flex gap-2 items-center justify-center">
+											<div
+												class="bg-zinc-100 dark:bg-zinc-800 p-1.5 rounded-lg h-8 w-8 flex items-center justify-center text-zinc-400">
+												<i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
+											</div>
+											<div
+												class="bg-zinc-200 dark:bg-zinc-700 p-1.5 rounded-lg h-8 w-8 flex items-center justify-center text-zinc-900 dark:text-white border border-zinc-300 dark:border-zinc-600">
+												<i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
+											</div>
+										</div>
+										<div class="text-xs"><strong>System Menu:</strong> Consolidates sorting and
+											mobile
+											controls into a single, unified drawer.</div>
+									</li>
+								</ul>
+							</div>
+						</div>
+					</div>
+
+					<!-- DEFINITIONS -->
+					<div class="space-y-2 border-b border-zinc-200 dark:border-zinc-800 pb-4">
+						<button onclick="document.getElementById('definitionsGuide').classList.toggle('hidden')"
+							class="w-full flex items-center justify-between text-left group">
+							<h3
+								class="text-sm font-bold uppercase tracking-widest text-emerald-500 dark:text-emerald-400">
+								Definitions</h3>
+							<i data-lucide="chevron-down"
+								class="w-4 h-4 text-zinc-400 group-hover:text-emerald-500 transition-colors"></i>
+						</button>
+
+						<div id="definitionsGuide" class="hidden space-y-6 text-sm animate-enter pt-2">
+
+							<!-- Status -->
+							<div class="space-y-2">
+								<h4 class="text-xs font-bold uppercase opacity-70">Status</h4>
+								<div
+									class="bg-zinc-100 dark:bg-zinc-900/50 p-3 rounded-lg border border-zinc-200 dark:border-zinc-800">
+									<ul class="text-xs space-y-2">
+										<li class="flex justify-between"><span
+												class="font-bold text-blue-500">Planning</span> <span
+												class="opacity-70">Not
+												started yet</span></li>
+										<li class="flex justify-between gap-4"><span
+												class="font-bold text-fuchsia-500">Anticipating</span> <span
+												class="opacity-70 text-right">Partly finished, waiting for
+												release</span>
+										</li>
+										<li class="flex justify-between"><span class="font-bold text-amber-500">Reading
+												/
+												Watching</span> <span class="opacity-70">In progress</span></li>
+										<li class="flex justify-between"><span
+												class="font-bold text-emerald-500">Completed</span> <span
+												class="opacity-70">Finished completely</span></li>
+										<li class="flex justify-between"><span class="font-bold text-zinc-500">On
+												Hold</span> <span class="opacity-70">Paused temporarily</span></li>
+										<li class="flex justify-between"><span
+												class="font-bold text-red-500">Dropped</span>
+											<span class="opacity-70">Stopped permanently</span>
+										</li>
+									</ul>
+								</div>
+							</div>
+
+							<!-- Ratings -->
+							<div class="space-y-2">
+								<h4 class="text-xs font-bold uppercase opacity-70">Ratings</h4>
+								<div
+									class="bg-zinc-100 dark:bg-zinc-900/50 p-3 rounded-lg border border-zinc-200 dark:border-zinc-800">
+									<ul class="text-xs space-y-2">
+										<li class="flex justify-between items-center">
+											<span class="font-bold text-emerald-500">Masterpiece</span>
+											<div class="flex gap-0.5"><i data-lucide="star"
+													class="w-3 h-3 fill-emerald-500 text-emerald-500"></i><i
+													data-lucide="star"
+													class="w-3 h-3 fill-emerald-500 text-emerald-500"></i><i
+													data-lucide="star"
+													class="w-3 h-3 fill-emerald-500 text-emerald-500"></i><i
+													data-lucide="star"
+													class="w-3 h-3 fill-emerald-500 text-emerald-500"></i></div>
+										</li>
+										<li class="text-[10px] opacity-70 text-right -mt-1 italic">Great in all regards
+										</li>
+
+										<li class="flex justify-between items-center mt-2">
+											<span class="font-bold text-blue-500">Good</span>
+											<div class="flex gap-0.5"><i data-lucide="star"
+													class="w-3 h-3 fill-blue-500 text-blue-500"></i><i
+													data-lucide="star"
+													class="w-3 h-3 fill-blue-500 text-blue-500"></i><i
+													data-lucide="star"
+													class="w-3 h-3 fill-blue-500 text-blue-500"></i><i
+													data-lucide="star"
+													class="w-3 h-3 text-zinc-300 dark:text-zinc-700"></i></div>
+										</li>
+										<li class="text-[10px] opacity-70 text-right -mt-1 italic">Something enjoyable
+										</li>
+
+										<li class="flex justify-between items-center mt-2">
+											<span class="font-bold text-amber-500">Ok</span>
+											<div class="flex gap-0.5"><i data-lucide="star"
+													class="w-3 h-3 fill-amber-500 text-amber-500"></i><i
+													data-lucide="star"
+													class="w-3 h-3 fill-amber-500 text-amber-500"></i><i
+													data-lucide="star"
+													class="w-3 h-3 text-zinc-300 dark:text-zinc-700"></i><i
+													data-lucide="star"
+													class="w-3 h-3 text-zinc-300 dark:text-zinc-700"></i>
+											</div>
+										</li>
+										<li class="text-[10px] opacity-70 text-right -mt-1 italic">Just "meh"</li>
+
+										<li class="flex justify-between items-center mt-2">
+											<span class="font-bold text-red-500">Bad</span>
+											<div class="flex gap-0.5"><i data-lucide="star"
+													class="w-3 h-3 fill-red-500 text-red-500"></i><i data-lucide="star"
+													class="w-3 h-3 text-zinc-300 dark:text-zinc-700"></i><i
+													data-lucide="star"
+													class="w-3 h-3 text-zinc-300 dark:text-zinc-700"></i><i
+													data-lucide="star"
+													class="w-3 h-3 text-zinc-300 dark:text-zinc-700"></i>
+											</div>
+										</li>
+										<li class="text-[10px] opacity-70 text-right -mt-1 italic">Unwatchable /
+											Unreadable
+										</li>
+									</ul>
+								</div>
+							</div>
+
+							<!-- Media Types -->
+							<div class="space-y-2">
+								<h4 class="text-xs font-bold uppercase opacity-70">Media Types</h4>
+								<ul class="space-y-2 text-xs opacity-90">
+									<li><strong class="text-violet-500">Anime:</strong> All animated works (TV, Movies,
+										Western, Donghua).</li>
+									<li><strong class="text-pink-500">Manga:</strong> All comics (Manga, Manhwa, Manhua,
+										Graphic Novels).</li>
+									<li><strong class="text-blue-500">Book:</strong> Novels, Non-fiction, Light Novels,
+										Audiobooks.</li>
+									<li><strong class="text-red-500">Movie:</strong> Live-action films, shorts.</li>
+									<li><strong class="text-amber-500">Series:</strong> Live-action TV shows, dramas.
+									</li>
+								</ul>
+							</div>
+
+						</div>
+					</div>
+
+					<!-- STATISTICS GUIDE -->
+					<div class="space-y-2 border-b border-zinc-200 dark:border-zinc-800 pb-4">
+						<button onclick="document.getElementById('statsGuide').classList.toggle('hidden')"
+							class="w-full flex items-center justify-between text-left group">
+							<h3
+								class="text-sm font-bold uppercase tracking-widest text-indigo-500 dark:text-indigo-400">
+								Library Statistics</h3>
+							<i data-lucide="chevron-down"
+								class="w-4 h-4 text-zinc-400 group-hover:text-indigo-500 transition-colors"></i>
+						</button>
+
+						<div id="statsGuide" class="hidden space-y-3 text-sm animate-enter pt-2">
+							<p class="leading-relaxed opacity-90">
+								The <strong>Library Stats</strong> portal provides advanced data visualizations:
+							</p>
+							<ul class="list-disc list-inside space-y-1 text-xs opacity-80">
+								<li><strong>Type Distribution:</strong> Visual breakdown of your media library.</li>
+								<li><strong>Status Breakdown:</strong> Track your progress from Planning to Completion.
+								</li>
+								<li><strong>Rating Distribution:</strong> Analyze your overall tastes and verdicts.</li>
+								<li><strong>Library Growth:</strong> Follow your collection's expansion over time.</li>
+							</ul>
+						</div>
+					</div>
+
+					<!-- DATA MANAGEMENT -->
+					<div class="space-y-2 border-b border-zinc-200 dark:border-zinc-800 pb-4">
+						<button onclick="document.getElementById('dataGuide').classList.toggle('hidden')"
+							class="w-full flex items-center justify-between text-left group">
+							<h3 class="text-sm font-bold uppercase tracking-widest text-amber-500 dark:text-amber-400">
+								Data
+								Management</h3>
+							<i data-lucide="chevron-down"
+								class="w-4 h-4 text-zinc-400 group-hover:text-amber-500 transition-colors"></i>
+						</button>
+
+						<div id="dataGuide" class="hidden flex gap-4 items-start animate-enter text-sm mt-3">
+							<div
+								class="shrink-0 bg-amber-100 dark:bg-amber-500/10 p-2 rounded-lg text-amber-600 dark:text-amber-500">
+								<i data-lucide="download" class="w-5 h-5"></i>
+							</div>
+							<div>
+								<p class="leading-relaxed opacity-90 mb-2">Backups are crucial. Use the download button
+									in
+									the header to access export options:</p>
+								<ul class="list-disc list-inside space-y-1 text-xs opacity-80">
+									<li><strong>Full Export:</strong> Complete backup (Code + DB + Images).</li>
+									<li><strong>Visual Export:</strong> Beautiful HTML grids/lists.</li>
+									<li><strong>Raw Data:</strong> JSON/CSV/XML for data analysis.</li>
+								</ul>
+							</div>
+						</div>
+					</div>
+
+					<!-- CORE DOCUMENTATION -->
+					<div class="space-y-2 pt-2">
+						<button onclick="document.getElementById('docsGuide').classList.toggle('hidden')"
+							class="w-full flex items-center justify-between text-left group">
+							<h3 class="text-sm font-bold uppercase tracking-widest text-zinc-500">
+								Core Documentation</h3>
+							<i data-lucide="chevron-down"
+								class="w-4 h-4 text-zinc-400 group-hover:text-zinc-300 transition-colors"></i>
+						</button>
+
+						<div id="docsGuide" class="hidden space-y-3 animate-enter pt-3">
+							<div class="grid grid-cols-1 gap-3">
+								<a href="https://github.com/TenKdoToLami/UpNext/blob/main/README.md" target="_blank"
+									class="flex items-center gap-4 p-4 rounded-xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 hover:border-indigo-500 transition-all group">
+									<div
+										class="shrink-0 w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-indigo-500">
+										<i data-lucide="file-text" class="w-5 h-5"></i>
+									</div>
+									<div>
+										<h4
+											class="text-xs font-bold text-zinc-900 dark:text-white group-hover:text-indigo-500 transition-colors">
+											README.md</h4>
+										<p class="text-[10px] text-zinc-500 dark:text-zinc-400 leading-tight">Project
+											overview, features, and setup instructions.</p>
+									</div>
+								</a>
+
+								<a href="https://github.com/TenKdoToLami/UpNext/blob/main/ARCHITECTURE.md"
+									target="_blank"
+									class="flex items-center gap-4 p-4 rounded-xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 hover:border-emerald-500 transition-all group">
+									<div
+										class="shrink-0 w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+										<i data-lucide="map" class="w-5 h-5"></i>
+									</div>
+									<div>
+										<h4
+											class="text-xs font-bold text-zinc-900 dark:text-white group-hover:text-emerald-500 transition-colors">
+											ARCHITECTURE.md</h4>
+										<p class="text-[10px] text-zinc-500 dark:text-zinc-400 leading-tight">Deep dive
+											into
+											technical stack and implementation details.</p>
+									</div>
+								</a>
+							</div>
+						</div>
+					</div>
+
+				</div>
+			</div>
+
+			<!-- Tab: Shortcuts -->
+			<div id="infoTab-shortcuts" class="hidden h-full animate-enter">
+				<div class="max-h-[60vh] overflow-y-auto custom-scrollbar pr-2">
+
+					<!-- Global Shortcuts -->
+					<div class="mb-8">
+						<h3
+							class="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-4 px-1 border-l-2 border-indigo-500 pl-3">
+							Global Shortcuts</h3>
+						<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+							<div
+								class="bg-zinc-100 dark:bg-zinc-900/50 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 flex items-center justify-between group hover:border-indigo-500/30 transition-colors">
+								<span class="text-xs font-semibold text-zinc-700 dark:text-zinc-300">New Entry</span>
+								<kbd
+									class="px-2 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs font-mono font-bold text-zinc-500 group-hover:text-indigo-500 transition-colors">N</kbd>
+							</div>
+							<div
+								class="bg-zinc-100 dark:bg-zinc-900/50 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 flex items-center justify-between group hover:border-indigo-500/30 transition-colors">
+								<span class="text-xs font-semibold text-zinc-700 dark:text-zinc-300">Search</span>
+								<kbd
+									class="px-2 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs font-mono font-bold text-zinc-500 group-hover:text-indigo-500 transition-colors">F</kbd>
+							</div>
+							<div
+								class="bg-zinc-100 dark:bg-zinc-900/50 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 flex items-center justify-between group hover:border-indigo-500/30 transition-colors">
+								<span class="text-xs font-semibold text-zinc-700 dark:text-zinc-300">Statistics</span>
+								<kbd
+									class="px-2 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs font-mono font-bold text-zinc-500 group-hover:text-indigo-500 transition-colors">S</kbd>
+							</div>
+							<div
+								class="bg-zinc-100 dark:bg-zinc-900/50 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 flex items-center justify-between group hover:border-indigo-500/30 transition-colors">
+								<span class="text-xs font-semibold text-zinc-700 dark:text-zinc-300">Calendar</span>
+								<kbd
+									class="px-2 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs font-mono font-bold text-zinc-500 group-hover:text-indigo-500 transition-colors">C</kbd>
+							</div>
+							<div
+								class="bg-zinc-100 dark:bg-zinc-900/50 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 flex items-center justify-between group hover:border-indigo-500/30 transition-colors">
+								<span class="text-xs font-semibold text-zinc-700 dark:text-zinc-300">Controls /
+									Sort</span>
+								<kbd
+									class="px-2 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs font-mono font-bold text-zinc-500 group-hover:text-indigo-500 transition-colors">O</kbd>
+							</div>
+						</div>
+					</div>
+
+					<!-- Navigation Shortcuts -->
+					<div class="mb-8">
+						<h3
+							class="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-4 px-1 border-l-2 border-emerald-500 pl-3">
+							Navigation (Wizard & Edit)</h3>
+						<div class="space-y-3">
+							<div
+								class="bg-zinc-100 dark:bg-zinc-900/50 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 flex items-center justify-between group hover:border-emerald-500/30 transition-colors">
+								<span class="text-xs font-semibold text-zinc-700 dark:text-zinc-300">Next Step /
+									Section</span>
+								<div class="flex flex-col items-end gap-1.5">
+									<div class="flex gap-1.5">
+										<kbd
+											class="px-2 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs font-mono font-bold text-zinc-500 group-hover:text-emerald-500 transition-colors">Ctrl</kbd>
+										<span class="text-zinc-400 self-center text-[10px]">+</span>
+										<kbd
+											class="px-2 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs font-mono font-bold text-zinc-500 group-hover:text-emerald-500 transition-colors">Right
+											Arrow</kbd>
+									</div>
+									<div class="flex gap-1.5 opacity-70">
+										<kbd
+											class="px-2 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs font-mono font-bold text-zinc-500 group-hover:text-emerald-500 transition-colors">Ctrl</kbd>
+										<span class="text-zinc-400 self-center text-[10px]">+</span>
+										<kbd
+											class="px-2 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs font-mono font-bold text-zinc-500 group-hover:text-emerald-500 transition-colors">D</kbd>
+									</div>
+								</div>
+							</div>
+							<div
+								class="bg-zinc-100 dark:bg-zinc-900/50 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 flex items-center justify-between group hover:border-emerald-500/30 transition-colors">
+								<span class="text-xs font-semibold text-zinc-700 dark:text-zinc-300">Previous Step /
+									Section</span>
+								<div class="flex flex-col items-end gap-1.5">
+									<div class="flex gap-1.5">
+										<kbd
+											class="px-2 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs font-mono font-bold text-zinc-500 group-hover:text-emerald-500 transition-colors">Ctrl</kbd>
+										<span class="text-zinc-400 self-center text-[10px]">+</span>
+										<kbd
+											class="px-2 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs font-mono font-bold text-zinc-500 group-hover:text-emerald-500 transition-colors">Left
+											Arrow</kbd>
+									</div>
+									<div class="flex gap-1.5 opacity-70">
+										<kbd
+											class="px-2 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs font-mono font-bold text-zinc-500 group-hover:text-emerald-500 transition-colors">Ctrl</kbd>
+										<span class="text-zinc-400 self-center text-[10px]">+</span>
+										<kbd
+											class="px-2 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs font-mono font-bold text-zinc-500 group-hover:text-emerald-500 transition-colors">A</kbd>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<!-- Other -->
+					<div>
+						<h3
+							class="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-4 px-1 border-l-2 border-amber-500 pl-3">
+							General</h3>
+						<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+							<div
+								class="bg-zinc-100 dark:bg-zinc-900/50 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 flex items-center justify-between group hover:border-amber-500/30 transition-colors">
+								<span class="text-xs font-semibold text-zinc-700 dark:text-zinc-300">Close Modal</span>
+								<kbd
+									class="px-2 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs font-mono font-bold text-zinc-500 group-hover:text-amber-500 transition-colors">Esc</kbd>
+							</div>
+							<div
+								class="bg-zinc-100 dark:bg-zinc-900/50 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 flex items-center justify-between group hover:border-amber-500/30 transition-colors">
+								<span class="text-xs font-semibold text-zinc-700 dark:text-zinc-300">Submit Form</span>
+								<kbd
+									class="px-2 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs font-mono font-bold text-zinc-500 group-hover:text-amber-500 transition-colors">Enter</kbd>
+							</div>
+						</div>
+					</div>
+
+				</div>
+			</div>
+
 		</div>
 	</div>
 </div>
+
+<script>
+	/**
+	 * Switches between different tabs in the Info & Guides modal.
+	 * @param {string} tab - The ID of the tab to switch to ('general' or 'shortcuts')
+	 */
+	function switchInfoTab(tab) {
+		const generalTab = document.getElementById('infoTab-general');
+		const shortcutsTab = document.getElementById('infoTab-shortcuts');
+		const btnGeneral = document.getElementById('tabBtn-general');
+		const btnShortcuts = document.getElementById('tabBtn-shortcuts');
+
+		if (!generalTab || !shortcutsTab || !btnGeneral || !btnShortcuts) return;
+
+		const isActiveGeneral = (tab === 'general');
+
+		// Toggle Content
+		generalTab.classList.toggle('hidden', !isActiveGeneral);
+		shortcutsTab.classList.toggle('hidden', isActiveGeneral);
+
+		// Style Buttons
+		const activeClasses = ['border-indigo-500', 'text-indigo-500'];
+		const inactiveClasses = ['border-transparent', 'text-zinc-500', 'dark:text-zinc-400'];
+
+		if (isActiveGeneral) {
+			btnGeneral.classList.remove(...inactiveClasses);
+			btnGeneral.classList.add(...activeClasses);
+			btnShortcuts.classList.add(...inactiveClasses);
+			btnShortcuts.classList.remove(...activeClasses);
+		} else {
+			btnShortcuts.classList.remove(...inactiveClasses);
+			btnShortcuts.classList.add(...activeClasses);
+			btnGeneral.classList.add(...inactiveClasses);
+			btnGeneral.classList.remove(...activeClasses);
+		}
+	}
+</script>

@@ -11,6 +11,23 @@ import {
 	updateFormUI, selectTypeVisuals, selectStatusVisuals
 } from './wizard_logic.js';
 
+/**
+ * Flag to prevent scroll spy from fighting with manual navigation.
+ * @type {boolean}
+ */
+let isAutoScrolling = false;
+
+/**
+ * Timeout handle for clearing the auto-scrolling flag.
+ * @type {number|null}
+ */
+let autoScrollTimeout = null;
+
+/**
+ * Observer for the scroll spy functionality.
+ * @type {IntersectionObserver|null}
+ */
+let scrollSpyObserver = null;
 
 /**
  * Initializes edit mode for an existing item.
@@ -21,27 +38,40 @@ export function initEditMode(id) {
 	state.currentStep = 1;
 
 	// Enable full screen & Scroll Mode
-	document.getElementById('modalContent').classList.add('full-screen-modal');
-	document.getElementById('entryForm').classList.add('scroll-mode');
+	const modalContent = document.getElementById('modalContent');
+	const entryForm = document.getElementById('entryForm');
 	const sidebar = document.getElementById('editSidebar');
-	sidebar.classList.remove('hidden');
-	sidebar.classList.add('flex');
-	sidebar.scrollTop = 0; // Reset scroll position
+
+	if (modalContent) modalContent.classList.add('full-screen-modal');
+	if (entryForm) {
+		entryForm.classList.add('scroll-mode');
+		entryForm.classList.remove('h-full', 'overflow-hidden');
+		entryForm.classList.add('h-auto');
+	}
+
+	if (sidebar) {
+		sidebar.classList.remove('hidden');
+		sidebar.classList.add('flex');
+		sidebar.scrollTop = 0;
+	}
 
 	// Hide Wizard specific UI
-	document.getElementById('wizardDots').classList.add('hidden');
-	document.getElementById('prevBtn').classList.add('hidden');
-	document.getElementById('nextBtn').classList.add('hidden');
-	document.getElementById('stepIndicator').innerText = '';
+	const wizardDots = document.getElementById('wizardDots');
+	const prevBtn = document.getElementById('prevBtn');
+	const nextBtn = document.getElementById('nextBtn');
+	const stepIndicator = document.getElementById('stepIndicator');
 
-	// Ensure form container is ready
-	document.getElementById('entryForm').classList.remove('h-full', 'overflow-hidden');
-	document.getElementById('entryForm').classList.add('h-auto');
+	if (wizardDots) wizardDots.classList.add('hidden');
+	if (prevBtn) prevBtn.classList.add('hidden');
+	if (nextBtn) nextBtn.classList.add('hidden');
+	if (stepIndicator) stepIndicator.innerText = '';
 
-	// Show Save Button
+	// Configure Save Button
 	const submitBtn = document.getElementById('submitBtn');
-	submitBtn.classList.remove('hidden');
-	submitBtn.innerText = 'Save Changes';
+	if (submitBtn) {
+		submitBtn.classList.remove('hidden');
+		submitBtn.innerText = 'Save Changes';
+	}
 
 	// Render Form Content
 	renderTypeSelection();
@@ -52,33 +82,37 @@ export function initEditMode(id) {
 	// Show all steps (CSS handles layout via .scroll-mode)
 	document.querySelectorAll('.wizard-step').forEach(el => {
 		el.classList.remove('hidden');
-		el.style.display = ''; // Clear inline display from wizard mode
+		el.style.display = '';
 	});
 
-	// Hide privacy step (11) if not in hidden mode - this is edit mode specific
+	// Hide restricted steps (Privacy & Calendar) if applicable
 	const privacyStep = document.getElementById('step-11');
 	if (privacyStep && !state.isHidden) {
 		privacyStep.classList.add('hidden');
 		privacyStep.style.display = 'none';
 	}
 
-	// Titles
+	const calendarStep = document.getElementById('step-12');
+	if (calendarStep) {
+		calendarStep.classList.add('hidden');
+		calendarStep.style.display = 'none';
+	}
+
+	// UI Headers
 	const item = state.items.find(i => i.id === id);
-	document.getElementById('modalTitle').innerText = item ? `Edit ${item.title}` : 'Edit Entry';
+	const modalTitle = document.getElementById('modalTitle');
+	if (modalTitle) modalTitle.innerText = item ? `Edit ${item.title}` : 'Edit Entry';
 	document.querySelectorAll('.edit-only-header').forEach(el => el.classList.remove('hidden'));
 
 	updateFormUI();
 
-	// Select visuals
-	const type = document.getElementById('type').value;
-	const status = document.getElementById('status').value;
-	selectTypeVisuals(type);
-	selectStatusVisuals(status);
+	// Set initial visuals
+	const typeEl = document.getElementById('type');
+	const statusEl = document.getElementById('status');
+	if (typeEl) selectTypeVisuals(typeEl.value);
+	if (statusEl) selectStatusVisuals(statusEl.value);
 
-	// Init Scroll Spy
 	initScrollSpy();
-
-	// Populate Sidebar (Call last to ensure visibility checks work)
 	renderSidebarNav();
 }
 
@@ -89,16 +123,15 @@ export function renderSidebarNav() {
 	const nav = document.getElementById('editSidebarNav');
 	if (!nav) return;
 
-	// Get type for dynamic step-10 label
 	const type = document.getElementById('type')?.value || 'Anime';
 	let step10Label = 'Seasons & Stats';
+
 	if (type === 'Movie' || type === 'Manga') {
 		step10Label = 'Technical Stats';
 	} else if (type === 'Book') {
 		step10Label = 'Volumes & Stats';
 	}
 
-	// Define sections based on steps
 	const sections = [
 		{ id: 'step-1', label: 'Media Type', icon: 'monitor' },
 		{ id: 'step-2', label: 'Status', icon: 'activity' },
@@ -110,7 +143,7 @@ export function renderSidebarNav() {
 		{ id: 'step-8', label: 'Review & Rating', icon: 'star' },
 		{ id: 'step-9', label: 'Notes', icon: 'sticky-note' },
 		{ id: 'step-10', label: step10Label, icon: 'layers' },
-		{ id: 'step-11', label: 'Privacy', icon: 'shield' } // Conditionally hidden
+		{ id: 'step-11', label: 'Privacy', icon: 'shield' }
 	];
 
 	nav.innerHTML = sections.map(sec => `
@@ -124,32 +157,67 @@ export function renderSidebarNav() {
 }
 
 /**
- * Scrolls to the specific section in edit mode.
+ * Scrolls to the specific section in edit mode and centers it.
+ * Disables scroll spy temporarily to avoid state conflicts.
+ * @param {string} id - Target section element ID
  */
 export function scrollToSection(id) {
 	const el = document.getElementById(id);
 	if (el) {
+		isAutoScrolling = true;
+		if (autoScrollTimeout) clearTimeout(autoScrollTimeout);
+
 		el.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-		// Manually trigger highlight immediately for better responsiveness
+		// Immediate UI feedback
 		document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
 		const navLink = document.getElementById(`nav-${id}`);
 		if (navLink) navLink.classList.add('active');
+
+		// Re-enable spy after transition
+		autoScrollTimeout = setTimeout(() => {
+			isAutoScrolling = false;
+		}, 800);
 	}
 }
 
 /**
- * Updates sidebar visibility based on visible sections.
+ * Handles keyboard navigation (Next/Prev) through sections.
+ * @param {number} direction - 1 for next, -1 for prev
+ */
+export function navigateSection(direction) {
+	const links = Array.from(document.querySelectorAll('.sidebar-link:not(.hidden)'));
+	const activeIndex = links.findIndex(l => l.classList.contains('active'));
+
+	let targetIndex = -1;
+	if (activeIndex !== -1) {
+		targetIndex = activeIndex + direction;
+	} else if (direction === 1 && links.length > 0) {
+		targetIndex = 0;
+	}
+
+	if (targetIndex >= 0 && targetIndex < links.length) {
+		const targetId = links[targetIndex].id.replace('nav-', '');
+		scrollToSection(targetId);
+	}
+}
+
+// Global exposure for shortcut handlers
+window.navigateEditSection = navigateSection;
+
+/**
+ * Updates sidebar navigation visibility based on field-level visibility.
  */
 export function updateSidebarVisibility() {
-	// Basic check to hide nav items if the section is hidden
 	const nav = document.getElementById('editSidebarNav');
 	if (!nav) return;
 
 	Array.from(nav.children).forEach(btn => {
 		const sectionId = btn.id.replace('nav-', '');
 		const section = document.getElementById(sectionId);
-		if (section && (section.classList.contains('hidden') || section.style.display === 'none')) {
+		const isHidden = section && (section.classList.contains('hidden') || section.style.display === 'none');
+
+		if (isHidden) {
 			btn.classList.add('hidden');
 		} else {
 			btn.classList.remove('hidden');
@@ -157,18 +225,21 @@ export function updateSidebarVisibility() {
 	});
 }
 
-// Simple Scroll Spy
-let scrollSpyObserver = null;
+/**
+ * Initializes the intersection observer for highlighting the sidebar based on scroll position.
+ */
 function initScrollSpy() {
 	if (scrollSpyObserver) scrollSpyObserver.disconnect();
 
 	const options = {
 		root: document.getElementById('formScrollWrapper'),
-		threshold: 0.2, // Lower threshold to catch taller sections
-		rootMargin: "-20% 0px -20% 0px" // Trigger when element is near center
+		threshold: 0,
+		rootMargin: "-5% 0px -45% 0px"
 	};
 
 	scrollSpyObserver = new IntersectionObserver((entries) => {
+		if (isAutoScrolling) return;
+
 		entries.forEach(entry => {
 			if (entry.isIntersecting) {
 				document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
@@ -184,13 +255,14 @@ function initScrollSpy() {
 }
 
 /**
- * Populates form fields from an existing item.
- * @param {string} id - Item ID
+ * Populates form fields from an existing item object.
+ * @param {string} id - Item ID to load
  */
 export function populateFormFromItem(id) {
 	const item = state.items.find(i => i.id === id);
 	if (!item) return;
 
+	// Basic identity & metadata
 	safeVal('itemId', item.id);
 	safeVal('title', item.title);
 	safeVal('type', item.type);
@@ -198,7 +270,7 @@ export function populateFormFromItem(id) {
 	safeVal('universe', item.universe || '');
 	safeVal('series', item.series || '');
 	safeVal('seriesNumber', item.seriesNumber || '');
-	safeVal('releaseDate', item.releaseDate ? item.releaseDate.split('T')[0] : ''); // Handle ISO format
+	safeVal('releaseDate', item.releaseDate ? item.releaseDate.split('T')[0] : '');
 	safeVal('description', item.description || '');
 	safeVal('notes', item.notes || '');
 	safeVal('review', item.review || '');
@@ -206,26 +278,31 @@ export function populateFormFromItem(id) {
 	safeVal('rereadCount', item.rereadCount || 0);
 	safeVal('completedAt', item.completedAt ? item.completedAt.split('T')[0] : '');
 
-	// Stats
+	// Counters & Technical Stats
 	safeVal('episodeCount', item.episodeCount || '');
 	safeVal('volumeCount', item.volumeCount || '');
 	safeVal('chapterCount', item.chapterCount || '');
 	safeVal('wordCount', item.wordCount || '');
 	safeVal('avgDurationMinutes', item.avgDurationMinutes || '');
 
+	// Rating UI
 	const rVal = item.rating || 2;
 	safeVal('rating', rVal);
-	// Manually trigger label update
 	if (window.updateRatingVisuals) window.updateRatingVisuals(rVal);
 
+	// Media Preview
 	if (item.coverUrl) {
 		safeText('currentCoverName', item.coverUrl);
 		const img = document.getElementById('previewImg');
 		const ph = document.getElementById('previewPlaceholder');
-		if (img) { img.src = `/images/${item.coverUrl}`; img.classList.remove('hidden'); }
+		if (img) {
+			img.src = `/images/${item.coverUrl}`;
+			img.classList.remove('hidden');
+		}
 		if (ph) ph.classList.add('hidden');
 	}
 
+	// Dynamic Collections
 	safeCheck('isHidden', item.isHidden || false);
 	state.currentAuthors = item.authors || (item.author ? [item.author] : []);
 	state.currentTags = item.tags || [];
@@ -237,3 +314,4 @@ export function populateFormFromItem(id) {
 	if (window.renderGenericTags) window.renderGenericTags();
 	if (window.renderAbbrTags) window.renderAbbrTags();
 }
+

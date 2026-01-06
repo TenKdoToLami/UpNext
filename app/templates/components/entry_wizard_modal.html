@@ -4,6 +4,8 @@
 	onclick="if(event.target === this) closeModal()">
 	<div class="bg-white dark:bg-[#0c0c0e] border border-zinc-200 dark:border-zinc-800 rounded-3xl w-full max-w-2xl h-[650px] max-h-[90vh] overflow-hidden flex flex-col shadow-2xl transform scale-95 transition-all duration-200 animate-enter"
 		id="modalContent">
+
+		<!-- Modal Header -->
 		<div
 			class="px-8 py-6 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center bg-white dark:bg-[#0c0c0e] relative">
 			<h2 class="text-xl font-heading font-bold text-zinc-900 dark:text-white tracking-wide mx-auto"
@@ -14,17 +16,18 @@
 				<i data-lucide="x" class="w-5 h-5"></i>
 			</button>
 		</div>
+
 		<div class="flex flex-1 overflow-hidden relative">
-			<!-- Edit Mode Sidebar -->
+			<!-- Navigation Sidebar (Edit Mode Only) -->
 			<div id="editSidebar"
 				class="hidden w-64 shrink-0 bg-white dark:bg-[#0c0c0e] border-r border-zinc-200 dark:border-zinc-800 flex-col overflow-y-auto custom-scrollbar py-6 pl-6 pr-2">
-				<nav class="space-y-1" id="editSidebarNav">
-				</nav>
+				<nav class="space-y-1" id="editSidebarNav"></nav>
 			</div>
 
 			<div id="formScrollWrapper"
 				class="p-8 overflow-y-auto custom-scrollbar flex-1 bg-zinc-50 dark:bg-zinc-950/30 scroll-smooth">
 				<form id="entryForm" class="h-full relative overflow-hidden" onsubmit="return false;">
+
 					<!-- Step 1: Media Type -->
 					<div id="step-1"
 						class="wizard-step absolute inset-0 p-6 flex flex-col items-center justify-center text-center space-y-4 overflow-hidden">
@@ -45,126 +48,6 @@
 							Status</h3>
 						<input type="hidden" id="status">
 						<div id="statusSelectionContainer" class="w-full h-full pb-2">
-						</div>
-					</div>
-
-					<!-- Step 4: Cover Image -->
-					<div id="step-4"
-						class="wizard-step absolute inset-0 p-8 flex flex-col items-center justify-center text-center space-y-6 hidden">
-
-						<div id="imageUploadArea" class="w-full max-w-md space-y-4 animate-enter px-4">
-							<div id="dropZone"
-								class="w-full h-80 bg-white dark:bg-zinc-900 border-2 border-dashed border-zinc-300 dark:border-zinc-700 rounded-3xl mx-auto flex flex-col items-center justify-center gap-4 relative group cursor-pointer transition-all hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 hover:scale-[1.02]"
-								onclick="document.getElementById('coverImage').click()"
-								ondragover="window.handleDragOver(event)" ondragleave="window.handleDragLeave(event)"
-								ondrop="window.handleDrop(event)">
-
-								<input type="file" id="coverImage" accept="image/*" class="hidden"
-									onchange="window.handleFileSelect(this)">
-
-								<div id="previewPlaceholder"
-									class="flex flex-col items-center gap-4 text-zinc-400 dark:text-zinc-500 group-hover:text-indigo-500 transition-colors pointer-events-none">
-									<div
-										class="p-4 rounded-full bg-zinc-100 dark:bg-zinc-800 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-500/20 transition-colors">
-										<i data-lucide="upload-cloud" class="w-10 h-10"></i>
-									</div>
-									<div class="space-y-1">
-										<h4
-											class="text-sm font-bold uppercase tracking-wider text-zinc-600 dark:text-zinc-300">
-											Click, Drag or Paste Image
-										</h4>
-										<p class="text-[10px] text-zinc-400">Supports JPG, PNG, WEBP (Ctrl+V)</p>
-									</div>
-								</div>
-
-								<!-- Existing Preview (If re-editing) -->
-								<img id="previewImg" src=""
-									class="absolute inset-0 w-full h-full object-contain p-4 hidden rounded-3xl">
-							</div>
-
-							<div class="flex justify-between items-center px-2">
-								<div id="currentCoverName"
-									class="text-xs text-zinc-400 font-mono truncate max-w-[200px]"></div>
-								<button type="button" onclick="document.getElementById('coverImage').click()"
-									class="text-xs font-bold text-indigo-500 hover:text-indigo-600">
-									Browse Files
-								</button>
-							</div>
-						</div>
-
-						<div id="imageEditorArea" class="w-full h-full flex flex-col hidden animate-enter">
-							<!-- Canvas Container -->
-							<div
-								class="flex-1 bg-zinc-950 rounded-2xl overflow-hidden relative border border-zinc-800 shadow-inner mb-4 w-full flex items-center justify-center min-h-0">
-								<canvas id="editorCanvas" class="max-w-full max-h-full cursor-move"></canvas>
-
-								<!-- Floating Controls Top Right -->
-								<div class="absolute top-4 right-4 flex flex-col gap-2">
-									<button type="button" onclick="window.imageEditor.closeEditor()"
-										class="p-2 rounded-lg bg-black/50 hover:bg-black/70 text-white backdrop-blur-sm transition-colors text-xs font-bold flex items-center gap-2 border border-white/10 w-full justify-center">
-										<i data-lucide="x" class="w-3 h-3"></i> Cancel
-									</button>
-									<button type="button" onclick="window.imageEditor.setAspectRatio(2/3)"
-										class="p-2 rounded-lg bg-black/50 hover:bg-black/70 text-white backdrop-blur-sm transition-colors text-xs font-bold flex items-center gap-2 border border-white/10 w-full justify-center">
-										<i data-lucide="refresh-ccw" class="w-3 h-3"></i> Reset
-									</button>
-								</div>
-							</div>
-
-							<!-- Toolbar (Bottom) -->
-							<div
-								class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 flex flex-col gap-4 shadow-xl shrink-0 text-left">
-
-								<!-- Zoom (Primary Control) -->
-								<div class="flex items-center gap-3 w-full">
-									<i data-lucide="minus" class="w-4 h-4 text-zinc-400"></i>
-									<input type="range" id="zoomSlider" min="0" max="100" value="0" step="1"
-										class="w-full accent-indigo-500 h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer"
-										oninput="window.imageEditor.setZoomFromSlider(this.value)">
-									<i data-lucide="plus" class="w-4 h-4 text-zinc-400"></i>
-								</div>
-
-								<!-- Advanced Options (Collapsible) -->
-								<details class="group border-t border-zinc-100 dark:border-zinc-800 pt-2">
-									<summary
-										class="list-none flex justify-between items-center cursor-pointer text-xs font-bold text-zinc-500 hover:text-indigo-500 dark:text-zinc-400 dark:hover:text-indigo-400 transition-colors select-none py-1">
-										<span>Advanced Options</span>
-										<i data-lucide="chevron-down"
-											class="w-4 h-4 transition-transform group-open:rotate-180"></i>
-									</summary>
-
-									<div class="grid grid-cols-2 gap-4 mt-3 animate-enter">
-										<!-- Ratio -->
-										<div class="space-y-1">
-											<label
-												class="text-[10px] font-bold uppercase text-zinc-400 tracking-wider">Aspect
-												Ratio</label>
-											<select id="aspectRatioSelect"
-												onchange="window.imageEditor.setAspectRatio(this.value)"
-												class="w-full bg-zinc-100 dark:bg-zinc-800 border-none rounded-lg text-xs font-bold text-zinc-700 dark:text-zinc-300 py-2 px-3 cursor-pointer focus:ring-2 focus:ring-indigo-500">
-												<option value="0.666666666" selected>2:3 (Recommended)</option>
-												<option value="1">1:1 (Square)</option>
-												<option value="1.777777778">16:9 (Backdrop)</option>
-												<option value="0.75">3:4 (Portrait)</option>
-											</select>
-										</div>
-
-										<!-- Resolution -->
-										<div class="space-y-1">
-											<label
-												class="text-[10px] font-bold uppercase text-zinc-400 tracking-wider">Output
-												Size</label>
-											<select id="resolutionSelect"
-												class="w-full bg-zinc-100 dark:bg-zinc-800 border-none rounded-lg text-xs font-bold text-zinc-700 dark:text-zinc-300 py-2 px-3 cursor-pointer focus:ring-2 focus:ring-indigo-500"
-												onchange="window.imageEditor.targetWidth = parseInt(this.value)">
-												<option value="600" selected>Medium (600px)</option>
-												<option value="1200">High (1200px)</option>
-												<option value="400">Small (400px)</option>
-											</select>
-										</div>
-									</div>
-								</details>
-							</div>
 						</div>
 					</div>
 
@@ -304,6 +187,126 @@
 							</div>
 
 							<input type="hidden" id="itemId">
+						</div>
+					</div>
+
+					<!-- Step 4: Cover Image -->
+					<div id="step-4"
+						class="wizard-step absolute inset-0 p-8 flex flex-col items-center justify-center text-center space-y-6 hidden">
+
+						<div id="imageUploadArea" class="w-full max-w-md space-y-4 animate-enter px-4">
+							<div id="dropZone"
+								class="w-full h-80 bg-white dark:bg-zinc-900 border-2 border-dashed border-zinc-300 dark:border-zinc-700 rounded-3xl mx-auto flex flex-col items-center justify-center gap-4 relative group cursor-pointer transition-all hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 hover:scale-[1.02]"
+								onclick="document.getElementById('coverImage').click()"
+								ondragover="window.handleDragOver(event)" ondragleave="window.handleDragLeave(event)"
+								ondrop="window.handleDrop(event)">
+
+								<input type="file" id="coverImage" accept="image/*" class="hidden"
+									onchange="window.handleFileSelect(this)">
+
+								<div id="previewPlaceholder"
+									class="flex flex-col items-center gap-4 text-zinc-400 dark:text-zinc-500 group-hover:text-indigo-500 transition-colors pointer-events-none">
+									<div
+										class="p-4 rounded-full bg-zinc-100 dark:bg-zinc-800 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-500/20 transition-colors">
+										<i data-lucide="upload-cloud" class="w-10 h-10"></i>
+									</div>
+									<div class="space-y-1">
+										<h4
+											class="text-sm font-bold uppercase tracking-wider text-zinc-600 dark:text-zinc-300">
+											Click, Drag or Paste Image
+										</h4>
+										<p class="text-[10px] text-zinc-400">Supports JPG, PNG, WEBP (Ctrl+V)</p>
+									</div>
+								</div>
+
+								<!-- Existing Preview (If re-editing) -->
+								<img id="previewImg" src=""
+									class="absolute inset-0 w-full h-full object-contain p-4 hidden rounded-3xl">
+							</div>
+
+							<div class="flex justify-between items-center px-2">
+								<div id="currentCoverName"
+									class="text-xs text-zinc-400 font-mono truncate max-w-[200px]"></div>
+								<button type="button" onclick="document.getElementById('coverImage').click()"
+									class="text-xs font-bold text-indigo-500 hover:text-indigo-600">
+									Browse Files
+								</button>
+							</div>
+						</div>
+
+						<div id="imageEditorArea" class="w-full h-full flex flex-col hidden animate-enter">
+							<!-- Canvas Container -->
+							<div
+								class="flex-1 bg-zinc-950 rounded-2xl overflow-hidden relative border border-zinc-800 shadow-inner mb-4 w-full flex items-center justify-center min-h-0">
+								<canvas id="editorCanvas" class="max-w-full max-h-full cursor-move"></canvas>
+
+								<!-- Floating Controls Top Right -->
+								<div class="absolute top-4 right-4 flex flex-col gap-2">
+									<button type="button" onclick="window.imageEditor.closeEditor()"
+										class="p-2 rounded-lg bg-black/50 hover:bg-black/70 text-white backdrop-blur-sm transition-colors text-xs font-bold flex items-center gap-2 border border-white/10 w-full justify-center">
+										<i data-lucide="x" class="w-3 h-3"></i> Cancel
+									</button>
+									<button type="button" onclick="window.imageEditor.setAspectRatio(2/3)"
+										class="p-2 rounded-lg bg-black/50 hover:bg-black/70 text-white backdrop-blur-sm transition-colors text-xs font-bold flex items-center gap-2 border border-white/10 w-full justify-center">
+										<i data-lucide="refresh-ccw" class="w-3 h-3"></i> Reset
+									</button>
+								</div>
+							</div>
+
+							<!-- Toolbar (Bottom) -->
+							<div
+								class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 flex flex-col gap-4 shadow-xl shrink-0 text-left">
+
+								<!-- Zoom (Primary Control) -->
+								<div class="flex items-center gap-3 w-full">
+									<i data-lucide="minus" class="w-4 h-4 text-zinc-400"></i>
+									<input type="range" id="zoomSlider" min="0" max="100" value="0" step="1"
+										class="w-full accent-indigo-500 h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer"
+										oninput="window.imageEditor.setZoomFromSlider(this.value)">
+									<i data-lucide="plus" class="w-4 h-4 text-zinc-400"></i>
+								</div>
+
+								<!-- Advanced Options (Collapsible) -->
+								<details class="group border-t border-zinc-100 dark:border-zinc-800 pt-2">
+									<summary
+										class="list-none flex justify-between items-center cursor-pointer text-xs font-bold text-zinc-500 hover:text-indigo-500 dark:text-zinc-400 dark:hover:text-indigo-400 transition-colors select-none py-1">
+										<span>Advanced Options</span>
+										<i data-lucide="chevron-down"
+											class="w-4 h-4 transition-transform group-open:rotate-180"></i>
+									</summary>
+
+									<div class="grid grid-cols-2 gap-4 mt-3 animate-enter">
+										<!-- Ratio -->
+										<div class="space-y-1">
+											<label
+												class="text-[10px] font-bold uppercase text-zinc-400 tracking-wider">Aspect
+												Ratio</label>
+											<select id="aspectRatioSelect"
+												onchange="window.imageEditor.setAspectRatio(this.value)"
+												class="w-full bg-zinc-100 dark:bg-zinc-800 border-none rounded-lg text-xs font-bold text-zinc-700 dark:text-zinc-300 py-2 px-3 cursor-pointer focus:ring-2 focus:ring-indigo-500">
+												<option value="0.666666666" selected>2:3 (Recommended)</option>
+												<option value="1">1:1 (Square)</option>
+												<option value="1.777777778">16:9 (Backdrop)</option>
+												<option value="0.75">3:4 (Portrait)</option>
+											</select>
+										</div>
+
+										<!-- Resolution -->
+										<div class="space-y-1">
+											<label
+												class="text-[10px] font-bold uppercase text-zinc-400 tracking-wider">Output
+												Size</label>
+											<select id="resolutionSelect"
+												class="w-full bg-zinc-100 dark:bg-zinc-800 border-none rounded-lg text-xs font-bold text-zinc-700 dark:text-zinc-300 py-2 px-3 cursor-pointer focus:ring-2 focus:ring-indigo-500"
+												onchange="window.imageEditor.targetWidth = parseInt(this.value)">
+												<option value="600" selected>Medium (600px)</option>
+												<option value="1200">High (1200px)</option>
+												<option value="400">Small (400px)</option>
+											</select>
+										</div>
+									</div>
+								</details>
+							</div>
 						</div>
 					</div>
 

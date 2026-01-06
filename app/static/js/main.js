@@ -1050,6 +1050,11 @@ async function initApp() {
         document.getElementById('clearSearchBtn').classList.toggle('hidden', e.target.value.length === 0);
         renderGrid();
     });
+    addListener('searchInput', 'keydown', (e) => {
+        if (e.key === 'Enter' || e.key === 'Escape') {
+            e.target.blur();
+        }
+    });
 
     // Tag inputs
     addListener('authorInput', 'keydown', (e) => checkEnterKey(e, 'author'));
@@ -1114,9 +1119,24 @@ async function initApp() {
     }
     // Global Shortcuts
     document.addEventListener('keydown', (e) => {
-        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        // 2. Check if ANY modal is open
+        const modalIds = [
+            'modal',            // Wizard/Edit Modal
+            'detailModal',      // Detail View
+            'infoModal',        // Info/Help
+            'statsModal',       // Statistics
+            'exportModal',      // Export/Backup
+            'settingsModal',    // Settings
+            'calendarModal',    // Calendar
+            'externalSearchModal' // External Search
+        ];
 
-        // Modal closing with ESC
+        const isAnyModalOpen = modalIds.some(id => {
+            const el = document.getElementById(id);
+            return el && !el.classList.contains('hidden');
+        });
+
+        // 3. Modal closing with ESC (Always allowed if modal is open)
         if (e.key === 'Escape') {
             if (document.getElementById('modal') && !document.getElementById('modal').classList.contains('hidden')) window.closeModal();
             if (document.getElementById('detailModal') && !document.getElementById('detailModal').classList.contains('hidden')) window.closeDetail();
@@ -1125,12 +1145,48 @@ async function initApp() {
             if (document.getElementById('exportModal') && !document.getElementById('exportModal').classList.contains('hidden')) window.closeExportModal();
             if (document.getElementById('settingsModal') && !document.getElementById('settingsModal').classList.contains('hidden')) window.closeSettingsModal();
             if (document.getElementById('calendarModal') && !document.getElementById('calendarModal').classList.contains('hidden')) window.closeCalendarModal?.();
+            // External search close is handled in its own file usually, but safety check here if needed
+            if (document.getElementById('externalSearchModal') && !document.getElementById('externalSearchModal').classList.contains('hidden')) window.closeExternalSearchModal?.();
+            return; // Stop further processing after closing
         }
 
-        // Shortcuts
+        // --- STEPPER NAVIGATION SHORTCUTS (Wizard & Edit Mode) ---
+        if (isAnyModalOpen) {
+            const isCtrl = e.ctrlKey || e.metaKey;
+            const key = e.key.toLowerCase();
+
+            if (isCtrl && (key === 'd' || key === 'arrowright' || key === 'a' || key === 'arrowleft')) {
+                e.preventDefault();
+
+                const isNext = (key === 'd' || key === 'arrowright');
+
+                if (!state.isEditMode) {
+                    const btnId = isNext ? 'nextBtn' : 'prevBtn';
+                    const btn = document.getElementById(btnId);
+                    if (btn && !btn.classList.contains('hidden')) {
+                        btn.click();
+                    }
+                } else {
+                    if (window.navigateEditSection) {
+                        window.navigateEditSection(isNext ? 1 : -1);
+                    }
+                }
+                return;
+            }
+        }
+
+        // 1. Always allow processing for inputs/textareas (browser default behavior usually handles these, but we keep this check)
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+        // 4. BLOCK other shortcuts if a modal is open
+        if (isAnyModalOpen) return;
+
+
+        // 5. Global Application Shortcuts (Only if no modal is open)
         if (e.key.toLowerCase() === 'n') window.openModal();
         if (e.key.toLowerCase() === 's' && !state.appSettings?.disabledFeatures?.includes('stats')) window.openStatsModal();
         if (e.key.toLowerCase() === 'c' && !state.appSettings?.disabledFeatures?.includes('calendar')) window.openCalendarModal?.();
+        if (e.key.toLowerCase() === 'o') window.toggleSortMenu();
         if (e.key.toLowerCase() === 'f') {
             e.preventDefault();
             const searchBar = document.getElementById('searchBar'); // Desktop
