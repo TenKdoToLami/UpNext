@@ -12,6 +12,10 @@ import { saveTag } from './api_service.js';
 import { resetWizardFields } from './wizard_logic.js';
 
 
+/**
+ * Configuration for various search sources including display names, icons, and theme colors.
+ * @const {Object.<string, {name: string, icon: string, color: string}>}
+ */
 const SOURCE_CONFIG = {
     anilist: { name: 'AniList', icon: 'sparkles', color: 'text-blue-400' },
     tmdb: { name: 'TMDB', icon: 'film', color: 'text-green-400' },
@@ -79,6 +83,9 @@ export function openExternalSearchModal(mediaType) {
     safeCreateIcons();
 }
 
+/**
+ * Updates the search modal header to reflect the current primary search source.
+ */
 function updateSearchHeader() {
     const btn = document.querySelector('button[onclick="window.toggleSearchInput()"]');
     if (btn && currentSearchSource) {
@@ -235,7 +242,6 @@ async function performSearch(query) {
         if (currentResults.length === 0) {
             resultsContainer.innerHTML = renderNoResults(query) + renderSecondarySearchOptions(query);
         } else {
-            // Updated to use the correct function name for grouped results
             renderSearchResults(currentResults);
         }
 
@@ -250,10 +256,9 @@ async function performSearch(query) {
 
 /**
  * Handles secondary search (e.g. Anime in TMDB, Series in AniList)
- */
-/**
- * Handles secondary search (e.g. Anime in TMDB, Series in AniList)
- * Triggered by expanding the details element.
+ * Triggered by expanding the details element in the search results.
+ * @param {string} source - The API source to search in
+ * @param {HTMLDetailsElement} detailsEl - The details element triggering the search
  */
 window.performSecondarySearch = async function (source, detailsEl) {
     // Only fetch if opening
@@ -312,6 +317,11 @@ window.performSecondarySearch = async function (source, detailsEl) {
 };
 
 
+/**
+ * Renders secondary search options if the primary source returned no results.
+ * @param {string} query - The search query
+ * @returns {string} HTML string representing secondary search buttons
+ */
 function renderSecondarySearchOptions(query) {
     if (!query) return '';
 
@@ -513,6 +523,11 @@ function renderSearchResults(results) {
     }
 }
 
+/**
+ * Creates an individual result item element.
+ * @param {Object} item - Normalized result item
+ * @returns {HTMLDivElement}
+ */
 function createResultItem(item) {
     const el = document.createElement('div');
     el.className = 'p-3 hover:bg-zinc-800/50 transition-colors cursor-pointer group flex gap-4';
@@ -630,7 +645,13 @@ function prefillWizardFromExternal(data) {
             previewImg.classList.remove('hidden');
             if (placeholder) placeholder.classList.add('hidden');
 
+            // Store URL for editor to pick up when user reaches Step 4
             previewImg.dataset.externalUrl = data.cover_url;
+
+            // In Edit Mode, we can trigger the editor immediately because all steps are visible
+            if (state.isEditMode && window.processImageUrl) {
+                window.processImageUrl(data.cover_url, `${data.title || 'cover'}.jpg`);
+            }
         }
     }
 
@@ -807,45 +828,32 @@ function prefillWizardFromExternal(data) {
     // External link
     if (data.external_link) {
         if (!state.currentLinks) state.currentLinks = [];
-        // Check if we already have this link
-        const exists = state.currentLinks.some(l => l.url === data.external_link);
-        if (!exists) {
-            // Strict naming based on media type for known sources
-            let sourceName = 'External';
+        // Determine display name for the source
+        const sourceMap = {
+            tvmaze: 'TVMaze',
+            anilist: 'AniList',
+            tmdb: 'TMDB',
+            openlibrary: 'Open Library',
+            mangadex: 'MangaDex',
+            jikan: 'MyAnimeList',
+            googlebooks: 'Google Books',
+            comicvine: 'Comic Vine'
+        };
 
-            if (data.source && data.source.toLowerCase() === 'tvmaze') {
-                sourceName = 'TVMaze';
-            } else if (data.source && data.source.toLowerCase() === 'anilist') {
-                sourceName = 'AniList';
-            } else if (data.source && data.source.toLowerCase() === 'tmdb') {
-                sourceName = 'TMDB';
-            } else if (data.source && data.source.toLowerCase() === 'openlibrary') {
-                sourceName = 'Open Library';
-            } else if (data.source && data.source.toLowerCase() === 'mangadex') {
-                sourceName = 'MangaDex';
-            } else if (data.source && data.source.toLowerCase() === 'jikan') {
-                sourceName = 'MyAnimeList';
-            } else if (data.source && data.source.toLowerCase() === 'googlebooks') {
-                sourceName = 'Google Books';
-            } else if (data.source && data.source.toLowerCase() === 'comicvine') {
-                sourceName = 'Comic Vine';
-            } else if (currentSearchType === 'Book') {
-                sourceName = 'Open Library';
-            } else if (currentSearchType === 'Anime' || currentSearchType === 'Manga') {
-                sourceName = 'AniList';
-            } else if (currentSearchType === 'Movie' || currentSearchType === 'Series') {
-                sourceName = 'TMDB';
-            } else if (data.source) {
-                const key = data.source.toLowerCase();
-                sourceName = data.source.charAt(0).toUpperCase() + data.source.slice(1);
-            }
+        let sourceName = sourceMap[data.source?.toLowerCase()] || 'External';
 
-            state.currentLinks.push({
-                label: sourceName,
-                url: data.external_link
-            });
-            if (window.renderLinks) window.renderLinks();
+        // Fallback heuristics if no explicit source provided
+        if (sourceName === 'External') {
+            if (currentSearchType === 'Book') sourceName = 'Open Library';
+            else if (['Anime', 'Manga'].includes(currentSearchType)) sourceName = 'AniList';
+            else if (['Movie', 'Series'].includes(currentSearchType)) sourceName = 'TMDB';
         }
+
+        state.currentLinks.push({
+            label: sourceName,
+            url: data.external_link
+        });
+        if (window.renderLinks) window.renderLinks();
     }
 }
 

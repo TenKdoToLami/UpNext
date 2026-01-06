@@ -150,7 +150,7 @@ function resetFormState() {
 
 /** 
  * Advances to the next valid wizard step.
- * If on Step 3 (Image Cover), it implicitly waits for the Image Editor to save the crop.
+ * If on Step 4 (Image Cover), it implicitly waits for the Image Editor to save the crop.
  */
 export async function nextStep() {
 	if (!validateStep(state.currentStep)) return;
@@ -272,6 +272,10 @@ export function removeAuthor(val) {
 
 /**
  * Handles tag input for autocomplete.
+ */
+/**
+ * Handles tag input for the autocomplete dropdown.
+ * @param {Event} e - Input event
  */
 function handleTagInput(e) {
 	const val = e.target.value.trim().toLowerCase();
@@ -817,7 +821,7 @@ export function updateTotalsUIForType() {
 	// Movie: duration only (editable)
 	// Manga: chapters only (editable)
 	// Book: chapters + words (auto-calculated if tech stats enabled)
-	// Anime	// Book: chapters + words (auto-calculated if tech stats enabled)
+	// Anime/Series: episodes + duration
 	const showEpisodes = ['Anime', 'Series'].includes(type);
 	const showDuration = ['Anime', 'Series', 'Movie'].includes(type);
 	const showChapters = ['Book', 'Manga'].includes(type);
@@ -1307,8 +1311,8 @@ export function removeAbbreviation(val) {
 }
 
 /**
- * Toggles the abbreviation field enabled state.
- * @param {boolean} checked - Whether disabled is checked
+ * Helper function to toggle the abbreviation field disabled state.
+ * @param {boolean} checked - Whether the 'disable toggle' is checked.
  */
 export function toggleAbbrField(checked) {
 	const input = document.getElementById('abbrInput');

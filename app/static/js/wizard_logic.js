@@ -62,8 +62,14 @@ window.handleFileSelect = (input) => {
 
 // Global Paste Listener for Image Upload (Ctrl+V)
 window.addEventListener('paste', (e) => {
-	// Only handle if we are on Step 3 of the wizard
-	if (state.currentStep !== 3) return;
+	// Only handle if we are on Step 4 of the wizard (Cover Image) or in Edit Mode
+	if (!state.isEditMode && state.currentStep !== 4) return;
+
+	// In Edit Mode, ensure the modal is actually open
+	if (state.isEditMode) {
+		const modal = document.getElementById('modal');
+		if (!modal || modal.classList.contains('hidden')) return;
+	}
 
 	// 1. Try files directly (often populated for file copies)
 	if (e.clipboardData.files && e.clipboardData.files.length > 0) {
@@ -105,6 +111,22 @@ function processImageFile(file) {
 		handleCroppedImage(croppedBlob, file.name);
 	});
 }
+
+/**
+ * Fetches an image from a URL and opens it in the Image Editor.
+ * @param {string} url - The image URL
+ * @param {string} filename - The filename to use (metadata only)
+ */
+function processImageUrl(url, filename = 'imported_cover.jpg') {
+	if (!url) return;
+
+	initImageEditor(url, (croppedBlob) => {
+		handleCroppedImage(croppedBlob, filename);
+	});
+}
+
+// Window Bindings
+window.processImageUrl = processImageUrl;
 
 /**
  * Handles the cropped image blob.
@@ -300,6 +322,15 @@ export function animateStepChange(from, to, direction) {
 	// Render children on step 10
 	if (to === 10 && window.renderChildren) window.renderChildren();
 
+	// Auto-trigger Image Editor if an external URL was imported
+	if (to === 4) {
+		const previewImg = document.getElementById('previewImg');
+		if (previewImg && previewImg.dataset.externalUrl) {
+			processImageUrl(previewImg.dataset.externalUrl);
+			delete previewImg.dataset.externalUrl;
+		}
+	}
+
 	document.getElementById('stepIndicator').innerText = `Step ${to} / ${state.TOTAL_STEPS}`;
 
 	setTimeout(() => {
@@ -355,6 +386,15 @@ export function showStep(step) {
 
 	updateDots(step);
 	updateNavigationButtons(step);
+
+	// Auto-trigger Image Editor if an external URL was imported
+	if (step === 4) {
+		const previewImg = document.getElementById('previewImg');
+		if (previewImg && previewImg.dataset.externalUrl) {
+			processImageUrl(previewImg.dataset.externalUrl);
+			delete previewImg.dataset.externalUrl;
+		}
+	}
 }
 
 // =============================================================================
@@ -928,6 +968,10 @@ export function selectStatusVisuals(s) {
 // CALENDAR & RECURRENCE HELPERS (Step 12)
 // =============================================================================
 
+/**
+ * Toggles the visibility of the calendar event fields.
+ * @param {boolean} show - Whether to show the fields.
+ */
 window.toggleCalendarFields = (show) => {
 	const el = document.getElementById('calendarFields');
 	if (el) {
@@ -935,25 +979,23 @@ window.toggleCalendarFields = (show) => {
 		el.classList.add('animate-enter');
 
 		if (show) {
-			// Auto-fill date if empty
 			const releaseDate = document.getElementById('releaseDate').value;
 			const calDate = document.getElementById('calDate');
 			if (calDate && !calDate.value && releaseDate) {
 				calDate.value = releaseDate;
 			}
-			// Auto-fill title? No, usually title is item title.
-			// Content can be specific.
 		}
 	}
 };
 
+/**
+ * Toggles the visibility of the calendar recurrence fields.
+ * @param {boolean} show - Whether to show the fields.
+ */
 window.toggleRecurrenceFields = (show) => {
 	const el = document.getElementById('calRecurrenceFields');
 	if (el) {
 		el.classList.toggle('hidden', !show);
-		if (show) {
-			// Default focus?
-		}
 	}
 };
 // =============================================================================

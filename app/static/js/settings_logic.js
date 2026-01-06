@@ -633,6 +633,26 @@ export function renderSettings() {
 		tagsContainer.innerHTML = createHtml + (listHtml || '<div class="text-zinc-400 dark:text-zinc-600 italic text-sm text-center py-8 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl mt-4">No tags found. Create one above.</div>');
 	}
 
+	// 6. Image Settings
+	const imgFormat = document.getElementById('setting-imageFormat');
+	if (imgFormat) {
+		imgFormat.value = currentSettings.imageSettings?.format || 'image/webp';
+	}
+
+	const imgQuality = document.getElementById('setting-imageQuality');
+	const qualityVal = document.getElementById('qualityVal');
+	if (imgQuality) {
+		const q = currentSettings.imageSettings?.quality || 0.85;
+		imgQuality.value = q;
+		if (qualityVal) qualityVal.innerText = Math.round(q * 100) + '%';
+	}
+
+	const targetWidth = currentSettings.imageSettings?.width || 800;
+	updateImageWidthButtons(targetWidth);
+
+	// 7. Sync Guide & Quality Slider
+	syncImageSettingsUI();
+
 	// Scope icon creation to the modal content to avoid global flicker/reflow
 	const modalContent = document.getElementById('settingsModalContent');
 	safeCreateIcons(modalContent);
@@ -817,6 +837,10 @@ export function saveTagDesc(name, desc) {
 }
 
 // Tag Management Handlers
+/**
+ * Handles adding a new tag from the settings UI.
+ * @param {string} name - The name of the new tag.
+ */
 export function addNewTagHandler(name) {
 	if (!name || !name.trim()) return;
 	const cleanName = name.trim();
@@ -831,6 +855,11 @@ export function addNewTagHandler(name) {
 	});
 }
 
+/**
+ * Handles renaming an existing tag, with confirmation for merging if the new name exists.
+ * @param {string} oldName - Current tag name.
+ * @param {string} newName - New tag name.
+ */
 export async function renameTagHandler(oldName, newName) {
 	if (!newName || !newName.trim()) {
 		renderSettings(); // Revert
@@ -862,6 +891,10 @@ export async function renameTagHandler(oldName, newName) {
 	});
 }
 
+/**
+ * Handles deleting a tag with confirmation.
+ * @param {string} name - Tag name to delete.
+ */
 export async function deleteTagHandler(name) {
 	const confirmed = await showConfirm(
 		'Delete Tag',
@@ -953,3 +986,185 @@ window.loadSearchPriorities = async function () {
 	// I should probably add one or include it in /api/keys which I recall exists?
 	// Let's check api.py for GET /api/keys or config.
 };
+
+/**
+ * Updates a specific image setting.
+ * @param {string} key - 'format', 'quality', or 'width'
+ * @param {*} value 
+ */
+export function setImageSetting(key, value) {
+	if (!pendingAppSettings) pendingAppSettings = JSON.parse(JSON.stringify(state.appSettings));
+	if (!pendingAppSettings.imageSettings) pendingAppSettings.imageSettings = { format: 'image/webp', quality: 0.85, width: 800 };
+
+	pendingAppSettings.imageSettings[key] = value;
+
+	if (key === 'width') {
+		updateImageWidthButtons(value);
+	}
+
+	syncImageSettingsUI();
+}
+
+/**
+ * Synchronizes dependencies between image settings (Quality slider visibility, Guide rows).
+ */
+function syncImageSettingsUI() {
+	const currentSettings = pendingAppSettings || state.appSettings;
+	const format = currentSettings.imageSettings?.format || 'image/webp';
+
+	// 1. Quality Slider Visibility
+	const slider = document.getElementById('qualitySliderContainer');
+	if (slider) {
+		if (format === 'image/png') slider.classList.add('hidden');
+		else slider.classList.remove('hidden');
+	}
+
+	// 2. Render Guide
+	renderImageGuide();
+}
+
+/**
+ * Renders the dynamic image guide table based on the currently selected resolution.
+ */
+function renderImageGuide() {
+	const body = document.getElementById('imageGuideBody');
+	if (!body) return;
+
+	const currentSettings = pendingAppSettings || state.appSettings;
+	const activeWidth = currentSettings.imageSettings?.width || 800;
+	const activeMime = currentSettings.imageSettings?.format || 'image/webp';
+	const activeQuality = currentSettings.imageSettings?.quality || 0.85;
+
+	const widths = [400, 600, 800, 1000, 1200];
+	const currentIndex = widths.indexOf(activeWidth);
+
+	// Determine which widths to show: Previous, Active, Next
+	const showWidths = [];
+	if (currentIndex > 0) showWidths.push(widths[currentIndex - 1]);
+	showWidths.push(widths[currentIndex]);
+	if (currentIndex < widths.length - 1) showWidths.push(widths[currentIndex + 1]);
+
+	// Data Stats (Estimated for 2:3 ratio)
+	const stats = {
+		'image/jpeg': { label: 'JPEG', baseQuality: 0.9, perf: 'Ultra Fast', perfLevel: 1, color: 'indigo', sizes: { 400: 50, 600: 115, 800: 260, 1000: 420, 1200: 650 } },
+		'image/webp': { label: 'WebP', baseQuality: 0.85, perf: 'Fast', perfLevel: 1, color: 'emerald', sizes: { 400: 35, 600: 80, 800: 180, 1000: 300, 1200: 450 } },
+		'image/avif': { label: 'AVIF', baseQuality: 0.7, perf: 'Moderate', perfLevel: 2, color: 'teal', sizes: { 400: 25, 600: 60, 800: 130, 1000: 220, 1200: 350 } },
+		'image/png': { label: 'PNG', baseQuality: 1.0, perf: 'Heavy I/O', perfLevel: 3, color: 'red', sizes: { 400: 500, 600: 1500, 800: 4000, 1000: 6500, 1200: 9000 } }
+	};
+
+	const rows = [];
+
+	showWidths.forEach(w => {
+		const isCurrentWidth = w === activeWidth;
+
+		Object.entries(stats).forEach(([mime, data]) => {
+			const isCurrentFormat = mime === activeMime;
+			const isMatch = isCurrentWidth && isCurrentFormat;
+
+			// Highlight logic: Emerald for exact match, subtle Indigo for current width context
+			let rowBg = '';
+			let statusBadge = '';
+			if (isMatch) {
+				rowBg = 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-500/30';
+				statusBadge = `<span class="text-[8px] font-bold text-emerald-600 dark:text-emerald-400 uppercase flex items-center gap-1"><i data-lucide="check-circle" class="w-2.5 h-2.5"></i> Active Configuration</span>`;
+			} else if (isCurrentWidth) {
+				rowBg = 'bg-indigo-50/30 dark:bg-indigo-500/5';
+				statusBadge = `<span class="text-[8px] font-bold text-indigo-400 uppercase">Selected Res</span>`;
+			}
+
+			let sizeKB = data.sizes[w];
+			let label = data.label;
+
+			if (mime === 'image/png') {
+				label += ' (Lossless)';
+			} else {
+				const q = isMatch ? activeQuality : data.baseQuality;
+				label += ` (${Math.round(q * 100)}%)`;
+
+				// Very rough estimation scalar if user has custom quality selected
+				if (isMatch && activeQuality !== data.baseQuality) {
+					// This is VERY approximate, but better than showing static 90% size for 50% quality
+					// We use a non-linear scalar to avoid underestimating too much at low quality
+					const scalar = Math.pow(activeQuality / data.baseQuality, 1.2);
+					sizeKB *= scalar;
+				}
+			}
+
+			const sizeStr = sizeKB >= 1000 ? `~${(sizeKB / 1000).toFixed(1)} MB` : `~${sizeKB.toFixed(0)} KB`;
+			const itemsPerGB = Math.round(1024 * 1024 / sizeKB).toLocaleString();
+
+			// Render Performance Bars
+			const level = data.perfLevel;
+			const barClass = level === 1 ? 'bg-emerald-500' : (level === 2 ? 'bg-blue-500' : 'bg-red-500');
+			const bars = `
+                <div class="flex items-end gap-0.5 justify-end" title="Processing Overhead: ${data.perf}">
+                    <div class="w-1.5 h-1.5 rounded-t-[1px] ${level >= 1 ? barClass : 'bg-zinc-200 dark:bg-zinc-800'}"></div>
+                    <div class="w-1.5 h-2.5 rounded-t-[1px] ${level >= 2 ? barClass : 'bg-zinc-200 dark:bg-zinc-800'}"></div>
+                    <div class="w-1.5 h-4 rounded-t-[1px] ${level >= 3 ? barClass : 'bg-zinc-200 dark:bg-zinc-800'}"></div>
+                </div>
+            `;
+
+			rows.push(`
+                <tr class="${rowBg} transition-colors border-l-2 ${isMatch ? 'border-emerald-500' : 'border-transparent'}">
+                    <td class="px-4 py-2">
+                        <div class="flex flex-col">
+                            <span class="font-bold text-zinc-700 dark:text-zinc-300 whitespace-nowrap">${label}</span>
+                            ${statusBadge}
+                        </div>
+                    </td>
+                    <td class="px-3 py-2 text-zinc-500 font-mono">${w}px</td>
+                    <td class="px-3 py-2 text-zinc-500 text-right whitespace-nowrap">${sizeStr}</td>
+                    <td class="px-3 py-2 text-right">
+                        <span class="font-bold ${isMatch ? 'text-emerald-500' : `text-${data.color}-500`}">${itemsPerGB}</span>
+                    </td>
+                    <td class="px-4 py-2">
+                        ${bars}
+                    </td>
+                </tr>
+            `);
+		});
+	});
+
+	body.innerHTML = rows.join('');
+
+	// Re-initialize icons in the table
+	const settingsPanel = document.getElementById('settings-images');
+	if (settingsPanel && typeof lucide !== 'undefined') {
+		lucide.createIcons({
+			attrs: { class: 'lucide-custom' },
+			nameAttr: 'data-lucide'
+		});
+	}
+}
+
+/**
+ * Updates the visual state of the width selection buttons.
+ */
+function updateImageWidthButtons(activeWidth) {
+	document.querySelectorAll('.image-width-btn').forEach(btn => {
+		const btnWidth = parseInt(btn.id.replace('width-btn-', ''));
+		if (btnWidth === activeWidth) {
+			btn.classList.add('bg-indigo-600', 'text-white', 'border-indigo-600', 'shadow-md');
+			btn.classList.remove('bg-white', 'text-zinc-500', 'border-zinc-200', 'dark:bg-zinc-900', 'dark:text-zinc-400', 'dark:border-zinc-800');
+		} else {
+			btn.classList.remove('bg-indigo-600', 'text-white', 'border-indigo-600', 'shadow-md');
+			btn.classList.add('bg-white', 'text-zinc-500', 'border-zinc-200', 'dark:bg-zinc-900', 'dark:text-zinc-400', 'dark:border-zinc-800');
+		}
+	});
+}
+
+// Window Bindings
+window.openSettingsModal = openSettingsModal;
+window.closeSettingsModal = closeSettingsModal;
+window.saveSettingsAndClose = saveSettingsAndClose;
+window.switchSettingsTab = switchSettingsTab;
+window.toggleFeature = toggleFeature;
+window.toggleHiddenField = toggleHiddenField;
+window.toggleGroupCollapse = toggleGroupCollapse;
+window.toggleMediaType = toggleMediaType;
+window.toggleStatus = toggleStatus;
+window.toggleAutoLaunchSetting = toggleAutoLaunchSetting;
+window.toggleOpenWindowOnStart = toggleOpenWindowOnStart;
+window.setTrayClickAction = setTrayClickAction;
+window.setCloseBehavior = setCloseBehavior;
+window.setImageSetting = setImageSetting;

@@ -30,6 +30,10 @@
 				class="settings-tab-btn px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-white dark:hover:bg-zinc-900 border border-transparent hover:border-zinc-200 dark:hover:border-zinc-800">
 				Tags
 			</button>
+			<button onclick="switchSettingsTab('images')" id="tab-images"
+				class="settings-tab-btn px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-white dark:hover:bg-zinc-900 border border-transparent hover:border-zinc-200 dark:hover:border-zinc-800">
+				Images
+			</button>
 			<button onclick="switchSettingsTab('other')" id="tab-other"
 				class="settings-tab-btn px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-white dark:hover:bg-zinc-900 border border-transparent hover:border-zinc-200 dark:hover:border-zinc-800">
 				other
@@ -69,6 +73,130 @@
 							Tags</h3>
 					</div>
 					<div id="settings-tags-container" class="space-y-3">
+					</div>
+				</div>
+			</div>
+			<div id="settings-images" class="settings-panel hidden space-y-6">
+				<div class="space-y-6">
+					<div>
+						<h3 class="text-sm font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 mb-4">
+							Image Editor Defaults
+						</h3>
+
+						<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+							<!-- Format -->
+							<div
+								class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 space-y-3">
+								<div class="flex items-center justify-between">
+									<label
+										class="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Default
+										Format</label>
+									<i data-lucide="image" class="w-4 h-4 text-indigo-500"></i>
+								</div>
+								<select id="setting-imageFormat" onchange="window.setImageSetting('format', this.value)"
+									class="w-full bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm px-3 py-2 focus:ring-2 focus:ring-indigo-500 dark:text-white">
+									<option value="image/jpeg">JPEG (Universal)</option>
+									<option value="image/webp" selected>WebP (Modern/Small)</option>
+									<option value="image/avif">AVIF (Next-Gen/Tiny)</option>
+									<option value="image/png">PNG (Lossless/Heavy)</option>
+								</select>
+								<p class="text-[10px] text-zinc-500 dark:text-zinc-400">AVIF offers the best compression
+									but takes longer to save.</p>
+							</div>
+
+							<!-- Quality -->
+							<div id="qualitySliderContainer"
+								class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 space-y-3">
+								<div class="flex items-center justify-between">
+									<label
+										class="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Compression
+										Quality</label>
+									<i data-lucide="sliders" class="w-4 h-4 text-emerald-500"></i>
+								</div>
+								<div class="flex items-center gap-4">
+									<input type="range" id="setting-imageQuality" min="0.5" max="1.0" step="0.05"
+										value="0.85"
+										oninput="document.getElementById('qualityVal').innerText = Math.round(this.value * 100) + '%'"
+										onchange="window.setImageSetting('quality', parseFloat(this.value))"
+										class="flex-1 h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+									<span id="qualityVal"
+										class="text-xs font-mono font-bold text-indigo-500 min-w-[3ch]">85%</span>
+								</div>
+								<p class="text-[10px] text-zinc-500 dark:text-zinc-400">85% is the recommended "Sweet
+									Spot". Quality below
+									50% is not recommended.</p>
+								<p class="text-[10px] text-zinc-500 dark:text-zinc-400">Note: This setting does not
+									affect PNG (Lossless).</p>
+							</div>
+
+							<!-- Width -->
+							<div
+								class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 space-y-3 md:col-span-2">
+								<div class="flex items-center justify-between">
+									<label
+										class="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Default
+										Export Width</label>
+									<i data-lucide="maximize" class="w-4 h-4 text-amber-500"></i>
+								</div>
+								<div class="grid grid-cols-5 gap-2">
+									<button onclick="window.setImageSetting('width', 400)" id="width-btn-400"
+										class="image-width-btn py-2 px-1 rounded-lg text-[10px] font-bold border transition-all">400px</button>
+									<button onclick="window.setImageSetting('width', 600)" id="width-btn-600"
+										class="image-width-btn py-2 px-1 rounded-lg text-[10px] font-bold border transition-all">600px</button>
+									<button onclick="window.setImageSetting('width', 800)" id="width-btn-800"
+										class="image-width-btn py-2 px-1 rounded-lg text-[10px] font-bold border transition-all">800px<br><span
+											class="text-[8px] opacity-75">Recommended</span></button>
+									<button onclick="window.setImageSetting('width', 1000)" id="width-btn-1000"
+										class="image-width-btn py-2 px-1 rounded-lg text-[10px] font-bold border transition-all">1000px</button>
+									<button onclick="window.setImageSetting('width', 1200)" id="width-btn-1200"
+										class="image-width-btn py-2 px-1 rounded-lg text-[10px] font-bold border transition-all">1200px</button>
+								</div>
+							</div>
+						</div>
+						<p class="text-[10px] text-zinc-500 dark:text-zinc-400 mt-2 italic px-1">
+							Note: 800px is the modern standard for high-density displays. For smaller or lower
+							resolution
+							monitors, 600px is still sufficient.
+						</p>
+					</div>
+
+					<div class="border-t border-zinc-200 dark:border-zinc-800 pt-6">
+						<div class="flex items-center justify-between mb-4">
+							<h3 class="text-sm font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
+								Format & Resolution Guide
+							</h3>
+							<span class="text-[10px] font-bold text-zinc-400 italic">Est. for 2:3 Posters</span>
+						</div>
+
+						<div
+							class="overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950/50">
+							<table class="w-full text-left text-[11px] leading-tight">
+								<thead
+									class="bg-zinc-50 dark:bg-zinc-900 text-zinc-400 font-bold uppercase tracking-wider border-b border-zinc-200 dark:border-zinc-800">
+									<tr>
+										<th class="px-4 py-2 font-bold">Format</th>
+										<th class="px-3 py-2 font-bold">Res</th>
+										<th class="px-3 py-2 font-bold text-right">Size</th>
+										<th class="px-3 py-2 font-bold text-right">Items/GB</th>
+										<th class="px-4 py-2 font-bold text-right">Perf</th>
+									</tr>
+								</thead>
+								<tbody id="imageGuideBody" class="divide-y divide-zinc-100 dark:divide-zinc-800/50">
+									<!-- Dynamically populated -->
+								</tbody>
+							</table>
+						</div>
+						<div
+							class="mt-4 p-4 rounded-xl bg-indigo-50 dark:bg-indigo-500/5 border border-indigo-100 dark:border-indigo-500/20">
+							<div class="flex gap-3">
+								<i data-lucide="info" class="w-4 h-4 text-indigo-500 shrink-0"></i>
+								<p class="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed">
+									<strong class="text-indigo-600 dark:text-indigo-400">Pro Tip:</strong> WebP offers
+									the best balance for large collections. PNG is only recommended if you need absolute
+									pixel perfection and have infinite disk space.
+								</p>
+							</div>
+						</div>
 					</div>
 				</div>
 			</div>

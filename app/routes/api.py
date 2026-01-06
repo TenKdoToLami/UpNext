@@ -1,23 +1,26 @@
 """
 API Routes for UpNext.
 
-Handles CRUD operations for media items.
+Handles CRUD operations for media items and system configuration.
 """
 
-from flask import Blueprint, jsonify, request, current_app
 import logging
 import json
 import uuid
 import os
 from datetime import datetime
 from typing import Any, Dict
+
+from flask import Blueprint, jsonify, request, current_app, Response
 from sqlalchemy import create_engine
+import requests
 
 from app.services.data_manager import DataManager
 from app.utils.constants import MEDIA_TYPES, STATUS_TYPES
 from app.models import TagMeta, MediaItem
-from app.config import get_sqlite_db_path
+from app.config import get_sqlite_db_path, list_available_databases
 from app.database import db
+from app.utils.config_manager import load_config, save_config
 
 bp = Blueprint("api", __name__, url_prefix="/api")
 data_manager = DataManager()
@@ -39,9 +42,6 @@ def get_items():
 @bp.route("/database/status", methods=["GET"])
 def get_db_status():
     """Returns the current database status and available options."""
-    from app.config import list_available_databases, APP_CONFIG_FILE
-    from app.utils.config_manager import load_config
-    
     available = list_available_databases()
     current_app.config["AVAILABLE_DBS"] = available
     
@@ -60,9 +60,6 @@ def select_database():
     """Switches the active database connection."""
     data = request.get_json()
     db_name = data.get("db_name")
-    
-    from app.config import list_available_databases
-    from app.utils.config_manager import save_config
     
     available = list_available_databases()
     
@@ -137,7 +134,6 @@ def create_database():
 @bp.route("/settings", methods=["GET"])
 def get_settings():
     """Retrieves application settings."""
-    from app.utils.config_manager import load_config
     config = load_config()
     return jsonify(config.get('appSettings', {}))
 
@@ -146,7 +142,6 @@ def save_settings():
     """Saves application settings."""
     try:
         new_settings = request.get_json()
-        from app.utils.config_manager import save_config
         save_config({'appSettings': new_settings})
         return jsonify({"status": "success", "message": "Settings saved"})
     except Exception as e:
@@ -165,7 +160,6 @@ def update_config():
     """
     try:
         data = request.get_json()
-        from app.utils.config_manager import save_config
         if not data:
             return jsonify({"error": "No data provided"}), 400
             
@@ -208,8 +202,7 @@ def save_item():
             cover_url = request.form.get("cover_url")
             if cover_url:
                 try:
-                    import requests as req
-                    response = req.get(cover_url, timeout=10, headers={
+                    response = requests.get(cover_url, timeout=10, headers={
                         "User-Agent": "UpNext/1.0 (Media Tracker App)"
                     })
                     if response.status_code == 200:
@@ -394,7 +387,6 @@ def _get_external_api_service():
     global _external_api_service
     if _external_api_service is None:
         from app.services.external_api import ExternalAPIService
-        from app.utils.config_manager import load_config
         
         config = load_config()
         tmdb_key = config.get('apiKeys', {}).get('tmdb', '')
@@ -512,7 +504,6 @@ def update_external_api_key():
         service = _get_external_api_service()
         
         # Load current config to update
-        from app.utils.config_manager import load_config, save_config
         config = load_config()
         api_keys = config.get('apiKeys', {})
         
@@ -556,7 +547,6 @@ def update_search_priority():
         if not media_type or not source:
             return jsonify({"error": "Missing type or source"}), 400
             
-        from app.utils.config_manager import load_config, save_config
         config = load_config()
         priorities = config.get('searchPriorities', {})
         priorities[media_type] = source
@@ -571,6 +561,32 @@ def update_search_priority():
 @bp.route("/config", methods=["GET"])
 def get_config():
     """Returns the current public configuration."""
-    from app.utils.config_manager import load_config
     config = load_config()
     return jsonify(config)
+
+
+@bp.route("/proxy/image", methods=["GET"])
+def proxy_image():
+    """
+    Proxies an external image to bypass CORS restrictions.
+    Used by the Image Editor to allow canvas cropping of third-party images.
+    """
+    url = request.args.get("url")
+    if not url:
+        return jsonify({"error": "No URL provided"}), 400
+
+    try:
+        response = requests.get(url, timeout=15, stream=True, headers={
+            "User-Agent": "UpNext/1.0 (Media Tracker App)"
+        })
+        
+        if response.status_code != 200:
+            logger.warning(f"Failed to fetch proxied image from {url}: {response.status_code}")
+            return jsonify({"error": "Failed to fetch image"}), response.status_code
+
+        content_type = response.headers.get("Content-Type", "image/jpeg")
+        return Response(response.content, mimetype=content_type)
+        
+    except Exception as e:
+        logger.error(f"Image proxy failed for {url}: {e}")
+        return jsonify({"error": "Proxy failed", "message": str(e)}), 500

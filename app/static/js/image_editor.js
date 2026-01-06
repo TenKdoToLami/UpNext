@@ -5,6 +5,7 @@
  */
 
 import { showToast } from './toast.js';
+import { state } from './state.js';
 
 // =============================================================================
 // STATE & CONFIG
@@ -29,7 +30,9 @@ const editorState = {
 
 	// Config
 	aspectRatio: 2 / 3, // Default for covers
-	targetWidth: 600,   // Default export width
+	targetWidth: 600,   // Default export width (will be synced from settings)
+	targetFormat: 'image/jpeg',
+	targetQuality: 0.9,
 	maskColor: 'rgba(0, 0, 0, 0.7)',
 
 	// Limits
@@ -46,26 +49,42 @@ const editorState = {
 // =============================================================================
 
 /**
- * Initializes the image editor with a file.
- * @param {File} file - The image file to edit.
+ * Initializes the image editor with a file or URL.
+ * @param {File|string} fileOrUrl - The image file or URL to edit.
  * @param {Function} onSave - Callback receiving the cropped Blob.
  */
-export function initImageEditor(file, onSave) {
-	if (!file || !file.type.startsWith('image/')) {
+export function initImageEditor(fileOrUrl, onSave) {
+	if (!fileOrUrl) {
+		showToast('No image source provided.', 'error');
+		return;
+	}
+
+	if (fileOrUrl instanceof File && !fileOrUrl.type.startsWith('image/')) {
 		showToast('Please select a valid image file.', 'error');
 		return;
 	}
 
 	// Ensure clean slate, but keep config defaults if any
-	// We manually reset image-specific props only, or use resetEditorState but that clears callback. 
-	// Let's manually clear image props here to be safe without nuking the callback we just set.
 	editorState.image = null;
 	editorState.scale = 1;
 	editorState.imgX = 0;
 	editorState.imgY = 0;
 
-	editorState.file = file;
+	editorState.file = fileOrUrl instanceof File ? fileOrUrl : null;
 	editorState.callback = onSave;
+
+	// Sync from global settings
+	const settings = state.appSettings.imageSettings || { format: 'image/webp', quality: 0.85, width: 800 };
+	editorState.targetWidth = settings.width || 800;
+	editorState.targetFormat = settings.format || 'image/webp';
+	editorState.targetQuality = settings.quality || 0.85;
+
+	// Sync UI selectors if present
+	const resSelect = document.getElementById('resolutionSelect');
+	if (resSelect) resSelect.value = editorState.targetWidth.toString();
+
+	const formatSelect = document.getElementById('editorFormatSelect');
+	if (formatSelect) formatSelect.value = editorState.targetFormat;
 
 	// Show Editor UI / Hide Preview UI
 	toggleEditorUI(true);
@@ -73,7 +92,7 @@ export function initImageEditor(file, onSave) {
 	// Setup Canvas if not ready (or re-setup)
 	setTimeout(() => {
 		setupCanvas(); // execution deferred to ensure DOM visibility (animate-enter)
-		loadImage(file);
+		loadImage(fileOrUrl);
 	}, 50); // Small delay to allow 'hidden' class removal to paint so canvas can size correctly
 }
 
@@ -147,6 +166,7 @@ function resizeCanvas() {
 	editorState.canvasHeight = editorState.canvas.height;
 
 	calculateFrame();
+	checkResolution();
 	drawEditor();
 }
 
@@ -173,20 +193,39 @@ function calculateFrame() {
 }
 
 /**
- * Loads the file into an Image object.
+ * Loads the image source into an Image object.
+ * @param {File|string} source - File object or URL string
  */
-function loadImage(file) {
-	const reader = new FileReader();
-	reader.onload = (e) => {
+function loadImage(source) {
+	if (source instanceof File) {
+		const reader = new FileReader();
+		reader.onload = (e) => {
+			const img = new Image();
+			img.onload = () => {
+				editorState.image = img;
+				resetTransform();
+				checkResolution();
+				drawEditor();
+			};
+			img.src = e.target.result;
+		};
+		reader.readAsDataURL(source);
+	} else if (typeof source === 'string') {
 		const img = new Image();
+		img.crossOrigin = 'anonymous'; // Support cross-origin images for cropping
 		img.onload = () => {
 			editorState.image = img;
 			resetTransform();
+			checkResolution();
 			drawEditor();
 		};
-		img.src = e.target.result;
-	};
-	reader.readAsDataURL(file);
+		img.onerror = () => {
+			showToast('Failed to load image from external URL. It may be restricted by security policies.', 'error');
+			closeEditor();
+		};
+		// Use backend proxy to bypass CORS/Same-Origin restrictions
+		img.src = `/api/proxy/image?url=${encodeURIComponent(source)}`;
+	}
 }
 
 /**
@@ -212,6 +251,7 @@ function resetTransform() {
 	editorState.imgY = editorState.canvasHeight / 2 - (editorState.image.height * editorState.scale) / 2;
 
 	updateZoomSlider();
+	checkResolution();
 }
 
 // =============================================================================
@@ -343,6 +383,7 @@ function applyZoom(factor, center) {
 	editorState.scale = newScale;
 
 	updateZoomSlider();
+	checkResolution();
 	drawEditor();
 }
 
@@ -360,6 +401,7 @@ export function setZoomFromSlider(value) {
 	const center = { x: editorState.canvasWidth / 2, y: editorState.canvasHeight / 2 };
 	const factor = newScale / editorState.scale;
 	applyZoom(factor, center);
+	checkResolution();
 }
 
 /** Updates the zoom slider UI to match current scale. */
@@ -373,20 +415,44 @@ function updateZoomSlider() {
 }
 
 /**
- * Sets the aspect ratio for the crop frame.
- * @param {string|number} ratio - Aspect ratio (e.g. '2:3' or 0.66)
+ * Sets the target output width and re-checks resolution.
+ * @param {number} width - Output width in pixels
  */
-export function setAspectRatio(ratio) {
-	if (typeof ratio === 'string') {
-		const parts = ratio.split(':');
-		editorState.aspectRatio = parseFloat(parts[0]) / parseFloat(parts[1]);
-	} else {
-		editorState.aspectRatio = ratio;
-	}
+export function setTargetWidth(width) {
+	editorState.targetWidth = width;
+	checkResolution();
+}
 
-	calculateFrame();
-	resetTransform();
-	drawEditor();
+/**
+ * Updates the output format (MIME type).
+ * @param {string} mime 
+ */
+export function setFormat(mime) {
+	editorState.targetFormat = mime;
+}
+
+/**
+ * Checks if the source image resolution is sufficient for the current crop.
+ * Displays a warning if upscaling will occur.
+ */
+function checkResolution() {
+	if (!editorState.image) return;
+
+	// Calculate how many source pixels are currently in the crop frame
+	const sourcePixelsWidth = editorState.frameWidth / editorState.scale;
+	const isUpscaling = sourcePixelsWidth < editorState.targetWidth;
+
+	const warningEl = document.getElementById('resolutionWarning');
+	if (warningEl) {
+		warningEl.classList.toggle('hidden', !isUpscaling);
+
+		// Update warning text with better wording
+		const warnText = warningEl.querySelector('.warning-text');
+		if (warnText) {
+			const currentRes = Math.round(sourcePixelsWidth);
+			warnText.innerText = `Loss of quality: Source provides only ${currentRes}px for a ${editorState.targetWidth}px output.`;
+		}
+	}
 }
 
 // =============================================================================
@@ -399,10 +465,14 @@ export function setAspectRatio(ratio) {
 export async function saveCrop() {
 	if (!editorState.image) return;
 
-	const output = document.createElement('canvas');
-	const w = editorState.targetWidth;
+	// Calculate actual source pixels within the crop frame
+	const sourcePixelsWide = Math.round(editorState.frameWidth / editorState.scale);
+
+	// Smart Resolution: Cap output width to actual source detail to avoid upscaling
+	const w = Math.min(editorState.targetWidth, sourcePixelsWide);
 	const h = w / editorState.aspectRatio;
 
+	const output = document.createElement('canvas');
 	output.width = w;
 	output.height = h;
 
@@ -422,7 +492,7 @@ export async function saveCrop() {
 			editorState.callback(blob);
 		}
 		closeEditor();
-	}, 'image/jpeg', 0.9);
+	}, editorState.targetFormat, editorState.targetQuality);
 }
 
 /**
@@ -438,8 +508,12 @@ export function saveCropPromise() {
 		}
 
 		const output = document.createElement('canvas');
-		const w = editorState.targetWidth;
+
+		// Smart Resolution: Cap output width to actual source detail
+		const sourcePixelsWide = Math.round(editorState.frameWidth / editorState.scale);
+		const w = Math.min(editorState.targetWidth, sourcePixelsWide);
 		const h = w / editorState.aspectRatio;
+
 		output.width = w;
 		output.height = h;
 
@@ -461,7 +535,7 @@ export function saveCropPromise() {
 			}
 			closeEditor();
 			resolve(blob);
-		}, 'image/jpeg', 0.9);
+		}, editorState.targetFormat, editorState.targetQuality);
 	});
 }
 
@@ -490,9 +564,11 @@ export function resetEditorState() {
 // Expose to window for UI binding
 window.imageEditor = {
 	setZoomFromSlider,
-	setAspectRatio,
+	setFormat,
+	setTargetWidth,
 	saveCrop,
 	saveCropPromise,
+	resetTransform,
 	closeEditor,
 	resetEditorState
 };

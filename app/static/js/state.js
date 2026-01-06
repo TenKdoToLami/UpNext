@@ -74,7 +74,12 @@ export const state = {
 		disabledFeatures: [], // Features to disable (e.g. 'calendar', 'stats')
 		disabledTypes: [],    // Media Types to hide (e.g. 'Manga')
 		disabledStatuses: [], // Statuses to hide (e.g. 'Dropped')
-		trayClickAction: 'native' // 'native' or 'browser'
+		trayClickAction: 'native', // 'native' or 'browser'
+		imageSettings: {
+			format: 'image/webp',
+			quality: 0.85,
+			width: 800
+		}
 	}
 };
 
@@ -103,10 +108,6 @@ function waitForPywebview(timeout = 1000) {
 	});
 }
 
-/**
- * Saves specific application state to persistent storage.
- * Uses pywebview native API if available, falls back to LocalStorage.
- */
 /**
  * Saves specific application state to persistent storage.
  * Uses pywebview native API if available, otherwise syncs via Backend API.
@@ -201,7 +202,19 @@ export async function loadUIState() {
 	// Only overwrite keys that exist in the loaded data
 	PERSISTED_KEYS.forEach(key => {
 		if (data[key] !== undefined) {
-			state[key] = data[key];
+			if (key === 'appSettings' && typeof data[key] === 'object' && data[key] !== null) {
+				// Deep merge appSettings to preserve defaults for new sub-keys like imageSettings
+				state.appSettings = {
+					...state.appSettings,
+					...data[key],
+					imageSettings: {
+						...state.appSettings.imageSettings,
+						...(data[key].imageSettings || {})
+					}
+				};
+			} else {
+				state[key] = data[key];
+			}
 		}
 	});
 }

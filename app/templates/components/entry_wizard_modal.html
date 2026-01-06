@@ -246,10 +246,18 @@
 										class="p-2 rounded-lg bg-black/50 hover:bg-black/70 text-white backdrop-blur-sm transition-colors text-xs font-bold flex items-center gap-2 border border-white/10 w-full justify-center">
 										<i data-lucide="x" class="w-3 h-3"></i> Cancel
 									</button>
-									<button type="button" onclick="window.imageEditor.setAspectRatio(2/3)"
+									<button type="button" onclick="window.imageEditor.resetTransform()"
 										class="p-2 rounded-lg bg-black/50 hover:bg-black/70 text-white backdrop-blur-sm transition-colors text-xs font-bold flex items-center gap-2 border border-white/10 w-full justify-center">
 										<i data-lucide="refresh-ccw" class="w-3 h-3"></i> Reset
 									</button>
+								</div>
+
+								<!-- Resolution Warning Overlay -->
+								<div id="resolutionWarning"
+									class="absolute bottom-4 left-4 right-4 bg-amber-500/90 dark:bg-amber-600/90 backdrop-blur-md text-white px-4 py-2 rounded-xl border border-white/20 shadow-lg flex items-center gap-3 animate-enter hidden z-10">
+									<i data-lucide="alert-triangle" class="w-4 h-4 shrink-0"></i>
+									<span class="text-[10px] font-bold uppercase tracking-tight warning-text">Low
+										Resolution: Source provides only 300px for a 600px output.</span>
 								</div>
 							</div>
 
@@ -276,18 +284,18 @@
 									</summary>
 
 									<div class="grid grid-cols-2 gap-4 mt-3 animate-enter">
-										<!-- Ratio -->
+										<!-- Format -->
 										<div class="space-y-1">
 											<label
-												class="text-[10px] font-bold uppercase text-zinc-400 tracking-wider">Aspect
-												Ratio</label>
-											<select id="aspectRatioSelect"
-												onchange="window.imageEditor.setAspectRatio(this.value)"
+												class="text-[10px] font-bold uppercase text-zinc-400 tracking-wider">Output
+												Format</label>
+											<select id="editorFormatSelect"
+												onchange="window.imageEditor.setFormat(this.value)"
 												class="w-full bg-zinc-100 dark:bg-zinc-800 border-none rounded-lg text-xs font-bold text-zinc-700 dark:text-zinc-300 py-2 px-3 cursor-pointer focus:ring-2 focus:ring-indigo-500">
-												<option value="0.666666666" selected>2:3 (Recommended)</option>
-												<option value="1">1:1 (Square)</option>
-												<option value="1.777777778">16:9 (Backdrop)</option>
-												<option value="0.75">3:4 (Portrait)</option>
+												<option value="image/jpeg">JPEG (Universal)</option>
+												<option value="image/webp">WebP (Modern/Small)</option>
+												<option value="image/avif">AVIF (Next-Gen/Tiny)</option>
+												<option value="image/png">PNG (Lossless/Heavy)</option>
 											</select>
 										</div>
 
@@ -298,10 +306,12 @@
 												Size</label>
 											<select id="resolutionSelect"
 												class="w-full bg-zinc-100 dark:bg-zinc-800 border-none rounded-lg text-xs font-bold text-zinc-700 dark:text-zinc-300 py-2 px-3 cursor-pointer focus:ring-2 focus:ring-indigo-500"
-												onchange="window.imageEditor.targetWidth = parseInt(this.value)">
-												<option value="600" selected>Medium (600px)</option>
-												<option value="1200">High (1200px)</option>
+												onchange="window.imageEditor.setTargetWidth(parseInt(this.value))">
 												<option value="400">Small (400px)</option>
+												<option value="600">Medium (600px - Standard)</option>
+												<option value="800" selected>800px (Recommended)</option>
+												<option value="1000">Extra Large (1000px)</option>
+												<option value="1200">High (1200px - Retina)</option>
 											</select>
 										</div>
 									</div>
