@@ -177,7 +177,19 @@ export const ALL_EXPORT_FIELDS = [
 	{ id: 'alternateTitles', label: 'Alt. Titles', default: false, backendField: 'alternateTitles' },
 	{ id: 'children', label: 'Seasons/Volumes', default: false, backendField: 'children' },
 	{ id: 'series', label: 'Series / Collection', default: false, backendField: 'series' },
+	{ id: 'seriesNumber', label: 'Series Number', default: false, backendField: 'seriesNumber' },
 	{ id: 'universe', label: 'Universe', default: false, backendField: 'universe' },
+	{ id: 'releaseDate', label: 'Release Date', default: false, backendField: 'releaseDate' },
+	{ id: 'tags', label: 'Tags', default: false, backendField: 'tags' },
+	{ id: 'abbreviations', label: 'Abbreviations', default: false, backendField: 'abbreviations' },
+	{ id: 'episodeCount', label: 'Episode Count', default: false, backendField: 'episodeCount' },
+	{ id: 'chapterCount', label: 'Chapter Count', default: false, backendField: 'chapterCount' },
+	{ id: 'volumeCount', label: 'Volume Count', default: false, backendField: 'volumeCount' },
+	{ id: 'pageCount', label: 'Page Count', default: false, backendField: 'pageCount' },
+	{ id: 'wordCount', label: 'Word Count', default: false, backendField: 'wordCount' },
+	{ id: 'avgDurationMinutes', label: 'Avg Duration', default: false, backendField: 'avgDurationMinutes' },
+	{ id: 'completedAt', label: 'Completed Date', default: false, backendField: 'completedAt' },
+	{ id: 'rereadCount', label: 'Reread Count', default: false, backendField: 'rereadCount' },
 	{ id: 'externalLinks', label: 'External Links', default: false, backendField: 'externalLinks' },
 	{ id: 'isHidden', label: '"Hidden" Tag', default: false, backendField: 'isHidden', color: 'text-red-600 dark:text-red-400' }
 ];
@@ -189,16 +201,24 @@ export const EXPORT_CONFIG = {
 		label: 'Simple List',
 		category: 'visual',
 		mandatory: ['title'],
-		defaultOn: ['title', 'type', 'status', 'rating', 'coverUrl'],
-		excluded: [],
+		defaultOn: [
+			'title', 'type', 'status', 'rating', 'coverUrl', 'progress',
+			'authors', 'description', 'children',
+			'episodeCount', 'chapterCount', 'volumeCount', 'pageCount'
+		],
+		excluded: ['isHidden'],
 		icon: 'list-collapse'
 	},
 	'html_list': {
 		label: 'Detailed List',
 		category: 'visual',
 		mandatory: ['title', 'coverUrl'],
-		defaultOn: ['title', 'coverUrl', 'type', 'status', 'rating', 'authors', 'description'],
-		excluded: [],
+		defaultOn: [
+			'title', 'coverUrl', 'type', 'status', 'rating', 'authors',
+			'description', 'tags', 'children',
+			'episodeCount', 'chapterCount', 'volumeCount', 'pageCount'
+		],
+		excluded: ['isHidden'],
 		icon: 'layout-list'
 	},
 	'html_card': {
@@ -206,7 +226,13 @@ export const EXPORT_CONFIG = {
 		category: 'visual',
 		mandatory: ['coverUrl', 'title', 'type', 'status'],
 		defaultOn: ['coverUrl', 'title', 'type', 'status', 'rating'],
-		excluded: ['description', 'notes', 'review', 'alternateTitles', 'externalLinks'],
+		excluded: [
+			// Card view is compact - most fields don't fit
+			'description', 'notes', 'review', 'alternateTitles', 'externalLinks',
+			'children', 'abbreviations', 'episodeCount', 'chapterCount',
+			'volumeCount', 'pageCount', 'wordCount', 'avgDurationMinutes',
+			'rereadCount', 'completedAt', 'releaseDate', 'tags', 'isHidden'
+		],
 		icon: 'layout-grid'
 	},
 	// Raw Data Formats
@@ -233,6 +259,14 @@ export const EXPORT_CONFIG = {
 		defaultOn: [],
 		excluded: [],
 		icon: 'file-code'
+	},
+	'db': {
+		label: 'SQLite',
+		category: 'raw',
+		mandatory: [],
+		defaultOn: [],
+		excluded: [],
+		icon: 'database'
 	}
 };
 

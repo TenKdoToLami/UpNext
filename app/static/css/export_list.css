@@ -88,6 +88,18 @@ h1 {
 	margin-top: 10px;
 }
 
+/* Meta Rows */
+.meta-row {
+	color: #a1a1aa;
+	font-size: 12px;
+	margin-bottom: 8px;
+}
+
+.meta-row strong {
+	color: #fff;
+}
+
+/* Tag Group */
 .tag-group {
 	display: flex;
 	gap: 6px;
@@ -104,6 +116,64 @@ h1 {
 	background: #27272a;
 	color: #d4d4d8;
 }
+
+/* Simple Tags (#tag) */
+.tags-row {
+	margin-bottom: 10px;
+}
+
+.tag-simple {
+	background: #27272a;
+	color: #a1a1aa;
+	padding: 2px 8px;
+	border-radius: 12px;
+	font-size: 11px;
+	margin-right: 4px;
+	display: inline-block;
+	border: 1px solid #3f3f46;
+}
+
+/* Stats Grid */
+.stats-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+	gap: 8px;
+	margin: 10px 0;
+	background: #27272a;
+	/* Dark background */
+	padding: 10px;
+	border-radius: 8px;
+}
+
+.stat-item {
+	display: flex;
+	flex-direction: column;
+}
+
+.stat-item small {
+	font-size: 10px;
+	text-transform: uppercase;
+	color: #71717a;
+	letter-spacing: 0.05em;
+}
+
+.stat-item strong {
+	color: #e4e4e7;
+	font-size: 13px;
+}
+
+/* Notes Block */
+.notes-block {
+	background: #3f3f46;
+	/* Better dark note bg */
+	color: #e4e4e7;
+	padding: 10px;
+	border-radius: 6px;
+	font-size: 13px;
+	margin: 10px 0;
+	border-left: 3px solid #facc15;
+}
+
 
 /* Status Colors */
 .status-Planning {
@@ -238,8 +308,45 @@ p {
 	margin: 0;
 }
 
-.text-body {
-	color: #d4d4d8;
-	font-size: 14px;
-	line-height: 1.6;
+/* Rating Colors */
+.rating-bad {
+	color: #ef4444;
+}
+
+.rating-ok {
+	color: #f59e0b;
+}
+
+.rating-good {
+	color: #3b82f6;
+}
+
+.rating-masterpiece {
+	color: #10b981;
+}
+
+/* Media Type Colors */
+.type-Anime {
+	color: #8b5cf6;
+	border-color: #8b5cf6;
+}
+
+.type-Manga {
+	color: #ec4899;
+	border-color: #ec4899;
+}
+
+.type-Book {
+	color: #3b82f6;
+	border-color: #3b82f6;
+}
+
+.type-Movie {
+	color: #ef4444;
+	border-color: #ef4444;
+}
+
+.type-Series {
+	color: #f59e0b;
+	border-color: #f59e0b;
 }

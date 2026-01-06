@@ -97,7 +97,19 @@ def select_database():
         logger.error(f"Failed to switch database: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
-
+@bp.route("/database/schema", methods=["GET"])
+def get_db_schema():
+    """Returns the SQL schema for the current database."""
+    try:
+        # Query sqlite_master for table definitions
+        with db.engine.connect() as conn:
+            result = conn.execute(text("SELECT sql FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND sql IS NOT NULL"))
+            schema = [row[0] for row in result]
+        
+        return jsonify({"status": "success", "schema": schema})
+    except Exception as e:
+        logger.error(f"Failed to fetch DB schema: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
 @bp.route("/database/create", methods=["POST"])
 def create_database():
     """Creates a new empty database."""

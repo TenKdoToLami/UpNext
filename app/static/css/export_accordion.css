@@ -200,3 +200,77 @@ details[open] .chevron {
 .links a:hover {
 	text-decoration: underline;
 }
+
+/* Rating Colors */
+.rating-bad {
+	color: #ef4444 !important;
+}
+
+.rating-ok {
+	color: #f59e0b !important;
+}
+
+.rating-good {
+	color: #3b82f6 !important;
+}
+
+.rating-masterpiece {
+	color: #10b981 !important;
+}
+
+/* Status Badge Colors */
+.badge-Planning {
+	background: #27272a;
+	color: #a1a1aa;
+}
+
+.badge-ReadingWatching {
+	background: #0c4a6e;
+	color: #38bdf8;
+}
+
+.badge-Dropped {
+	background: #450a0a;
+	color: #f87171;
+}
+
+.badge-OnHold {
+	background: #431407;
+	color: #fb923c;
+}
+
+.badge-Anticipating {
+	background: #3b0764;
+	color: #c084fc;
+}
+
+.badge-Completed {
+	background: #064e3b;
+	color: #34d399;
+}
+
+/* Media Type Badge Colors */
+.badge-Anime {
+	background: #312e81;
+	color: #818cf8;
+}
+
+.badge-Manga {
+	background: #831843;
+	color: #f472b6;
+}
+
+.badge-Book {
+	background: #172554;
+	color: #60a5fa;
+}
+
+.badge-Movie {
+	background: #450a0a;
+	color: #f87171;
+}
+
+.badge-Series {
+	background: #451a03;
+	color: #fbbf24;
+}

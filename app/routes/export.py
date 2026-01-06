@@ -25,7 +25,7 @@ from datetime import datetime
 from xml.etree.ElementTree import Element, SubElement, tostring
 from xml.dom import minidom
 
-from flask import Blueprint, request, send_file, render_template, jsonify
+from flask import Blueprint, request, send_file, render_template, jsonify, current_app
 from app.services.data_manager import DataManager
 from app.utils.constants import RATING_MAP, MEDIA_COLOR_MAP, STATUS_TEXT_MAP
 
@@ -33,17 +33,22 @@ bp = Blueprint('export', __name__, url_prefix='/api')
 data_manager = DataManager()
 logger = logging.getLogger(__name__)
 
-# Default fields for CSV export
+# Default fields for CSV export (Updated to be comprehensive)
 DEFAULT_CSV_FIELDS = [
-    'title', 'type', 'status', 'rating', 'authors', 'universe',
+    'id', 'title', 'type', 'status', 'rating', 'authors', 'universe',
     'series', 'seriesNumber', 'progress', 'description', 'notes',
-    'review', 'coverUrl', 'isHidden'
+    'review', 'coverUrl', 'isHidden', 
+    'releaseDate', 'tags', 'abbreviations', 'alternateTitles',
+    'episodeCount', 'volumeCount', 'chapterCount', 'wordCount', 
+    'pageCount', 'avgDurationMinutes', 'completedAt', 'rereadCount',
+    'externalLinks', 'children'
 ]
 
 # Patterns to exclude from full backup
 EXCLUDE_PATTERNS = [
     '__pycache__', '.pyc', '.git', '.env', 'venv', 'env',
-    '.vscode', '.idea', 'node_modules', '.DS_Store', 'Thumbs.db'
+    '.vscode', '.idea', 'node_modules', '.DS_Store', 'Thumbs.db',
+    'dist', 'build', '.pytest_cache', '.mypy_cache'
 ]
 
 
@@ -67,9 +72,21 @@ def parse_export_params():
 def filter_items(items, params):
     """Filter items based on export parameters."""
     filtered = []
+    
+    # Check if we are doing a raw export (JSON/CSV/XML)
+    # For raw exports, we usually want to ignore the "Hidden" filter to ensure full backup
+    # unless explicitly handled otherwise. 
+    # However, user requested "unless you are in raw data, where it should show them anyway"
+    # So for raw formats, we FORCE exclude_hidden to False.
+    is_raw_format = params['format'] in ['json_raw', 'csv', 'xml', 'db']
+    exclude_hidden = params['exclude_hidden']
+    
+    if is_raw_format:
+        exclude_hidden = False
+
     for item in items:
         # Hidden filter
-        if params['exclude_hidden'] and item.get('isHidden'):
+        if exclude_hidden and item.get('isHidden'):
             continue
         # Type filter
         if params['filter_types'] and item.get('type') not in params['filter_types']:
@@ -158,9 +175,14 @@ def generate_zip_filename(prefix):
 # EXPORT FORMATS
 # =============================================================================
 
+# =============================================================================
+# EXPORT FORMATS
+# =============================================================================
+
 def export_json(items, fields, images):
     """Export items as JSON."""
-    processed_items = _process_items_for_export(items, images)
+    processed_items = _process_items_for_export(items, images, base64_encode=False)
+    # ... (same as before but using updated process func) ...
     export_items = [filter_item_fields(item, fields) for item in processed_items] if fields else processed_items
     json_data = json.dumps(export_items, indent=2, ensure_ascii=False)
     
@@ -172,37 +194,58 @@ def export_json(items, fields, images):
     return create_zip_response(generate_zip_filename('upnext_raw_export'), memory_file)
 
 
-def _process_items_for_export(items, images):
+def _process_items_for_export(items, images, base64_encode=False):
     """
-    Adjusts item metadata for portable export (e.g., rewriting cover URLs to relative ZIP paths).
+    Adjusts item metadata for export.
     
     Args:
-        items (list): List of item dictionaries (from to_dict).
+        items (list): List of item dictionaries.
         images (set): Set of item IDs being exported with binary covers.
+        base64_encode (bool): If True, embeds images as base64 strings.
         
     Returns:
         list: Processed item dictionaries.
     """
+    # Local imports to prevent circular dependencies
     from app.models import MediaItem
     from app.database import db
     import mimetypes
+    import base64
     
     processed = []
     for item in items:
         new_item = item.copy()
+        
+        # Handle cover images handling (Binary Link vs Base64)
         if new_item.get('id') in images:
              media_item = db.session.get(MediaItem, new_item['id'])
-             ext = ".jpg"
-             if media_item and media_item.cover and media_item.cover.cover_mime:
-                 ext = mimetypes.guess_extension(media_item.cover.cover_mime) or ".jpg"
-             new_item['coverUrl'] = f"images/{new_item['id']}{ext}"
+             if media_item and media_item.cover and media_item.cover.cover_image:
+                 mime = media_item.cover.cover_mime or "image/jpeg"
+                 ext = mimetypes.guess_extension(mime) or ".jpg"
+                 
+                 if base64_encode:
+                     b64_str = base64.b64encode(media_item.cover.cover_image).decode('utf-8')
+                     new_item['coverUrl'] = f"data:{mime};base64,{b64_str}"
+                 else:
+                     new_item['coverUrl'] = f"images/{new_item['id']}{ext}"
+
+        # Ensure child items have necessary display fields
+        if 'children' in new_item and new_item['children']:
+            updated_children = []
+            for child in new_item['children']:
+                child_data = child.copy() if isinstance(child, dict) else child
+                updated_children.append(child_data)
+            new_item['children'] = updated_children
+
         processed.append(new_item)
     return processed
 
 def export_csv(items, fields, images):
     """Export items as CSV."""
-    processed_items = _process_items_for_export(items, images)
-    csv_fields = [f for f in fields if f not in ['children', 'externalLinks']] if fields else DEFAULT_CSV_FIELDS
+    processed_items = _process_items_for_export(items, images, base64_encode=False)
+    
+    # Use provided fields or fallback to extended default list
+    csv_fields = [f for f in fields] if fields else DEFAULT_CSV_FIELDS
     
     output = io.StringIO()
     writer = csv.DictWriter(output, fieldnames=csv_fields, extrasaction='ignore')
@@ -213,9 +256,16 @@ def export_csv(items, fields, images):
         for field in csv_fields:
             value = item.get(field, '')
             if isinstance(value, list):
-                value = ', '.join(str(v) for v in value)
+                # Handle lists of dicts (like children, externalLinks) vs strings (tags)
+                if value and isinstance(value[0], dict):
+                     value = json.dumps(value, ensure_ascii=False)
+                else:
+                     value = ', '.join(str(v) for v in value)
             elif isinstance(value, bool):
                 value = 'Yes' if value else 'No'
+            elif value is None:
+                value = ""
+                
             row[field] = value
         writer.writerow(row)
     
@@ -229,7 +279,7 @@ def export_csv(items, fields, images):
 
 def export_xml(items, fields, images):
     """Export items as XML."""
-    processed_items = _process_items_for_export(items, images)
+    processed_items = _process_items_for_export(items, images, base64_encode=False)
     
     root = Element('library')
     root.set('exported', datetime.now().isoformat())
@@ -296,8 +346,12 @@ def export_db():
 
 
 def export_html(items, fields, format_param, images):
-    """Export items as HTML."""
-    processed_items = _process_items_for_export(items, images)
+    """
+    Export items as a SINGLE HTML file.
+    
+    Embeds CSS and Images (Base64) directly into the HTML.
+    """
+    processed_items = _process_items_for_export(items, images, base64_encode=True)
     
     template_map = {
         'html_card': 'export_card.html',
@@ -305,40 +359,52 @@ def export_html(items, fields, format_param, images):
     }
     template_name = template_map.get(format_param, 'export_list.html')
     
-    html_content = render_template(
-        template_name,
-        items=processed_items,
-        fields=fields,
-        now=datetime.now(),
-        RATING_MAP=RATING_MAP,
-        MEDIA_COLOR_MAP=MEDIA_COLOR_MAP,
-        STATUS_TEXT_MAP=STATUS_TEXT_MAP
-    )
-    
+    # Read CSS Content
     css_file_map = {
         'html_card': 'export_card.css',
         'html_accordion': 'export_accordion.css'
     }
     css_file_name = css_file_map.get(format_param, 'export_list.css')
     
-    # Read CSS content
+    css_content = ""
     try:
         from app.config import STATIC_DIR
         css_path = os.path.join(STATIC_DIR, 'css', css_file_name)
-        with open(css_path, 'r') as f:
-            css_content = f.read()
+        if os.path.exists(css_path):
+            with open(css_path, 'r', encoding='utf-8') as f:
+                css_content = f.read()
     except Exception as e:
         logger.warning(f"Failed to include exported CSS: {e}")
-        css_content = ""
 
-    memory_file = io.BytesIO()
-    with zipfile.ZipFile(memory_file, 'w') as zf:
-        zf.writestr('upnext_library.html', html_content)
-        if css_content:
-            zf.writestr(f'css/{css_file_name}', css_content)
-        add_images_to_zip(zf, images)
+    # Render Template
+    html_content = render_template(
+        template_name,
+        items=processed_items,
+        fields=fields,
+        now=datetime.now(),
+        # css_content passed via string replacement to avoid formatter issues
+        RATING_MAP=RATING_MAP,
+        MEDIA_COLOR_MAP=MEDIA_COLOR_MAP,
+        STATUS_TEXT_MAP=STATUS_TEXT_MAP
+    )
     
-    return create_zip_response(generate_zip_filename('upnext_export'), memory_file)
+    # Inject CSS via string replacement to be robust against HTML formatters
+    # that break Jinja2 {{ variable }} syntax
+    if css_content:
+        html_content = html_content.replace('/* UP_NEXT_CSS_INJECT */', css_content)
+    
+    # Create Response
+    memory_file = io.BytesIO()
+    memory_file.write(html_content.encode('utf-8'))
+    memory_file.seek(0)
+    
+    return send_file(
+        memory_file,
+        mimetype='text/html',
+        as_attachment=True,
+        download_name=generate_zip_filename(f'upnext_{format_param}').replace('.zip', '.html')
+    )
+
 
 
 # =============================================================================
@@ -394,35 +460,35 @@ def export_full():
     """
     Export complete application backup.
     
-    Creates a ZIP containing all application files needed to run the app:
-    - Python source code
-    - HTML templates
-    - Static files (CSS, JS, images)
-    - Data files
-    - Configuration files
+    Creates a ZIP containing the complete application directory contents,
+    respecting exclusion patterns. This includes source code, data, config,
+    static assets, and templates.
     
     Returns:
-        ZIP file containing the complete application
+        ZIP file containing the complete application directory structure.
     """
     try:
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        app_dir = os.path.dirname(current_dir)
-        project_root = os.path.dirname(app_dir)
+        # Use BASE_DIR from config which handles both source and frozen envs
+        from app.config import BASE_DIR
+        
+        target_root = BASE_DIR
         
         def should_exclude(path):
             return any(pattern in path for pattern in EXCLUDE_PATTERNS)
         
         memory_file = io.BytesIO()
         with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zf:
-            for root, dirs, files in os.walk(project_root):
-                dirs[:] = [d for d in dirs if not should_exclude(d)]
+            for root, dirs, files in os.walk(target_root):
+                # Filter directories in-place
+                dirs[:] = [d for d in dirs if not should_exclude(os.path.join(root, d))]
                 
                 for file in files:
                     file_path = os.path.join(root, file)
                     if should_exclude(file_path):
                         continue
                     
-                    rel_path = os.path.relpath(file_path, project_root)
+                    # Store relative to BASE_DIR
+                    rel_path = os.path.relpath(file_path, target_root)
                     try:
                         zf.write(file_path, arcname=rel_path)
                     except Exception as e:
@@ -443,40 +509,19 @@ def _generate_backup_readme():
 
 Created: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
 
-## How to Run
+## Restore Instructions
 
-1. Extract this ZIP file to a folder
-2. Install Python 3.8+ if not already installed
-3. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-4. Run the application:
-   ```bash
-   python manage.py run
-   ```
-   (Or use `python manage.py build` to create an executable)
+1.  **Extract**: Unzip this archive to your desired location.
+2.  **Environment**: 
+    - If running from source, ensure you have Python 3.8+ and run `pip install -r requirements.txt`.
+    - If this was a portable build, you likely have the executable + data.
+3.  **Run**:
+    - Source: `python manage.py run`
+    - Executable: Run the `.exe` or binary file.
 
-5. Open your browser to http://localhost:5000
+## Contents Overview
 
-## Contents
-
-- `app/` - Application source code
-  - `routes/` - API endpoints
-  - `services/` - Business logic
-  - `models.py` - Database models
-  - `database.py` - Database utilities
-  - `static/` - CSS, JavaScript, and assets
-  - `templates/` - HTML templates
-- `data/` - Database directory
-  - `library.db` - SQLite database containing all items and images
-- `run.py` - Application entry point
-- `manage.py` - Project manager script
-- `requirements.txt` - Python dependencies
-
-## Notes
-
-- This is a complete backup of your UpNext installation.
-- All your library entries and images are stored within `data/library.db`.
-- You can restore this backup by extracting it and running the application, or by copying `data/library.db` to a new installation.
-"""
+*   `data/`: Contains your `library.db` (media items) and `config.json` (settings).
+*   `app/`: Source code directory.
+*   `manage.py`: Management script.
+""".strip()

@@ -155,3 +155,45 @@ h1 {
 .media-Series {
 	border-top: 4px solid #f59e0b;
 }
+
+/* Rating Colors */
+.rating-bad {
+	color: #ef4444 !important;
+}
+
+.rating-ok {
+	color: #f59e0b !important;
+}
+
+.rating-good {
+	color: #3b82f6 !important;
+}
+
+.rating-masterpiece {
+	color: #10b981 !important;
+}
+
+/* Status Colors for Footer */
+.status-Planning {
+	color: #71717a !important;
+}
+
+.status-ReadingWatching {
+	color: #38bdf8 !important;
+}
+
+.status-Dropped {
+	color: #f87171 !important;
+}
+
+.status-OnHold {
+	color: #fb923c !important;
+}
+
+.status-Anticipating {
+	color: #c084fc !important;
+}
+
+.status-Completed {
+	color: #34d399 !important;
+}

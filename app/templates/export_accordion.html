@@ -5,7 +5,9 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>UpNext Library Export (Interactive List)</title>
-	<link rel="stylesheet" href="css/export_accordion.css">
+	<style>
+		/* UP_NEXT_CSS_INJECT */
+	</style>
 </head>
 
 <body>
@@ -18,7 +20,6 @@
 			<div class="item-row">
 				<details>
 					<summary>
-						<!-- Left Thumbnail (if cover enabled) -->
 						{% if 'coverUrl' in fields and item.coverUrl %}
 						<img src="{{ item.coverUrl }}" class="thumb" loading="lazy">
 						{% elif 'coverUrl' in fields %}
@@ -28,14 +29,21 @@
 						<div class="header-content">
 							<div class="title">{{ item.title }}</div>
 							<div class="meta-badges">
-								{% if 'type' in fields %}<span class="badge">{{ item.type }}</span>{% endif %}
-								{% if 'status' in fields %}<span class="badge">{{ item.status }}</span>{% endif %}
-								{% if 'rating' in fields and item.rating %}<span class="badge" style="color:#fbbf24">{{
-									RATING_MAP.get(item.rating, '') }}</span>{% endif %}
+								{% if 'type' in fields %}<span class="badge badge-{{ item.type|replace(' ', '') }}">{{
+									item.type }}</span>{% endif %}
+								{% if 'progress' in fields and item.progress %}<span class="badge"
+									style="background:#e0e7ff; color:#4338ca;">{{ item.progress }}</span>{% endif %}
+								{% if 'status' in fields %}<span
+									class="badge badge-{{ item.status|replace('/', '')|replace(' ', '') }}">{{
+									item.status }}</span>{% endif %}
+								{% if 'rating' in fields and item.rating %}
+								{% set rating_class = {1: 'rating-bad', 2: 'rating-ok', 3: 'rating-good', 4:
+								'rating-masterpiece'}.get(item.rating, '') %}
+								<span class="badge {{ rating_class }}">{{ RATING_MAP.get(item.rating, '') }}</span>
+								{% endif %}
 							</div>
 						</div>
 
-						<!-- Right Chevron -->
 						<svg class="chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
 						</svg>
@@ -43,7 +51,6 @@
 
 					<div class="expanded-content">
 						<div class="grid-info">
-							<!-- Large Cover if expanded -->
 							{% if 'coverUrl' in fields and item.coverUrl %}
 							<div>
 								<img src="{{ item.coverUrl }}" class="cover-large" loading="lazy">
@@ -51,6 +58,46 @@
 							{% endif %}
 
 							<div class="details-text">
+								<div class="meta-section-group"
+									style="margin-bottom:15px; background:rgba(255,255,255,0.03); padding:10px; border-radius:6px;">
+									{% if 'series' in fields and item.series %}
+									<div class="meta-item"><strong>Series:</strong> {{ item.series }} {% if
+										item.seriesNumber %}#{{ item.seriesNumber }}{% endif %}</div>
+									{% endif %}
+									{% if 'universe' in fields and item.universe %}
+									<div class="meta-item"><strong>Universe:</strong> {{ item.universe }}</div>
+									{% endif %}
+
+									{% if ('alternateTitles' in fields and item.alternateTitles) or ('abbreviations' in
+									fields and item.abbreviations) %}
+									<div
+										style="margin-top:5px; padding-top:5px; border-top:1px solid rgba(255,255,255,0.1);">
+										{% if 'alternateTitles' in fields and item.alternateTitles %}
+										<div class="meta-item"><small>Alt:</small> {{ item.alternateTitles|join(', ') }}
+										</div>
+										{% endif %}
+										{% if 'abbreviations' in fields and item.abbreviations %}
+										<div class="meta-item"><small>Abbr:</small> {{ item.abbreviations|join(', ') }}
+										</div>
+										{% endif %}
+									</div>
+									{% endif %}
+
+									{% if ('releaseDate' in fields and item.releaseDate) or ('completedAt' in fields and
+									item.completedAt) %}
+									<div
+										style="margin-top:5px; padding-top:5px; border-top:1px solid rgba(255,255,255,0.1);">
+										{% if 'releaseDate' in fields and item.releaseDate %}
+										<div class="meta-item"><small>Released:</small> {{ item.releaseDate }}</div>
+										{% endif %}
+										{% if 'completedAt' in fields and item.completedAt %}
+										<div class="meta-item"><small>Completed:</small> {{
+											item.completedAt.split('T')[0] }}</div>
+										{% endif %}
+									</div>
+									{% endif %}
+								</div>
+
 								{% if 'authors' in fields and (item.authors or item.author) %}
 								<div class="info-block">
 									<h3>Creators</h3>
@@ -58,18 +105,51 @@
 								</div>
 								{% endif %}
 
-								{% if 'universe' in fields and item.universe %}
-								<div class="info-block">
-									<h3>Universe</h3>
-									<p>{{ item.universe }}</p>
-								</div>
-								{% endif %}
-
-								{% if 'series' in fields and item.series %}
-								<div class="info-block">
-									<h3>Series</h3>
-									<p>{{ item.series }} {% if item.seriesNumber %}#{{ item.seriesNumber }}{% endif %}
-									</p>
+								<!-- Stats Grid -->
+								{% if (('episodeCount' in fields and item.episodeCount) or
+								('chapterCount' in fields and item.chapterCount) or
+								('volumeCount' in fields and item.volumeCount) or
+								('pageCount' in fields and item.pageCount) or
+								('avgDurationMinutes' in fields and item.avgDurationMinutes) or
+								('wordCount' in fields and item.wordCount) or
+								('rereadCount' in fields and item.rereadCount)) %}
+								<div class="info-block stats-block"
+									style="display:grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap:8px; background:rgba(0,0,0,0.2); padding:10px; border-radius:8px;">
+									{% if 'episodeCount' in fields and item.episodeCount %}
+									<div><span style="opacity:0.6; font-size:0.8em">Episodes</span>
+										<div>{{ item.episodeCount }}</div>
+									</div>
+									{% endif %}
+									{% if 'chapterCount' in fields and item.chapterCount %}
+									<div><span style="opacity:0.6; font-size:0.8em">Chapters</span>
+										<div>{{ item.chapterCount }}</div>
+									</div>
+									{% endif %}
+									{% if 'volumeCount' in fields and item.volumeCount %}
+									<div><span style="opacity:0.6; font-size:0.8em">Volumes</span>
+										<div>{{ item.volumeCount }}</div>
+									</div>
+									{% endif %}
+									{% if 'pageCount' in fields and item.pageCount %}
+									<div><span style="opacity:0.6; font-size:0.8em">Pages</span>
+										<div>{{ item.pageCount }}</div>
+									</div>
+									{% endif %}
+									{% if 'wordCount' in fields and item.wordCount %}
+									<div><span style="opacity:0.6; font-size:0.8em">Words</span>
+										<div>{{ "{:,}".format(item.wordCount) }}</div>
+									</div>
+									{% endif %}
+									{% if 'avgDurationMinutes' in fields and item.avgDurationMinutes %}
+									<div><span style="opacity:0.6; font-size:0.8em">Avg Duration</span>
+										<div>{{ item.avgDurationMinutes }}m</div>
+									</div>
+									{% endif %}
+									{% if 'rereadCount' in fields and item.rereadCount %}
+									<div><span style="opacity:0.6; font-size:0.8em">Rereads</span>
+										<div>{{ item.rereadCount }}</div>
+									</div>
+									{% endif %}
 								</div>
 								{% endif %}
 
@@ -80,19 +160,77 @@
 								</div>
 								{% endif %}
 
-								{% if 'review' in fields and item.review %}
+								{% if ('rating' in fields and (item.rating or item.review)) %}
 								<div class="info-block">
 									<h3>Review</h3>
+									{% if item.rating %}
+									{% set rating_class = {1: 'rating-bad', 2: 'rating-ok', 3: 'rating-good', 4:
+									'rating-masterpiece'}.get(item.rating, '') %}
+									<div style="margin-bottom:5px;"><strong>Verdict:</strong> <span
+											class="{{ rating_class }}">{{ RATING_MAP.get(item.rating, 'N/A') }}</span>
+									</div>
+									{% endif %}
+									{% if item.review %}
 									<div class="prose"
-										style="font-style: italic; border-left: 2px solid #333; padding-left: 12px;">{{
-										item.review }}</div>
+										style="font-style: italic; border-left: 2px solid #555; padding-left: 12px; opacity: 0.9;">
+										{{ item.review }}</div>
+									{% endif %}
 								</div>
 								{% endif %}
 
 								{% if 'notes' in fields and item.notes %}
 								<div class="info-block">
 									<h3>Notes</h3>
-									<div class="prose" style="color: #a1a1aa;">{{ item.notes }}</div>
+									<div class="prose"
+										style="color: #a1a1aa; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 4px;">
+										{{ item.notes }}</div>
+								</div>
+								{% endif %}
+
+								{% if 'tags' in fields and item.tags %}
+								<div class="info-block tags">
+									<h3>Tags</h3>
+									<div>
+										{% for tag in item.tags %}
+										<span
+											style="display:inline-block; background:rgba(255,255,255,0.1); padding:2px 8px; border-radius:4px; font-size:0.8em; margin-right:4px; margin-bottom:4px;">#{{
+											tag }}</span>
+										{% endfor %}
+									</div>
+								</div>
+								{% endif %}
+
+								<!-- Children (Seasons/Volumes) -->
+								{% if 'children' in fields and item.children %}
+								{% set child_label = 'Volumes' if item.type in ['Book', 'Manga'] else 'Seasons' %}
+								<div class="info-block">
+									<h3>{{ child_label }}</h3>
+									<ul style="list-style:none; padding:0;">
+										{% for child in item.children %}
+										<li
+											style="padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.05); display:flex; justify-content:space-between; align-items:center;">
+											<span>{{ child.title }}</span>
+											<div style="display:flex; align-items:center; gap:10px;">
+												{% if child.avgDurationMinutes %}
+												<span style="font-size:0.85em; opacity:0.6;">{{ child.avgDurationMinutes
+													}}m</span>
+												{% endif %}
+												{% if child.episodeCount %}
+												<span style="font-size:0.85em; opacity:0.6;">{{ child.episodeCount }}
+													eps</span>
+												{% endif %}
+												{% set child_rating_text = RATING_MAP.get(child.rating, '') %}
+												{% if child_rating_text %}
+												{% set child_rating_class = {1: 'rating-bad', 2: 'rating-ok', 3:
+												'rating-good', 4: 'rating-masterpiece'}.get(child.rating, '') %}
+												<span class="{{ child_rating_class }}"
+													style="font-size:0.85em; font-weight:bold;">{{ child_rating_text
+													}}</span>
+												{% endif %}
+											</div>
+										</li>
+										{% endfor %}
+									</ul>
 								</div>
 								{% endif %}
 

@@ -5,7 +5,9 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>UpNext Library Export (Card View - {{ now.strftime("%Y-%m-%d") }})</title>
-	<link rel="stylesheet" href="css/export_card.css">
+	<style>
+		/* UP_NEXT_CSS_INJECT */
+	</style>
 </head>
 
 <body>
@@ -17,9 +19,7 @@
 		{% endif %}
 
 		{% for item in items %}
-		<!-- Card type class: media-Type -->
 		<div class="card media-{{ item.type|replace(' ', '') }}">
-			<!-- Cover -->
 			<div class="cover-container">
 				{% if 'coverUrl' in fields and item.coverUrl %}
 				<img src="{{ item.coverUrl }}" class="cover" loading="lazy">
@@ -28,24 +28,20 @@
 				{% endif %}
 			</div>
 
-			<!-- Badges -->
 			<div class="badge-group">
 				{% if 'progress' in fields and item.progress %}
 				<span class="badge progress-badge">{{ item.progress }}</span>
 				{% endif %}
 				{% if 'type' in fields %}
 				<span class="badge status-badge"
-					style="color: {{ MEDIA_COLOR_MAP.get(item.type, '#333') }}; border-color: {{ MEDIA_COLOR_MAP.get(item.type, '#ccc') }};">
-					{{ item.type }}
-				</span>
+					style="color: {{ MEDIA_COLOR_MAP.get(item.type, '#333') }}; border-color: {{ MEDIA_COLOR_MAP.get(item.type, '#ccc') }};">{{
+					item.type }}</span>
 				{% endif %}
 			</div>
 
-			<!-- Content -->
 			<div class="content">
 				<div class="title">{{ item.title|default('Untitled') }}</div>
 
-				<!-- Meta -->
 				{% set meta_items = [] %}
 				{% if item.authors %}{% set _ = meta_items.append(item.authors|join(', ')) %}{% elif item.author %}{%
 				set _ = meta_items.append(item.author) %}{% endif %}
@@ -60,19 +56,22 @@
 				<div class="meta">{{ meta_items|join(', ') }}</div>
 				{% endif %}
 
-				<!-- Footer -->
+				{% if ('rating' in fields and item.status in ['Completed', 'Anticipating'] and item.rating) or ('status'
+				in fields) %}
 				<div class="footer">
-					<span class="rating-text">
-						{% if 'rating' in fields and item.status in ['Completed', 'Anticipating'] and item.rating %}
-						{{ RATING_MAP.get(item.rating, '') }}
-						{% endif %}
-					</span>
+					{% if 'rating' in fields and item.status in ['Completed', 'Anticipating'] and item.rating %}
+					{% set rating_class = {1: 'rating-bad', 2: 'rating-ok', 3: 'rating-good', 4:
+					'rating-masterpiece'}.get(item.rating, '') %}
+					<span class="rating-text {{ rating_class }}">{{ RATING_MAP.get(item.rating, '') }}</span>
+					{% else %}
+					<span class="rating-text"></span>
+					{% endif %}
 					{% if 'status' in fields %}
-					<span class="status-text" style="color: {{ STATUS_TEXT_MAP.get(item.status, '#333') }};">
-						{{ item.status }}
-					</span>
+					<span class="status-text status-{{ item.status|replace('/', '')|replace(' ', '') }}">{{ item.status
+						}}</span>
 					{% endif %}
 				</div>
+				{% endif %}
 			</div>
 		</div>
 		{% endfor %}

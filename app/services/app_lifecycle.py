@@ -362,6 +362,10 @@ def run_application_stack(create_app_func: Callable, host: str, port: int, headl
         Javascript API Bridge.
         Exposed to the native webview to allow frontend -> backend communication.
         """
+        def __init__(self, window_ref, target_url):
+            self.window_ref = window_ref
+            self.target_url = target_url
+
         def save_app_config(self, key, value):
             """Bridge: Save configuration key/value pair."""
             from app.utils.config_manager import save_config
@@ -372,6 +376,47 @@ def run_application_stack(create_app_func: Callable, host: str, port: int, headl
             """Bridge: Retrieve full configuration."""
             from app.utils.config_manager import load_config
             return load_config()
+            
+        def download_file(self, relative_url, filename):
+            """
+            Bridge: Trigger a native file save dialog and download content from local server.
+            Useful for exports where in-browser download might be suppressed.
+            """
+            try:
+                if not self.window_ref[0]:
+                    return "ERROR: Window not ready"
+                
+                # 1. Open Native Save Dialog
+                save_path = self.window_ref[0].create_file_dialog(
+                    webview.SAVE_DIALOG, 
+                    directory='', 
+                    save_filename=filename
+                )
+                
+                # Handle cancellation (returns None or empty tuple/list depending on OS/version)
+                if not save_path:
+                    return "CANCELLED"
+                
+                # webview returns list of paths or string? usually string for save_dialog, but safe check
+                if isinstance(save_path, (list, tuple)):
+                    if not save_path: return "CANCELLED"
+                    save_path = save_path[0]
+                
+                # 2. Download from local server
+                # Construct full URL
+                full_url = f"{self.target_url.rstrip('/')}/{relative_url.lstrip('/')}"
+                
+                import urllib.request
+                
+                # Stream download to file
+                with urllib.request.urlopen(full_url) as response, open(save_path, 'wb') as out_file:
+                    import shutil
+                    shutil.copyfileobj(response, out_file)
+                    
+                return "OK"
+            except Exception as e:
+                logger.error(f"Native download failed: {e}")
+                return f"ERROR: {str(e)}"
 
     # Load Config (for other settings)
     from app.utils.config_manager import load_config
@@ -407,7 +452,7 @@ def run_application_stack(create_app_func: Callable, host: str, port: int, headl
         x=initial_x,
         y=initial_y,
         hidden=minimized, 
-        js_api=JsApi()
+        js_api=JsApi(window_ref, target_url)
     )
     window_ref[0] = window
     

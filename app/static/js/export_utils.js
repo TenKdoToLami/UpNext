@@ -206,6 +206,98 @@ function renderFieldCheckboxes(format, config) {
 	const container = document.getElementById(containerId);
 	if (!container) return;
 
+	// Reset container classes
+	container.className = format === 'db' ? '' : 'grid grid-cols-3 gap-2';
+
+	if (format === 'db') {
+		container.innerHTML = `
+			<div class="flex flex-col h-full bg-zinc-900 rounded-xl border border-zinc-700/50 overflow-hidden">
+                <div class="px-4 py-2 border-b border-zinc-800 bg-zinc-900/50 flex items-center justify-between shrink-0">
+                    <span class="text-[10px] font-mono text-zinc-500 uppercase tracking-wider font-bold">Database & Schema</span>
+                    <span id="schemaTableCount" class="text-[10px] text-zinc-500 font-mono"></span>
+                </div>
+                
+                <div id="dbSchemaOutput" class="flex-1 overflow-y-auto custom-scrollbar p-4 grid grid-cols-1 md:grid-cols-2 gap-4 content-start bg-zinc-950/30">
+                    <!-- Info Card (First Element) -->
+                    <div class="bg-zinc-800/20 border-2 border-dashed border-zinc-800 rounded-lg p-5 flex flex-col justify-center items-center text-center">
+                        <div class="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center mb-3">
+                            <i data-lucide="database" class="w-5 h-5 text-zinc-300"></i>
+                        </div>
+                        <h3 class="text-sm font-bold text-zinc-200 mb-1">Full Database Backup</h3>
+                        <p class="text-xs text-zinc-500 leading-relaxed mb-3">
+                            Includes complete structure and data (library.db).
+                        </p>
+                         <p class="text-[10px] text-amber-500/80 bg-amber-500/10 px-2 py-1.5 rounded border border-amber-500/20">
+                            Schema adjustments must be done manually.
+                        </p>
+                    </div>
+
+                    <div class="col-span-full md:col-span-1 text-center py-12 flex flex-col items-center justify-center h-full">
+                        <i data-lucide="loader-2" class="w-6 h-6 text-indigo-500 animate-spin mb-2"></i>
+                        <span class="text-xs text-zinc-500">Loading tables...</span>
+                    </div>
+                </div>
+			</div>
+		`;
+		if (window.lucide?.createIcons) window.lucide.createIcons();
+
+		// Fetch and display schema
+		fetch('api/database/schema')
+			.then(res => res.json())
+			.then(data => {
+				const el = document.getElementById('dbSchemaOutput');
+				const countEl = document.getElementById('schemaTableCount');
+				if (!el) return;
+
+				// Remove loading indicator but keep the first info card
+				// The loading indicator is the second child (index 1)
+				if (el.children.length > 1) {
+					el.removeChild(el.lastElementChild);
+				}
+
+				if (data.status === 'success' && data.schema) {
+					countEl.textContent = `${data.schema.length} TABLES`;
+
+					data.schema.forEach(sql => {
+						// Extract table name
+						const tableNameMatch = sql.match(/CREATE\s+TABLE\s+["`]?(\w+)["`]?/i);
+						const tableName = tableNameMatch ? tableNameMatch[1] : 'Unknown Table';
+						const cleanSql = sql.trim();
+
+						const card = document.createElement('div');
+						card.className = 'w-full flex flex-col h-64 bg-zinc-950 border border-zinc-800 rounded-lg overflow-hidden transition-all hover:border-zinc-700';
+						card.innerHTML = `
+                            <div class="px-3 py-2 bg-zinc-900 border-b border-zinc-800 flex items-center gap-2 shrink-0">
+                                <i data-lucide="table-2" class="w-3.5 h-3.5 text-indigo-400"></i>
+                                <span class="text-xs font-bold text-zinc-300 font-mono truncate" title="${tableName}">${tableName}</span>
+                            </div>
+                            <pre class="flex-1 p-3 text-[10px] font-mono text-emerald-400/90 overflow-x-auto custom-scrollbar leading-relaxed whitespace-pre">${cleanSql}</pre>
+                        `;
+						el.appendChild(card);
+					});
+
+					if (window.lucide?.createIcons) window.lucide.createIcons();
+				} else {
+					const errDiv = document.createElement('div');
+					errDiv.className = 'col-span-full text-center py-8 text-red-400 text-sm';
+					errDiv.textContent = 'Failed to load schema: ' + (data.message || 'Unknown error');
+					el.appendChild(errDiv);
+				}
+			})
+			.catch(err => {
+				const el = document.getElementById('dbSchemaOutput');
+				if (el && el.children.length > 1) el.removeChild(el.lastElementChild);
+				if (el) {
+					const errDiv = document.createElement('div');
+					errDiv.className = 'col-span-full text-center py-8 text-red-400 text-sm';
+					errDiv.textContent = 'Error loading schema: ' + err.message;
+					el.appendChild(errDiv);
+				}
+			});
+
+		return;
+	}
+
 	const fieldsHtml = ALL_EXPORT_FIELDS
 		.filter(field => field.id !== 'isHidden') // Hidden handled separately
 		.filter(field => !config.excluded?.includes(field.id))
@@ -558,48 +650,123 @@ export function toggleExportRatingFilter(rating) {
  * Triggers the export download based on current settings.
  * @export
  */
-export function triggerExport() {
-	// Full export has a dedicated endpoint
-	if (exportState.category === 'full') {
-		window.location.href = '/api/export/full';
+export async function triggerExport() {
+	const submitBtn = document.querySelector('#exportFooter button');
+	const originalContent = submitBtn ? submitBtn.innerHTML : '';
+
+	try {
+		if (submitBtn) {
+			submitBtn.disabled = true;
+			submitBtn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Processing...';
+			if (window.lucide?.createIcons) window.lucide.createIcons();
+		}
+
+		let relativeUrl = '';
+
+		// Determine URL Path
+		if (exportState.category === 'full') {
+			relativeUrl = 'api/export/full';
+		} else {
+			const format = getCurrentFormat();
+			if (format === 'db') {
+				relativeUrl = 'api/export?format=db';
+			} else {
+				const config = EXPORT_CONFIG[format];
+				if (!config) throw new Error("Invalid configuration for format " + format);
+
+				const selectedFields = ALL_EXPORT_FIELDS
+					.filter(f => {
+						if (config.excluded?.includes(f.id)) return false;
+						if (config.mandatory?.includes(f.id)) return true;
+						return exportState.fieldStates[f.id] ?? true;
+					})
+					.map(f => f.backendField);
+
+				const params = new URLSearchParams({
+					format,
+					fields: selectedFields.join(','),
+					filterTypes: exportState.filterTypes.join(','),
+					filterStatuses: exportState.filterStatuses.join(','),
+					filterRatings: exportState.filterRatings.join(','),
+					excludeHidden: (!state.isHidden || !(exportState.fieldStates['includeHidden'] ?? true)).toString(),
+					includeCovers: (exportState.fieldStates['coverUrl'] ?? true).toString()
+				});
+				relativeUrl = `api/export?${params.toString()}`;
+			}
+		}
+
+		// NATIVE APP EXPORT (via Python Bridge)
+		if (window.pywebview && window.pywebview.api && window.pywebview.api.download_file) {
+			console.log("Triggering Native Export via Bridge...");
+
+			// Determine filename request based on format
+			const format = exportState.category === 'full' ? 'zip' : getCurrentFormat();
+			let filenameEstimate = 'upnext_export.zip';
+			if (format === 'db') filenameEstimate = 'library.db';
+			if (format === 'csv') filenameEstimate = 'upnext_library.zip'; // CSV is also zipped
+			if (format === 'json_raw' || format === 'xml' || format.startsWith('html')) filenameEstimate = 'upnext_export.zip';
+
+			const result = await window.pywebview.api.download_file(relativeUrl, filenameEstimate);
+
+			if (result === 'CANCELLED') {
+				console.log("Export cancelled by user.");
+			} else if (result !== 'OK') {
+				throw new Error(result.replace('ERROR: ', ''));
+			} else {
+				showToast("Export saved successfully!", "success");
+			}
+
+			closeExportModal();
+			return;
+		}
+
+		// BROWSER EXPORT (Fallback)
+		console.log("Triggering Browser Export...");
+		const res = await fetch('/' + relativeUrl);
+
+		if (!res.ok) {
+			// Try to interpret JSON error
+			const contentType = res.headers.get("content-type");
+			if (contentType && contentType.includes("application/json")) {
+				const errorData = await res.json();
+				throw new Error(errorData.message || "Export failed on server.");
+			}
+			throw new Error(`Server returned status ${res.status}`);
+		}
+
+		// Handle Download
+		const blob = await res.blob();
+		const downloadUrl = window.URL.createObjectURL(blob);
+		const a = document.createElement('a');
+		a.href = downloadUrl;
+
+		// Try to get filename from headers or default
+		const contentDisposition = res.headers.get('Content-Disposition');
+		let fileName = 'export.zip';
+		if (contentDisposition && contentDisposition.includes('filename=')) {
+			fileName = contentDisposition.split('filename=')[1].replace(/['"]/g, '');
+		}
+
+		a.download = fileName;
+		document.body.appendChild(a);
+		a.click();
+		window.URL.revokeObjectURL(downloadUrl);
+		document.body.removeChild(a);
+
 		closeExportModal();
-		return;
+
+	} catch (e) {
+		console.error("Export Error:", e);
+		// Assuming showToast is globally available or we use alert
+		if (window.showToast) window.showToast("Export Failed: " + e.message, "error");
+		else alert("Export Failed: " + e.message);
+	} finally {
+		if (submitBtn) {
+			submitBtn.disabled = false;
+			submitBtn.innerHTML = originalContent;
+			if (window.lucide?.createIcons) window.lucide.createIcons();
+		}
 	}
-
-	const format = getCurrentFormat();
-
-	// DB export doesn't need config/fields
-	if (format === 'db') {
-		window.location.href = '/api/export?format=db';
-		closeExportModal();
-		return;
-	}
-
-	const config = EXPORT_CONFIG[format];
-	if (!config) return;
-
-	// Collect selected fields
-	const selectedFields = ALL_EXPORT_FIELDS
-		.filter(f => {
-			if (config.excluded?.includes(f.id)) return false;
-			if (config.mandatory?.includes(f.id)) return true;
-			return exportState.fieldStates[f.id] ?? true;
-		})
-		.map(f => f.backendField);
-
-	// Build export parameters
-	const params = new URLSearchParams({
-		format,
-		fields: selectedFields.join(','),
-		filterTypes: exportState.filterTypes.join(','),
-		filterStatuses: exportState.filterStatuses.join(','),
-		filterRatings: exportState.filterRatings.join(','),
-		excludeHidden: (!state.isHidden || !(exportState.fieldStates['includeHidden'] ?? true)).toString(),
-		includeCovers: (exportState.fieldStates['coverUrl'] ?? true).toString()
-	});
-
-	window.location.href = `/api/export?${params.toString()}`;
-	closeExportModal();
 }
 
 // ============================================================================
