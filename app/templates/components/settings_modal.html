@@ -197,6 +197,25 @@
 								</p>
 							</div>
 						</div>
+
+						<!-- Optimization Section -->
+						<div class="border-t border-zinc-200 dark:border-zinc-800 pt-6">
+							<div class="flex items-center justify-between">
+								<div>
+									<h3
+										class="text-sm font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
+										Library Optimization
+									</h3>
+									<p class="text-xs text-zinc-500 dark:text-zinc-400 mt-1 max-w-sm">
+										Batch convert and resize all library covers to save disk space.
+									</p>
+								</div>
+								<button onclick="window.openOptimizationModal()"
+									class="px-4 py-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-bold text-xs hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors border border-zinc-200 dark:border-zinc-700">
+									Configure Optimization
+								</button>
+							</div>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -411,7 +430,8 @@
 								class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 flex items-center justify-between">
 								<div>
 									<div class="font-bold text-zinc-900 dark:text-white">Tray Click Behavior</div>
-									<div class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">Action when clicking the
+									<div class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">Action when clicking
+										the
 										system tray icon</div>
 								</div>
 								<select id="setting-trayClickAction" onchange="window.setTrayClickAction(this.value)"

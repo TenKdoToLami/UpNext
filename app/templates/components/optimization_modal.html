@@ -1,0 +1,152 @@
+<div id="optimizationModal"
+    class="fixed inset-0 z-[110] flex items-center justify-center bg-zinc-500/30 dark:bg-black/90 backdrop-blur-md hidden opacity-0 transition-opacity duration-200"
+    onclick="if(event.target === this) closeOptimizationModal()">
+    <div class="bg-white dark:bg-[#0c0c0e] border border-zinc-200 dark:border-zinc-800 rounded-3xl w-full max-w-md overflow-hidden flex flex-col shadow-2xl transform scale-95 transition-all duration-200 animate-enter"
+        id="optimizationModalContent">
+
+        <div
+            class="px-8 py-6 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center bg-white dark:bg-[#0c0c0e]">
+            <h2
+                class="text-xl font-heading font-bold text-zinc-900 dark:text-white tracking-wide flex items-center gap-2">
+                <i data-lucide="zap" class="w-5 h-5 text-amber-500"></i> Optimize Library
+            </h2>
+            <button onclick="closeOptimizationModal()"
+                class="text-zinc-400 hover:text-red-500 dark:hover:text-white transition-colors">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <div class="p-8 space-y-6 bg-zinc-50 dark:bg-zinc-950/30">
+
+            <!-- Config Section -->
+            <div id="optConfigSection" class="space-y-4">
+                <div
+                    class="bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 rounded-xl p-4 flex gap-3">
+                    <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-500 shrink-0"></i>
+                    <p class="text-xs text-amber-800 dark:text-amber-200 leading-relaxed">
+                        <strong>Backup Required:</strong> This process modifies your database files directly. Please
+                        ensure you have a backup of <code>library.db</code> before proceeding.
+                    </p>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="space-y-1">
+                        <label
+                            class="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Target
+                            Format</label>
+                        <select id="optFormat"
+                            class="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-bold text-zinc-700 dark:text-zinc-200">
+                            <option value="image/webp" selected>WebP (Recommended)</option>
+                            <option value="image/jpeg">JPEG</option>
+                            <option value="image/avif">AVIF (Slow)</option>
+                        </select>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Max
+                            Width</label>
+                        <select id="optWidth"
+                            class="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-bold text-zinc-700 dark:text-zinc-200">
+                            <option value="400">400px</option>
+                            <option value="600">600px</option>
+                            <option value="800" selected>800px (Standard)</option>
+                            <option value="1000">1000px</option>
+                        </select>
+                    </div>
+                    <!-- Quality Slider -->
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center">
+                            <label
+                                class="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Quality</label>
+                            <span id="optQualityVal"
+                                class="text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 px-2 py-0.5 rounded">85%</span>
+                        </div>
+                        <input type="range" id="optQuality" min="10" max="100" value="85"
+                            class="w-full h-2 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                            oninput="document.getElementById('optQualityVal').innerText = this.value + '%'">
+                        <p class="text-[10px] text-zinc-400 italic" id="optQualityHelp">Higher is better quality but
+                            larger file size.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Confirmation Section (Hidden by default) -->
+            <div id="optConfirmSection" class="hidden space-y-4">
+                <div class="bg-red-50 dark:bg-red-500/10 border-l-4 border-red-500 p-4 rounded-r-xl">
+                    <div class="flex items-center gap-3 mb-2">
+                        <i data-lucide="alert-octagon" class="w-6 h-6 text-red-500"></i>
+                        <h3 class="text-sm font-bold text-red-800 dark:text-red-200 uppercase tracking-widest">
+                            Irreversible Action</h3>
+                    </div>
+                    <p class="text-xs text-red-700 dark:text-red-300 leading-relaxed mb-2">
+                        This process will scan and rewrite your entire database image library.
+                    </p>
+                    <ul class="list-disc list-inside text-xs text-red-700 dark:text-red-300 space-y-1 ml-1">
+                        <li>All images larger than <strong><span id="confirmWidth">800px</span></strong> will be
+                            downscaled.</li>
+                        <li>All images will be re-encoded to <strong><span id="confirmFormat">WebP</span></strong> at
+                            <strong><span id="confirmQuality">85%</span></strong> quality.
+                        </li>
+                        <li>Original high-quality covers will be <strong>permanently modified</strong>.</li>
+                        <li>This operation cannot be undone.</li>
+                    </ul>
+                </div>
+                <div
+                    class="p-4 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-center">
+                    <p class="text-xs font-bold text-zinc-600 dark:text-zinc-400">
+                        Please confirm you have a backup of <code>library.db</code>.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Progress Section (Hidden by default) -->
+            <div id="optProgressSection" class="hidden space-y-4">
+                <div
+                    class="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                    <span>Processing Images...</span>
+                    <span id="optProgressPercent">0%</span>
+                </div>
+                <div class="w-full bg-zinc-200 dark:bg-zinc-800 rounded-full h-2 overflow-hidden">
+                    <div id="optProgressBar" class="bg-indigo-500 h-full w-0 transition-all duration-300"></div>
+                </div>
+                <p id="optStatusText" class="text-center text-xs text-zinc-400 font-mono truncate">Initializing...</p>
+            </div>
+
+            <!-- Result Section (Hidden by default) -->
+            <div id="optResultSection" class="hidden space-y-4 text-center">
+                <div
+                    class="w-16 h-16 bg-emerald-100 dark:bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-2">
+                    <i data-lucide="check" class="w-8 h-8 text-emerald-500"></i>
+                </div>
+                <h3 class="text-lg font-bold text-zinc-900 dark:text-white">Optimization Complete!</h3>
+                <div
+                    class="grid grid-cols-2 gap-4 bg-white dark:bg-zinc-900/50 rounded-xl p-4 border border-zinc-200 dark:border-zinc-800">
+                    <div>
+                        <div class="text-xs text-zinc-500 uppercase tracking-wider">Processed</div>
+                        <div class="text-xl font-bold text-zinc-900 dark:text-white" id="optResultCount">0</div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-zinc-500 uppercase tracking-wider">Saved</div>
+                        <div class="text-xl font-bold text-emerald-500" id="optResultSpace">0 MB</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div
+            class="px-8 py-4 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#0c0c0e] flex justify-end gap-3">
+            <button id="optCloseBtn" onclick="closeOptimizationModal()"
+                class="px-6 py-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 font-bold text-sm hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors">
+                Cancel
+            </button>
+            <button id="optRunBtn" onclick="window.confirmOptimization()"
+                class="px-6 py-2 rounded-lg bg-indigo-600 text-white font-bold text-sm hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-500/20 flex items-center gap-2">
+                <i data-lucide="arrow-right" class="w-4 h-4"></i> Review Changes
+            </button>
+            <button id="optConfirmBtn" onclick="window.runOptimization()"
+                class="hidden px-6 py-2 rounded-lg bg-red-600 text-white font-bold text-sm hover:bg-red-700 transition-colors shadow-lg shadow-red-500/20 flex items-center gap-2">
+                <i data-lucide="zap" class="w-4 h-4"></i> I Understand, Optimize
+            </button>
+        </div>
+    </div>
+</div>

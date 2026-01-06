@@ -11,9 +11,11 @@ import os
 from datetime import datetime
 from typing import Any, Dict
 
-from flask import Blueprint, jsonify, request, current_app, Response
-from sqlalchemy import create_engine
+from flask import Blueprint, jsonify, request, current_app, Response, stream_with_context
+from sqlalchemy import create_engine, text
 import requests
+import io
+from PIL import Image
 
 from app.services.data_manager import DataManager
 from app.utils.constants import MEDIA_TYPES, STATUS_TYPES
@@ -590,3 +592,116 @@ def proxy_image():
     except Exception as e:
         logger.error(f"Image proxy failed for {url}: {e}")
         return jsonify({"error": "Proxy failed", "message": str(e)}), 500
+
+
+@bp.route("/admin/optimize-images", methods=["POST"])
+def optimize_images():
+    """
+    Batch optimizes all stored cover images in the database.
+    
+    Accepts JSON parameters:
+        - width (int): Max width to resize images to. Default: 800.
+        - format (str): MIME type for target format. Default: 'image/webp'.
+        - quality (int): Compression quality (1-100). Default: 85.
+    
+    Returns:
+        A text/event-stream with progress updates and final stats.
+    """
+    data_req = request.get_json() or {}
+    target_width = int(data_req.get("width", 800))
+    target_format = data_req.get("format", "image/webp")
+    target_quality = int(data_req.get("quality", 85))
+    
+    # Map MIME type to Pillow format string
+    format_map = {
+        "image/webp": "WEBP",
+        "image/jpeg": "JPEG",
+        "image/png": "PNG",
+        "image/avif": "AVIF"  # Requires pillow-avif-plugin
+    }
+    pil_format = format_map.get(target_format, "WEBP")
+
+    def generate():
+        """SSE generator for optimization progress."""
+        conn = None
+        try:
+            db_path = get_sqlite_db_path(current_app.config["ACTIVE_DB"])
+            import sqlite3
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            
+            cursor.execute("SELECT count(*) FROM media_covers WHERE cover_image IS NOT NULL")
+            total = cursor.fetchone()[0]
+            
+            yield f"data: {json.dumps({'progress': 0, 'total': total, 'message': 'Starting...'})}\n\n"
+            
+            cursor.execute("SELECT item_id, cover_image, cover_mime FROM media_covers WHERE cover_image IS NOT NULL")
+            
+            processed = 0
+            original_size_total = 0
+            new_size_total = 0
+            rows = cursor.fetchall()
+            
+            for row in rows:
+                item_id, blob, mime = row
+                if not blob: continue
+                
+                original_size = len(blob)
+                original_size_total += original_size
+                
+                try:
+                    # Optimize
+                    img = Image.open(io.BytesIO(blob))
+                    
+                    # Resize
+                    if img.width > target_width:
+                        ratio = target_width / img.width
+                        new_height = int(img.height * ratio)
+                        img = img.resize((target_width, new_height), Image.Resampling.LANCZOS)
+                        
+                    # Save
+                    out = io.BytesIO()
+                    save_kwargs = {"quality": target_quality, "optimize": True}
+                    if pil_format == "PNG": 
+                         save_kwargs = {"optimize": True} # PNG is lossless
+                    
+                    if img.mode != "RGB" and pil_format == "JPEG":
+                        img = img.convert("RGB")
+                        
+                    img.save(out, format=pil_format, **save_kwargs)
+                    new_blob = out.getvalue()
+                    
+                    # Update DB
+                    cursor.execute(
+                        "UPDATE media_covers SET cover_image = ?, cover_mime = ? WHERE item_id = ?",
+                        (new_blob, target_format, item_id)
+                    )
+                    
+                    new_size_total += len(new_blob)
+                    processed += 1
+                    
+                    if processed % 5 == 0:
+                        yield f"data: {json.dumps({'progress': processed, 'total': total, 'message': f'Processing {processed}/{total}'})}\n\n"
+                        
+                except Exception as e:
+                    logger.error(f"Failed to optimize {item_id}: {e}")
+            
+            conn.commit()
+            
+            yield f"data: {json.dumps({'progress': total, 'total': total, 'message': 'Vacuuming database...'})}\n\n"
+            cursor.execute("VACUUM")
+            conn.commit()
+            
+            saved_bytes = original_size_total - new_size_total
+            saved_mb = round(saved_bytes / (1024 * 1024), 2)
+            
+            yield f"data: {json.dumps({'done': True, 'stats': {'processed': processed, 'savedMB': saved_mb}})}\n\n"
+            
+        except Exception as e:
+            logger.exception("Optimization failed")
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+        finally:
+            if conn:
+                conn.close()
+            
+    return Response(stream_with_context(generate()), mimetype='text/event-stream')

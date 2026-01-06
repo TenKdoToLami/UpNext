@@ -1168,3 +1168,190 @@ window.toggleOpenWindowOnStart = toggleOpenWindowOnStart;
 window.setTrayClickAction = setTrayClickAction;
 window.setCloseBehavior = setCloseBehavior;
 window.setImageSetting = setImageSetting;
+/**
+ * =============================================================================
+ * IMAGE OPTIMIZATION LOGIC
+ * =============================================================================
+ */
+
+/**
+ * Opens the image optimization modal and resets its state.
+ */
+export function openOptimizationModal() {
+	const modal = document.getElementById('optimizationModal');
+	if (!modal) return;
+
+	// Reset all sections
+	document.getElementById('optConfigSection').classList.remove('hidden');
+	document.getElementById('optConfirmSection').classList.add('hidden');
+	document.getElementById('optProgressSection').classList.add('hidden');
+	document.getElementById('optResultSection').classList.add('hidden');
+
+	// Reset buttons
+	document.getElementById('optRunBtn').classList.remove('hidden');
+	document.getElementById('optConfirmBtn').classList.add('hidden');
+	document.getElementById('optCloseBtn').innerText = "Cancel";
+	document.getElementById('optCloseBtn').disabled = false;
+	document.getElementById('optCloseBtn').classList.remove('opacity-50', 'cursor-not-allowed');
+
+	updateOptimizationProgress(0, "Ready");
+
+	// Animate modal in
+	modal.classList.remove('hidden');
+	void modal.offsetWidth;
+	modal.classList.remove('opacity-0');
+	document.getElementById('optimizationModalContent').classList.remove('scale-95');
+
+	// Load defaults from app settings
+	const currentWidth = state.appSettings?.imageSettings?.width || 800;
+	const currentFormat = state.appSettings?.imageSettings?.format || 'image/webp';
+	const currentQuality = state.appSettings?.imageSettings?.quality
+		? Math.round(state.appSettings.imageSettings.quality * 100)
+		: 85;
+
+	const widthSelect = document.getElementById('optWidth');
+	if (widthSelect) widthSelect.value = currentWidth;
+
+	const formatSelect = document.getElementById('optFormat');
+	if (formatSelect) {
+		formatSelect.value = currentFormat;
+		if (formatSelect.onchange) formatSelect.onchange();
+	}
+
+	const qualityInput = document.getElementById('optQuality');
+	if (qualityInput) {
+		qualityInput.value = currentQuality;
+		document.getElementById('optQualityVal').innerText = currentQuality + '%';
+	}
+}
+
+/**
+ * Shows the confirmation step with selected settings.
+ */
+export function confirmOptimization() {
+	const width = document.getElementById('optWidth').value;
+	const format = document.getElementById('optFormat').value;
+	const quality = document.getElementById('optQuality').value;
+
+	document.getElementById('confirmWidth').innerText = `${width}px`;
+	document.getElementById('confirmFormat').innerText = format.split('/')[1].toUpperCase();
+	document.getElementById('confirmQuality').innerText = `${quality}%`;
+
+	document.getElementById('optConfigSection').classList.add('hidden');
+	document.getElementById('optConfirmSection').classList.remove('hidden');
+	document.getElementById('optRunBtn').classList.add('hidden');
+	document.getElementById('optConfirmBtn').classList.remove('hidden');
+}
+
+/**
+ * Closes the optimization modal with animation.
+ */
+export function closeOptimizationModal() {
+	const modal = document.getElementById('optimizationModal');
+	if (!modal) return;
+	modal.classList.add('opacity-0');
+	document.getElementById('optimizationModalContent').classList.add('scale-95');
+	setTimeout(() => modal.classList.add('hidden'), 200);
+}
+
+/**
+ * Updates the progress bar and status text.
+ * @param {number} percent - Progress percentage (0-100).
+ * @param {string} message - Status message to display.
+ */
+function updateOptimizationProgress(percent, message) {
+	const bar = document.getElementById('optProgressBar');
+	const text = document.getElementById('optStatusText');
+	const pctText = document.getElementById('optProgressPercent');
+
+	if (bar) bar.style.width = `${percent}%`;
+	if (text) text.innerText = message;
+	if (pctText) pctText.innerText = `${Math.round(percent)}%`;
+}
+
+/**
+ * Executes the optimization process and streams progress via SSE.
+ */
+export async function runOptimization() {
+	const width = document.getElementById('optWidth').value;
+	const format = document.getElementById('optFormat').value;
+	const quality = document.getElementById('optQuality').value;
+
+	// Switch to progress view
+	document.getElementById('optConfigSection').classList.add('hidden');
+	document.getElementById('optConfirmSection').classList.add('hidden');
+	document.getElementById('optProgressSection').classList.remove('hidden');
+	document.getElementById('optRunBtn').classList.add('hidden');
+	document.getElementById('optConfirmBtn').classList.add('hidden');
+	document.getElementById('optCloseBtn').innerText = "Close";
+	document.getElementById('optCloseBtn').disabled = true;
+	document.getElementById('optCloseBtn').classList.add('opacity-50', 'cursor-not-allowed');
+
+	try {
+		const response = await fetch('/api/admin/optimize-images', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ width, format, quality })
+		});
+
+		if (!response.ok) throw new Error("Server Error");
+
+		const reader = response.body.getReader();
+		const decoder = new TextDecoder();
+
+		while (true) {
+			const { done, value } = await reader.read();
+			if (done) break;
+
+			const chunk = decoder.decode(value);
+			const lines = chunk.split('\n\n');
+
+			for (const line of lines) {
+				if (line.startsWith('data: ')) {
+					try {
+						const data = JSON.parse(line.substring(6));
+
+						if (data.error) {
+							showToast(data.error, "error");
+							closeOptimizationModal();
+							return;
+						}
+
+						if (data.done) {
+							document.getElementById('optProgressSection').classList.add('hidden');
+							document.getElementById('optResultSection').classList.remove('hidden');
+
+							document.getElementById('optResultCount').innerText = data.stats.processed;
+							document.getElementById('optResultSpace').innerText = data.stats.savedMB + " MB";
+
+							document.getElementById('optCloseBtn').disabled = false;
+							document.getElementById('optCloseBtn').classList.remove('opacity-50', 'cursor-not-allowed');
+							showToast("Optimization Complete!", "success");
+							return;
+						}
+
+						if (data.total > 0) {
+							const pct = (data.progress / data.total) * 100;
+							updateOptimizationProgress(pct, data.message || "Processing...");
+						} else {
+							updateOptimizationProgress(0, data.message || "Initializing...");
+						}
+
+					} catch (e) {
+						console.warn("Failed to parse SSE", e);
+					}
+				}
+			}
+		}
+	} catch (e) {
+		console.error("Optimization failed", e);
+		showToast("Optimization failed: " + e.message, "error");
+		closeOptimizationModal();
+	}
+}
+
+// Attach to window
+window.openOptimizationModal = openOptimizationModal;
+window.closeOptimizationModal = closeOptimizationModal;
+window.confirmOptimization = confirmOptimization;
+window.runOptimization = runOptimization;
