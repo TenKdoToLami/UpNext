@@ -1,12 +1,28 @@
-<!-- DETAIL MODAL -->
+<!-- Detail Modal - Full-screen item detail view with navigation -->
 <div id="detailModal"
 	class="fixed inset-0 z-[90] flex items-center justify-center bg-zinc-500/30 dark:bg-black/95 backdrop-blur-md hidden opacity-0 transition-all duration-300"
 	onclick="if(event.target === this) closeDetail()">
+
+	<!-- Navigation Arrows (z-[1] renders under modal to create seamless border connection) -->
+	<button id="detailNavPrev" onclick="event.stopPropagation(); window.navigateDetail(-1)"
+		class="absolute top-1/2 -translate-y-1/2 left-[calc(50%-47.5rem-3rem)] z-[1] bg-white dark:bg-zinc-950 text-[color:var(--theme-col)] hover:bg-[color:var(--theme-col)] hover:text-white w-14 h-20 rounded-l-2xl transition-all duration-200 border-2 border-[color:var(--theme-col)] shadow-xl disabled:opacity-20 disabled:cursor-not-allowed disabled:pointer-events-none hover:scale-105 active:scale-95 flex items-center justify-center max-xl:left-[calc(2.5vw-3rem)]"
+		style="--theme-col: var(--col-book)" title="Previous (← / A)">
+		<i data-lucide="chevron-left" class="w-6 h-6"></i>
+	</button>
+	<button id="detailNavNext" onclick="event.stopPropagation(); window.navigateDetail(1)"
+		class="absolute top-1/2 -translate-y-1/2 right-[calc(50%-47.5rem-3rem)] z-[1] bg-white dark:bg-zinc-950 text-[color:var(--theme-col)] hover:bg-[color:var(--theme-col)] hover:text-white w-14 h-20 rounded-r-2xl transition-all duration-200 border-2 border-[color:var(--theme-col)] shadow-xl disabled:opacity-20 disabled:cursor-not-allowed disabled:pointer-events-none hover:scale-105 active:scale-95 flex items-center justify-center max-xl:right-[calc(2.5vw-3rem)]"
+		style="--theme-col: var(--col-book)" title="Next (→ / D)">
+		<i data-lucide="chevron-right" class="w-6 h-6"></i>
+	</button>
+
+	<!-- Modal Content (z-[2] renders above nav buttons) -->
 	<div id="detailModalContent"
-		class="bg-white dark:bg-zinc-950 border-2 rounded-3xl w-full max-w-[95rem] h-[92vh] overflow-hidden flex flex-col shadow-2xl relative animate-enter transition-colors duration-300 border-zinc-200 dark:border-zinc-800">
+		class="bg-white dark:bg-zinc-950 border-2 rounded-3xl w-full max-w-[95rem] h-[92vh] overflow-hidden flex flex-col shadow-2xl relative z-[2] animate-enter transition-colors duration-300 border-zinc-200 dark:border-zinc-800">
 		<button onclick="closeDetail()"
-			class="absolute top-6 right-6 z-50 bg-black/10 dark:bg-black/40 hover:bg-zinc-200 dark:hover:bg-white text-zinc-900 dark:text-white hover:text-black p-2 rounded-full backdrop-blur-md transition-all border border-black/5 dark:border-white/10 hover:border-black/20 dark:hover:border-white shadow-lg"><i
-				data-lucide="x" class="w-5 h-5"></i></button>
+			class="absolute top-6 right-6 z-50 bg-black/10 dark:bg-black/40 hover:bg-zinc-200 dark:hover:bg-white text-zinc-900 dark:text-white hover:text-black p-2 rounded-full backdrop-blur-md transition-all border border-black/5 dark:border-white/10 hover:border-black/20 dark:hover:border-white shadow-lg"
+			title="Close (Esc)">
+			<i data-lucide="x" class="w-5 h-5"></i>
+		</button>
 		<div id="detailContent" class="overflow-y-auto custom-scrollbar h-full relative"></div>
 	</div>
 </div>

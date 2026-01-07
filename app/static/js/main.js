@@ -878,43 +878,214 @@ window.saveEntry = async () => {
 };
 
 // =============================================================================
-// DETAIL MODAL
+// DETAIL MODAL - Navigation and display for detailed item view
 // =============================================================================
+
+/** @type {string|null} Currently displayed item ID in detail modal */
+let currentDetailItemId = null;
+
+/**
+ * Gets the currently filtered and sorted list of items matching grid display.
+ * Replicates the filtering/sorting logic from renderGrid for navigation consistency.
+ * @returns {Array} Filtered and sorted items array
+ */
+function getFilteredSortedItems() {
+    const searchInput = document.getElementById('searchInput');
+    const searchVal = (searchInput?.value || '').toLowerCase();
+
+    let textQuery = searchVal.replace(/(universe|author|series|type|tags?)=("([^"]*)"|([^\"\s]+))/gi, () => '').trim();
+    const searchFilters = {};
+    searchVal.replace(/(universe|author|series|type|tags?)=("([^"]*)"|([^\"\s]+))/gi, (m, k, qf, qi, s) => {
+        let key = k.toLowerCase();
+        if (key === 'tags') key = 'tag';
+        searchFilters[key] = (qi || s).toLowerCase();
+    });
+
+    let filtered = state.items.filter(item => {
+        if (state.appSettings?.disabledTypes?.includes(item.type)) return false;
+        if (state.appSettings?.disabledStatuses?.includes(item.status)) return false;
+        if (!state.filterTypes.includes('All') && !state.filterTypes.includes(item.type)) return false;
+        if (!state.filterStatuses.includes('All') && !state.filterStatuses.includes(item.status)) return false;
+
+        if (state.filterRatings.length > 0) {
+            if (item.status === 'Planning' || item.status === 'Reading/Watching') return true;
+            if (!state.filterRatings.includes(item.rating)) return false;
+        }
+
+        if (state.filterHiddenOnly) {
+            if (!item.isHidden) return false;
+        } else {
+            if (!state.isHidden && item.isHidden) return false;
+        }
+
+        if (searchFilters.type && item.type.toLowerCase() !== searchFilters.type) return false;
+        if (searchFilters.universe && (!item.universe || !item.universe.toLowerCase().includes(searchFilters.universe))) return false;
+        if (searchFilters.series && (!item.series || !item.series.toLowerCase().includes(searchFilters.series))) return false;
+        if (searchFilters.author) {
+            const auths = (item.authors || (item.author ? [item.author] : [])).map(a => a.toLowerCase());
+            if (!auths.some(a => a.includes(searchFilters.author))) return false;
+        }
+        if (searchFilters.tag) {
+            const itemTags = (item.tags || []).map(t => t.toLowerCase());
+            if (!itemTags.some(t => t.includes(searchFilters.tag))) return false;
+        }
+
+        if (!textQuery) return true;
+        const matchesMainTitle = item.title.toLowerCase().includes(textQuery);
+        const matchesAlternateTitle = (item.alternateTitles || []).some(alt => alt.toLowerCase().includes(textQuery));
+        const matchesUniverse = (item.universe && item.universe.toLowerCase().includes(textQuery));
+        const matchesAbbreviation = (item.abbreviations || []).some(abbr => abbr.toLowerCase().includes(textQuery));
+        const matchesTags = (item.tags || []).some(tag => tag.toLowerCase().includes(textQuery));
+        return matchesMainTitle || matchesAlternateTitle || matchesUniverse || matchesAbbreviation || matchesTags;
+    });
+
+    return filtered.sort((a, b) => {
+        let valA = a[state.sortBy] || '';
+        let valB = b[state.sortBy] || '';
+        if (state.sortBy === 'series') {
+            const numA = parseFloat(a.seriesNumber) || 0;
+            const numB = parseFloat(b.seriesNumber) || 0;
+            const seriesA = (a.series || '').toLowerCase();
+            const seriesB = (b.series || '').toLowerCase();
+            if (seriesA === seriesB) {
+                if (numA < numB) return state.sortOrder === 'asc' ? -1 : 1;
+                if (numA > numB) return state.sortOrder === 'asc' ? 1 : -1;
+                return 0;
+            }
+            valA = seriesA; valB = seriesB;
+        } else {
+            valA = String(valA).toLowerCase();
+            valB = String(valB).toLowerCase();
+        }
+        if (valA < valB) return state.sortOrder === 'asc' ? -1 : 1;
+        if (valA > valB) return state.sortOrder === 'asc' ? 1 : -1;
+        return 0;
+    });
+}
+
+/**
+ * Updates navigation button disabled states based on current position.
+ */
+function updateDetailNavButtons() {
+    const filteredItems = getFilteredSortedItems();
+    const currentIndex = filteredItems.findIndex(i => i.id === currentDetailItemId);
+    const prevBtn = document.getElementById('detailNavPrev');
+    const nextBtn = document.getElementById('detailNavNext');
+
+    if (prevBtn) prevBtn.disabled = currentIndex <= 0;
+    if (nextBtn) nextBtn.disabled = currentIndex >= filteredItems.length - 1 || currentIndex === -1;
+    safeCreateIcons();
+}
+
+/**
+ * Applies the media type theme color to modal and navigation buttons.
+ * @param {Object} item - The media item
+ */
+function applyDetailThemeColor(item) {
+    const typeColorVar = `var(--col-${item.type.toLowerCase()})`;
+    const modalContent = document.getElementById('detailModalContent');
+    const prevBtn = document.getElementById('detailNavPrev');
+    const nextBtn = document.getElementById('detailNavNext');
+
+    modalContent.style.setProperty('--theme-col', typeColorVar);
+    modalContent.style.borderColor = typeColorVar;
+    modalContent.classList.add('border-[color:var(--theme-col)]');
+    if (prevBtn) prevBtn.style.setProperty('--theme-col', typeColorVar);
+    if (nextBtn) nextBtn.style.setProperty('--theme-col', typeColorVar);
+}
 
 /**
  * Opens the detail view modal for an item.
- * @param {string} id - Item ID
+ * @param {string} id - Item ID to display
  */
 window.openDetail = (id) => {
     const item = state.items.find(i => i.id === id);
     if (!item) return;
 
+    currentDetailItemId = id;
     const modal = document.getElementById('detailModal');
     const content = document.getElementById('detailContent');
-    const modalContent = document.getElementById('detailModalContent');
 
-    const typeColorVar = `var(--col-${item.type.toLowerCase()})`;
-    modalContent.style.setProperty('--theme-col', typeColorVar);
-    modalContent.style.borderColor = typeColorVar;
-    modalContent.classList.add('border-[color:var(--theme-col)]');
-
+    applyDetailThemeColor(item);
     modal.classList.remove('hidden');
     setTimeout(() => modal.classList.remove('opacity-0'), 10);
-
     renderDetailView(item, content);
+    updateDetailNavButtons();
 };
 
-/** Closes the detail view modal. */
+/**
+ * Navigates to adjacent item in the filtered list with slide animation.
+ * @param {number} direction - Navigation direction: -1 for previous, 1 for next
+ */
+window.navigateDetail = (direction) => {
+    const filteredItems = getFilteredSortedItems();
+    const currentIndex = filteredItems.findIndex(i => i.id === currentDetailItemId);
+    if (currentIndex === -1) return;
+
+    const newIndex = currentIndex + direction;
+    if (newIndex < 0 || newIndex >= filteredItems.length) return;
+
+    const newItem = filteredItems[newIndex];
+    currentDetailItemId = newItem.id;
+    const content = document.getElementById('detailContent');
+
+    applyDetailThemeColor(newItem);
+
+    // Slide out animation
+    content.style.transition = 'opacity 0.15s ease-out, transform 0.15s ease-out';
+    content.style.opacity = '0';
+    content.style.transform = direction > 0 ? 'translateX(-60px)' : 'translateX(60px)';
+
+    setTimeout(() => {
+        content.scrollTop = 0;
+        content.style.transition = 'none';
+        content.style.transform = direction > 0 ? 'translateX(60px)' : 'translateX(-60px)';
+        renderDetailView(newItem, content);
+        updateDetailNavButtons();
+        content.offsetHeight; // Force reflow
+        content.style.transition = 'opacity 0.2s ease-out, transform 0.2s ease-out';
+        content.style.opacity = '1';
+        content.style.transform = 'translateX(0)';
+    }, 150);
+};
+
+/**
+ * Scrolls the detail modal content panel.
+ * @param {number} direction - Scroll direction: -1 for up, 1 for down
+ * @param {boolean} [largeStep=false] - Use larger scroll step (Ctrl modifier)
+ * @param {boolean} [instant=false] - Use instant scroll for held keys
+ */
+window.scrollDetailContent = (direction, largeStep = false, instant = false) => {
+    const detailContent = document.getElementById('detailContent');
+    if (!detailContent) return;
+
+    const scrollablePanel = detailContent.querySelector('.overflow-y-auto') || detailContent;
+    const scrollAmount = largeStep ? 200 : (instant ? 25 : 50);
+    scrollablePanel.scrollBy({
+        top: direction * scrollAmount,
+        behavior: instant ? 'auto' : 'smooth'
+    });
+};
+
+/** Closes the detail view modal with fade animation. */
 window.closeDetail = () => {
     const modal = document.getElementById('detailModal');
     modal.classList.add('opacity-0');
+    currentDetailItemId = null;
     setTimeout(() => modal.classList.add('hidden'), 300);
 };
 
-window.editFromDetail = (id) => { window.closeDetail(); window.openModal(id); };
+/** Opens edit modal for item from detail view. */
+window.editFromDetail = (id) => {
+    window.closeDetail();
+    window.openModal(id);
+};
 
+/**
+ * Deletes item from detail view with confirmation toast.
+ * @param {string} id - Item ID to delete
+ */
 window.deleteFromDetail = async (id) => {
-    // Get item details before deletion for toast
     const item = state.items.find(i => i.id === id);
     const title = item?.title || 'Entry';
     const coverUrl = item?.coverUrl;
@@ -923,13 +1094,12 @@ window.deleteFromDetail = async (id) => {
     if (deleted) {
         window.closeDetail();
         loadItems();
-
         if (coverUrl) {
             showRichToast({
                 title: `Deleted '${title}'`,
                 message: 'Removed from library.',
                 coverUrl: coverUrl,
-                type: 'info' // Using info or trash-themed color if available, default info is fine
+                type: 'info'
             });
         } else {
             showToast(`Deleted '${title}' from library.`, 'info');
@@ -1137,6 +1307,7 @@ async function initApp() {
         });
 
         // 3. Modal closing with ESC (Always allowed if modal is open)
+        // --- Escape: Close any open modal ---
         if (e.key === 'Escape') {
             if (document.getElementById('modal') && !document.getElementById('modal').classList.contains('hidden')) window.closeModal();
             if (document.getElementById('detailModal') && !document.getElementById('detailModal').classList.contains('hidden')) window.closeDetail();
@@ -1145,59 +1316,97 @@ async function initApp() {
             if (document.getElementById('exportModal') && !document.getElementById('exportModal').classList.contains('hidden')) window.closeExportModal();
             if (document.getElementById('settingsModal') && !document.getElementById('settingsModal').classList.contains('hidden')) window.closeSettingsModal();
             if (document.getElementById('calendarModal') && !document.getElementById('calendarModal').classList.contains('hidden')) window.closeCalendarModal?.();
-            // External search close is handled in its own file usually, but safety check here if needed
             if (document.getElementById('externalSearchModal') && !document.getElementById('externalSearchModal').classList.contains('hidden')) window.closeExternalSearchModal?.();
-            return; // Stop further processing after closing
+            return;
         }
 
-        // --- STEPPER NAVIGATION SHORTCUTS (Wizard & Edit Mode) ---
+        // --- Detail Modal: Navigation (←/→, A/D) and Scrolling (W/S, ↑/↓) ---
+        const detailModal = document.getElementById('detailModal');
+        const isDetailModalOpen = detailModal && !detailModal.classList.contains('hidden');
+        if (isDetailModalOpen && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+            const isCtrl = e.ctrlKey || e.metaKey;
+            const key = e.key.toLowerCase();
+
+            // Navigation: ←/→ arrows or A/D keys
+            if (e.key === 'ArrowLeft' || key === 'a') {
+                e.preventDefault();
+                window.navigateDetail(-1);
+                return;
+            }
+            if (e.key === 'ArrowRight' || key === 'd') {
+                e.preventDefault();
+                window.navigateDetail(1);
+                return;
+            }
+            // Scrolling: W/S or ↑/↓ arrows (Ctrl for larger step)
+            if (key === 'w' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                window.scrollDetailContent(-1, isCtrl, e.repeat);
+                return;
+            }
+            if (key === 's' || e.key === 'ArrowDown') {
+                e.preventDefault();
+                window.scrollDetailContent(1, isCtrl, e.repeat);
+                return;
+            }
+        }
+
+        // --- Wizard/Edit Modal: Stepper Navigation (Ctrl+A/D, Ctrl+←/→) ---
         if (isAnyModalOpen) {
             const isCtrl = e.ctrlKey || e.metaKey;
             const key = e.key.toLowerCase();
 
             if (isCtrl && (key === 'd' || key === 'arrowright' || key === 'a' || key === 'arrowleft')) {
                 e.preventDefault();
-
                 const isNext = (key === 'd' || key === 'arrowright');
-
                 if (!state.isEditMode) {
-                    const btnId = isNext ? 'nextBtn' : 'prevBtn';
-                    const btn = document.getElementById(btnId);
-                    if (btn && !btn.classList.contains('hidden')) {
-                        btn.click();
-                    }
+                    const btn = document.getElementById(isNext ? 'nextBtn' : 'prevBtn');
+                    if (btn && !btn.classList.contains('hidden')) btn.click();
                 } else {
-                    if (window.navigateEditSection) {
-                        window.navigateEditSection(isNext ? 1 : -1);
-                    }
+                    window.navigateEditSection?.(isNext ? 1 : -1);
                 }
                 return;
             }
         }
 
-        // 1. Always allow processing for inputs/textareas (browser default behavior usually handles these, but we keep this check)
+        // Skip shortcuts if focused on input
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
-        // 4. BLOCK other shortcuts if a modal is open
+        // Block other shortcuts if modal is open
         if (isAnyModalOpen) return;
 
+        // --- Global Shortcuts (no modal open) ---
+        const key = e.key.toLowerCase();
+        const isCtrl = e.ctrlKey || e.metaKey;
 
-        // 5. Global Application Shortcuts (Only if no modal is open)
-        if (e.key.toLowerCase() === 'n') window.openModal();
-        if (e.key.toLowerCase() === 's' && !state.appSettings?.disabledFeatures?.includes('stats')) window.openStatsModal();
-        if (e.key.toLowerCase() === 'c' && !state.appSettings?.disabledFeatures?.includes('calendar')) window.openCalendarModal?.();
-        if (e.key.toLowerCase() === 'o') window.toggleSortMenu();
-        if (e.key.toLowerCase() === 'f') {
+        // N: New entry, T: Statistics, C: Calendar, O: Sort menu, F: Focus search
+        if (key === 'n') window.openModal();
+        if (key === 't' && !state.appSettings?.disabledFeatures?.includes('stats')) window.openStatsModal();
+        if (key === 'c' && !state.appSettings?.disabledFeatures?.includes('calendar')) window.openCalendarModal?.();
+        if (key === 'o') window.toggleSortMenu();
+        if (key === 'f') {
             e.preventDefault();
-            const searchBar = document.getElementById('searchBar'); // Desktop
-            const searchInput = document.getElementById('searchInput'); // Mobile/Responsive?
-            if (searchBar && !searchBar.classList.contains('hidden')) searchBar.focus();
-            else if (searchInput) {
-                // Open mobile search if hidden?
+            const searchBar = document.getElementById('searchBar');
+            const searchInput = document.getElementById('searchInput');
+            if (searchBar && !searchBar.classList.contains('hidden')) {
+                searchBar.focus();
+            } else if (searchInput) {
                 const container = document.getElementById('searchBarContainer');
-                if (container && container.classList.contains('hidden')) container.classList.remove('hidden');
+                if (container?.classList.contains('hidden')) container.classList.remove('hidden');
                 searchInput.focus();
             }
+        }
+
+        // W/S/↑/↓: Page scrolling (Ctrl for larger step)
+        const scrollBehavior = e.repeat ? 'auto' : 'smooth';
+        const scrollAmount = isCtrl ? 200 : (e.repeat ? 25 : 50);
+        if (key === 'w' || e.key === 'ArrowUp') {
+            e.preventDefault();
+            window.scrollBy({ top: -scrollAmount, behavior: scrollBehavior });
+        }
+        if (key === 's' || e.key === 'ArrowDown') {
+            e.preventDefault();
+            window.scrollBy({ top: scrollAmount, behavior: scrollBehavior });
         }
     });
 }
