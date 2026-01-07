@@ -21,7 +21,9 @@ def launch_browser_app(url: str, title: str = "UpNext") -> Optional[webview.Wind
         logger.info(f"Creating webview window for {url}")
         
         # Load saved config
-        from app.utils.config_manager import load_config, save_window_geometry, save_config
+        from app.utils.config_manager import (
+            load_config, save_window_geometry, save_config, ensure_window_on_screen
+        )
         config = load_config()
         
         # Access 'window' key safely
@@ -29,8 +31,13 @@ def launch_browser_app(url: str, title: str = "UpNext") -> Optional[webview.Wind
         
         initial_width = window_state.get('width', 1200)
         initial_height = window_state.get('height', 800)
-        initial_x = window_state.get('x', None)
-        initial_y = window_state.get('y', None)
+        saved_x = window_state.get('x', None)
+        saved_y = window_state.get('y', None)
+        
+        # Ensure window position is on a visible monitor
+        initial_x, initial_y = ensure_window_on_screen(
+            saved_x, saved_y, initial_width, initial_height
+        )
 
         class JsApi:
             def save_app_config(self, key, value):
@@ -51,8 +58,8 @@ def launch_browser_app(url: str, title: str = "UpNext") -> Optional[webview.Wind
             y=initial_y,
             resizable=True,
             min_size=(800, 600),
-            text_select=False, # Premium feel: disable text selection
-            js_api=JsApi() # Bind the API
+            text_select=False,
+            js_api=JsApi()
         )
         
         # Bind close event to save window geometry
@@ -65,3 +72,4 @@ def launch_browser_app(url: str, title: str = "UpNext") -> Optional[webview.Wind
     except Exception as e:
         logger.error(f"Failed to create webview window: {e}")
         return None
+

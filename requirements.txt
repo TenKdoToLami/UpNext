@@ -43,3 +43,4 @@ PyQt6>=6.10.0
 PyQt6-WebEngine>=6.10.0
 qtpy>=2.4.0
 requests>=2.32.5
+screeninfo>=0.8.1
