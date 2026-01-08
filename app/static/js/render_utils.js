@@ -14,6 +14,7 @@ import { safeCreateIcons, toggleExpand, checkOverflow } from './dom_utils.js';
 import { generateCardHtml } from './card_renderer.js';
 
 
+let gridObserver = null;
 
 /**
  * Calculates counts for types, statuses, and ratings based on current items.
@@ -401,6 +402,22 @@ export function renderGrid() {
 	});
 
 	filtered = sortItems(filtered);
+	state.currentFilteredItems = filtered;
+
+	// Reset limit if it is a fresh render (not a "load more" op)
+	// We can detect this if we are filtering or searching, or we can just always reset in renderGrid
+	// and use a separate function for appending.
+	// Actually, renderGrid implies a full refresh.
+	state.visibleLimit = state.BATCH_SIZE;
+
+	renderVisibleBatch(container);
+}
+
+/**
+ * Renders the visible batch of items based on state.visibleLimit.
+ */
+function renderVisibleBatch(container) {
+	const filtered = state.currentFilteredItems;
 
 	if (filtered.length === 0) {
 		container.innerHTML = '';
@@ -412,11 +429,84 @@ export function renderGrid() {
 	document.getElementById('emptyState').classList.add('hidden');
 	document.getElementById('emptyState').classList.remove('flex');
 
-	container.innerHTML = filtered.map(item => generateCardHtml(item)).join('');
+	const visibleItems = filtered.slice(0, state.visibleLimit);
+	const html = visibleItems.map(item => generateCardHtml(item)).join('');
+
+	// Append Sentinel for Infinite Scroll
+	const sentinel = '<div id="scroll-sentinel" class="w-full h-20 bg-transparent flex items-center justify-center pointer-events-none p-4"><div class="w-2 h-2 bg-zinc-300 dark:bg-zinc-700 rounded-full animate-bounce"></div></div>';
+
+	container.innerHTML = html + sentinel;
 
 	safeCreateIcons();
+	setupIntersectionObserver();
 
-	// Check for overflow after render
+	// Check truncation for new items
+	setTimeout(updateGridTruncation, 50);
+}
+
+/**
+ * Sets up the IntersectionObserver for infinite scrolling.
+ */
+function setupIntersectionObserver() {
+	if (gridObserver) gridObserver.disconnect();
+
+	const options = {
+		root: null, // viewport
+		rootMargin: '400px', // Preload before reaching bottom
+		threshold: 0.1
+	};
+
+	gridObserver = new IntersectionObserver((entries) => {
+		entries.forEach(entry => {
+			if (entry.isIntersecting) {
+				loadMoreItems();
+			}
+		});
+	}, options);
+
+	const sentinel = document.getElementById('scroll-sentinel');
+	if (sentinel) gridObserver.observe(sentinel);
+}
+
+/**
+ * Loads the next batch of items.
+ */
+function loadMoreItems() {
+	if (state.visibleLimit >= state.currentFilteredItems.length) return;
+
+	state.visibleLimit += state.BATCH_SIZE;
+	const container = document.getElementById('gridContainer');
+
+	// Optimization: Instead of re-rendering everything, append only new items.
+	// But simply replacing innerHTML is safer for simplicity unless performance is critical.
+	// Re-rendering full innerHTML on large lists (e.g. 1000 items) is slow.
+	// Let's implement APPEND logic.
+
+	const sentinel = document.getElementById('scroll-sentinel');
+	if (sentinel) sentinel.remove();
+
+	const nextBatch = state.currentFilteredItems.slice(state.visibleLimit - state.BATCH_SIZE, state.visibleLimit);
+	const html = nextBatch.map(item => generateCardHtml(item)).join('');
+
+	// Create temp container to parse HTML string into nodes
+	const tempDiv = document.createElement('div');
+	tempDiv.innerHTML = html;
+
+	while (tempDiv.firstChild) {
+		container.appendChild(tempDiv.firstChild);
+	}
+
+	// Re-add sentinel if more items exist
+	if (state.visibleLimit < state.currentFilteredItems.length) {
+		const newSentinel = document.createElement('div');
+		newSentinel.id = 'scroll-sentinel';
+		newSentinel.className = 'w-full h-10 bg-transparent flex items-center justify-center pointer-events-none opacity-0';
+		// newSentinel.innerHTML = '<div class="w-2 h-2 bg-zinc-300 dark:bg-zinc-700 rounded-full animate-bounce"></div>';
+		container.appendChild(newSentinel);
+		if (gridObserver) gridObserver.observe(newSentinel);
+	}
+
+	safeCreateIcons();
 	setTimeout(updateGridTruncation, 50);
 }
 

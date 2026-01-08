@@ -18,6 +18,10 @@ import { FEATURE_GROUPS } from './constants.js';
 export const state = {
 	// Library data
 	items: [],
+	// Lazy Loading State
+	visibleLimit: 60,
+	BATCH_SIZE: 60,
+	currentFilteredItems: [], // Cache for filtered results before rendering
 
 	// Form state (for add/edit modal)
 	currentAuthors: [],
