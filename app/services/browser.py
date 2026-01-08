@@ -4,6 +4,8 @@ Browser Service.
 Handles the creation and management of the native window using pywebview.
 """
 import logging
+import os
+import sys
 import webview
 from typing import Optional
 
@@ -20,6 +22,10 @@ def launch_browser_app(url: str, title: str = "UpNext") -> Optional[webview.Wind
     try:
         logger.info(f"Creating webview window for {url}")
         
+        if sys.platform.startswith('linux'):
+           # Formerly disabled hardware acceleration here, but now using QT backend instead.
+           pass
+
         # Load saved config
         from app.utils.config_manager import (
             load_config, save_window_geometry, save_config, ensure_window_on_screen

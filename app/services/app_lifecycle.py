@@ -237,6 +237,12 @@ def run_application_stack(create_app_func: Callable, host: str, port: int, headl
         except Exception:
             pass
         os.environ['QTWEBENGINE_DISABLE_SANDBOX'] = '1'
+        # Force disable GPU for QT on Linux to prevent flickering (Wayland/X11 compositing issues)
+        os.environ['QT_WEBENGINE_DISABLE_GPU'] = '1'
+        os.environ['QT_X11_NO_MITSHM'] = '1'
+        # Force XCB (X11) platform to avoid native Wayland flickering issues
+        os.environ['QT_QPA_PLATFORM'] = 'xcb'
+        
         if os.environ.get('WEBVIEW_DISABLE_GPU'):
             os.environ['QT_WEBENGINE_DISABLE_GPU'] = '1'
         os.environ['PYTHONIOENCODING'] = 'utf-8'
@@ -482,7 +488,9 @@ def run_application_stack(create_app_func: Callable, host: str, port: int, headl
 
     logger.info("Starting GUI...")
     # Start Webview (Blocks Main Thread)
-    webview.start(debug=True, icon=icon_path)
+    # Force QT on Linux to prevent flickering issues with GTK/WebKit
+    gui_engine = 'qt' if sys.platform == 'linux' else None
+    webview.start(debug=True, icon=icon_path, gui=gui_engine)
     
     # Cleanup after loop exit
     remove_lock_file()

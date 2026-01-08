@@ -18,7 +18,8 @@ import {
     renderGenericTags, removeTag, incrementRereadCount, decrementRereadCount,
     toggleChildDetails, incrementChildField, decrementChildField,
     toggleTotalsOverride, updateTotalsUIForType,
-    updateModalTags, renderAltTitles, syncTotalsToChild
+    updateModalTags, renderAltTitles, syncTotalsToChild,
+    showConfirmationModal, closeConfirmationModal
 } from './main_helpers.js';
 import { updateWizardUI, selectType, selectStatus, initDuplicateCheck } from './wizard_logic.js';
 import { scrollToSection, updateSidebarVisibility } from './edit_mode.js';
@@ -91,6 +92,8 @@ window.updateTotalsUIForType = updateTotalsUIForType;
 window.updateModalTags = updateModalTags;
 window.renderAltTitles = renderAltTitles;
 window.syncTotalsToChild = syncTotalsToChild;
+window.showConfirmationModal = showConfirmationModal;
+window.closeConfirmationModal = closeConfirmationModal;
 
 // Export Utils Bindings
 window.openExportModal = openExportModal;
@@ -852,6 +855,7 @@ window.saveEntry = async () => {
             }
         }
 
+        state.isDirty = false;
         closeModal();
         loadItems();
 
@@ -1409,6 +1413,17 @@ async function initApp() {
             window.scrollBy({ top: scrollAmount, behavior: scrollBehavior });
         }
     });
+
+    // Initialize Dirty State Tracking
+    const entryForm = document.getElementById('entryForm');
+    if (entryForm) {
+        entryForm.addEventListener('input', (e) => {
+            if (!state.isDirty) state.isDirty = true;
+        });
+        entryForm.addEventListener('change', (e) => {
+            if (!state.isDirty) state.isDirty = true;
+        });
+    }
 }
 
 // Run initialization

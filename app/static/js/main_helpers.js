@@ -46,6 +46,7 @@ export function openModal(id = null) {
 
 		if (form) form.reset();
 		resetFormState();
+		state.isDirty = false;
 
 		if (id) {
 			populateFormFromItem(id);
@@ -69,12 +70,140 @@ export function openModal(id = null) {
 
 /**
  * Closes the entry modal with animation.
+ * Confirms if there are unsaved changes.
+ */
+/**
+ * Closes the entry modal with animation.
+ * Confirms if there are unsaved changes.
  */
 export function closeModal() {
+	if (state.isDirty) {
+		showConfirmationModal(
+			'Unsaved Changes',
+			'You have unsaved changes. Are you sure you want to close this form? Your changes will be lost.',
+			() => {
+				state.isDirty = false;
+				forceCloseModal();
+			},
+			'warning',
+			null,
+			'Discard Changes'
+		);
+		return;
+	}
+	forceCloseModal();
+}
+
+/**
+ * Internal helper to force close the modal without checks.
+ */
+function forceCloseModal() {
 	const modal = document.getElementById('modal');
 	modal.classList.add('opacity-0');
 	document.getElementById('modalContent').classList.add('scale-95');
 	setTimeout(() => modal.classList.add('hidden'), 200);
+}
+
+/**
+ * Shows the custom confirmation modal.
+ * @param {string} title - Modal title
+ * @param {string} message - Modal message (can be longer)
+ * @param {Function} onConfirm - Callback function to execute on confirm
+ * @param {string} type - 'warning' (formatted as delete/destructive) or 'info' (default)
+ * @param {Function} [onCancel] - Optional callback for cancellation
+ * @param {string} [confirmText] - Optional text for confirm button
+ */
+export function showConfirmationModal(title, message, onConfirm, type = 'info', onCancel = null, confirmText = 'Confirm') {
+	const modal = document.getElementById('confirmationModal');
+	if (!modal) {
+		if (confirm(`${title}\n\n${message}`)) {
+			onConfirm();
+		} else {
+			if (onCancel) onCancel();
+		}
+		return;
+	}
+
+	// Set Content
+	document.getElementById('confirmTitle').textContent = title;
+	document.getElementById('confirmMessage').textContent = message;
+	document.getElementById('btnConfirmAction').textContent = confirmText;
+
+	// Type Styling
+	const iconContainer = document.getElementById('confirmIconContainer');
+	const confirmBtn = document.getElementById('btnConfirmAction');
+	const cancelBtn = document.getElementById('btnCancelAction'); // Ensure we target the cancel button
+	const icon = document.getElementById('confirmIcon');
+
+	// Reset Classes
+	iconContainer.className = 'w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-colors';
+	confirmBtn.className = 'flex-1 py-3 rounded-xl font-bold text-sm shadow-lg hover:shadow-xl transition-all text-white';
+
+	if (type === 'warning' || type === 'danger') {
+		// Red Theme
+		iconContainer.classList.add('bg-red-100', 'dark:bg-red-900/20', 'text-red-600', 'dark:text-red-500');
+		confirmBtn.classList.add('bg-red-500', 'hover:bg-red-600');
+		icon.setAttribute('data-lucide', 'trash-2');
+	} else {
+		// Default/Brand Theme
+		iconContainer.classList.add('bg-zinc-100', 'dark:bg-zinc-800', 'text-zinc-900', 'dark:text-white');
+		confirmBtn.classList.add('bg-zinc-900', 'hover:bg-zinc-800', 'dark:bg-white', 'dark:text-black', 'dark:hover:bg-zinc-200');
+		icon.setAttribute('data-lucide', 'check-circle-2');
+	}
+
+	// Set Callbacks
+	confirmBtn.onclick = () => {
+		onConfirm();
+		closeConfirmationModal();
+	};
+
+	const handleCancel = () => {
+		if (onCancel) onCancel();
+		closeConfirmationModal();
+	};
+
+	if (cancelBtn) cancelBtn.onclick = handleCancel;
+
+	// Handle overlay click cancellation
+	modal.onclick = (e) => {
+		if (e.target === modal) {
+			handleCancel();
+		}
+	};
+
+	// Show
+	modal.classList.remove('hidden');
+	if (typeof lucide !== 'undefined' && window.lucide && window.lucide.createIcons) {
+		window.lucide.createIcons();
+	}
+
+	requestAnimationFrame(() => {
+		modal.classList.remove('opacity-0');
+		const content = modal.querySelector('div');
+		if (content) {
+			content.classList.remove('scale-95');
+			content.classList.add('scale-100');
+		}
+	});
+}
+
+/**
+ * Closes the confirmation modal.
+ */
+export function closeConfirmationModal() {
+	const modal = document.getElementById('confirmationModal');
+	if (!modal) return;
+
+	modal.classList.add('opacity-0');
+	const content = modal.querySelector('div');
+	if (content) {
+		content.classList.remove('scale-100');
+		content.classList.add('scale-95');
+	}
+
+	setTimeout(() => {
+		modal.classList.add('hidden');
+	}, 200);
 }
 
 /**

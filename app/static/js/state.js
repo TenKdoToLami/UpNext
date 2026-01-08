@@ -48,6 +48,7 @@ export const state = {
 	currentStep: 1,
 	maxReachedStep: 1,
 	isEditMode: false,
+	isDirty: false,
 	TOTAL_STEPS: 12,
 
 	// Theme state
