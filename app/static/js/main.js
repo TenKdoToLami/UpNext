@@ -20,7 +20,7 @@ import {
     toggleTotalsOverride, updateTotalsUIForType,
     updateModalTags, renderAltTitles, syncTotalsToChild
 } from './main_helpers.js';
-import { updateWizardUI, selectType, selectStatus } from './wizard_logic.js';
+import { updateWizardUI, selectType, selectStatus, initDuplicateCheck } from './wizard_logic.js';
 import { scrollToSection, updateSidebarVisibility } from './edit_mode.js';
 import {
     openExportModal, closeExportModal, triggerExport,
@@ -1199,10 +1199,10 @@ async function checkOverdueReleases() {
 async function initApp() {
     await loadUIState();
     await checkDatabaseSelection();
+    initDuplicateCheck();
     populateAutocomplete();
     applyStateToUI();
 
-    // Check for overdue releases (delayed slightly to allow UI to settle)
     setTimeout(checkOverdueReleases, 1000);
 
     // Helper for safe event binding

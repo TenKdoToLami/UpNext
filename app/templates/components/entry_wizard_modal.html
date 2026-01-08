@@ -70,6 +70,11 @@
 								<input type="text" id="title" required
 									class="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-5 py-4 text-xl font-heading font-bold text-zinc-900 dark:text-white outline-none focus:border-zinc-400 dark:focus:border-white/20 focus:ring-1 focus:ring-zinc-400 dark:focus:ring-white/20 placeholder:text-zinc-400 dark:placeholder:text-zinc-700 transition-all"
 									placeholder="Enter title...">
+								<div id="duplicateWarning"
+									class="hidden flex items-center gap-2 mt-2 px-3 py-2 bg-amber-500/10 border border-amber-500/20 rounded-lg text-amber-600 dark:text-amber-500 animate-enter">
+									<i data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i>
+									<span class="text-xs font-bold" id="duplicateWarningText"></span>
+								</div>
 							</div>
 
 							<div class="space-y-2">

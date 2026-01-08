@@ -37,6 +37,76 @@ def get_items():
     return jsonify(items)
 
 
+@bp.route("/items/check", methods=["GET"])
+def check_duplicate():
+    """
+    Checks if an item with the same title and type already exists.
+    
+    Query params:
+        title: Title to search for (required)
+        type: Media type (required)
+        exclude_id: Optional ID to exclude from check (for edit mode)
+        
+    Returns:
+        { "exists": bool, "item": {id, title, type} | null }
+    """
+    title = request.args.get("title", "").strip()
+    media_type = request.args.get("type", "").strip()
+    exclude_id = request.args.get("exclude_id")
+    
+    if not title or not media_type:
+        return jsonify({"exists": False, "item": None})
+        
+    # Case-insensitive search
+    # 1. Check strict title match
+    query = MediaItem.query.filter(
+        db.func.lower(MediaItem.title) == title.lower(),
+        MediaItem.type == media_type
+    )
+    
+    if exclude_id:
+        query = query.filter(MediaItem.id != exclude_id)
+        
+    existing = query.first()
+    
+    if existing:
+        return jsonify({
+            "exists": True,
+            "item": {
+                "id": existing.id,
+                "title": existing.title,
+                "type": existing.type
+            }
+        })
+
+    # 2. Check overlap with alternate titles
+    candidates = db.session.query(MediaItem.id, MediaItem.title, MediaItem.alternate_titles).filter(
+        MediaItem.type == media_type
+    )
+    
+    if exclude_id:
+        candidates = candidates.filter(MediaItem.id != exclude_id)
+        
+    for cid, ctitle, calts in candidates.all():
+        if not calts: continue
+
+        alts_list = calts if isinstance(calts, list) else []
+        
+        if any(t.lower() == title.lower() for t in alts_list):
+             return jsonify({
+                "exists": True,
+                "item": {
+                    "id": cid,
+                    "title": ctitle,
+                    "type": media_type
+                }
+            })
+
+    return jsonify({"exists": False, "item": None})
+
+
+
+
 # =============================================================================
 # DATABASE SELECTION ENDPOINTS
 # =============================================================================

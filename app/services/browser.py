@@ -34,7 +34,6 @@ def launch_browser_app(url: str, title: str = "UpNext") -> Optional[webview.Wind
         saved_x = window_state.get('x', None)
         saved_y = window_state.get('y', None)
         
-        # Ensure window position is on a visible monitor
         initial_x, initial_y = ensure_window_on_screen(
             saved_x, saved_y, initial_width, initial_height
         )

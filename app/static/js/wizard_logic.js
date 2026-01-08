@@ -14,9 +14,70 @@ import {
 	STATUS_COLOR_MAP,
 	ICON_MAP
 } from './constants.js';
-import { safeCreateIcons, safeVal, safeHtml, safeCheck } from './dom_utils.js';
+import { safeCreateIcons, safeVal, safeHtml, safeCheck, debounce } from './dom_utils.js';
 import { showToast } from './toast.js';
 import { initImageEditor } from './image_editor.js';
+
+// =============================================================================
+// DUPLICATE CHECK
+// =============================================================================
+
+/**
+ * Checks for duplicate entries in the database.
+ */
+async function checkDuplicateImpl() {
+	const title = document.getElementById('title')?.value?.trim();
+	const type = document.getElementById('type')?.value;
+	const warningEl = document.getElementById('duplicateWarning');
+	const warningText = document.getElementById('duplicateWarningText');
+
+	if (!title || !type || !warningEl || !warningText) {
+		if (warningEl) warningEl.classList.add('hidden');
+		return;
+	}
+
+	// Don't check if we are in edit mode and the title hasn't changed? 
+	// Actually we should exclude the current ID.
+	const currentId = document.getElementById('itemId')?.value;
+
+	try {
+		const params = new URLSearchParams({ title, type });
+		if (currentId) params.append('exclude_id', currentId);
+
+		const res = await fetch(`/api/items/check?${params}`);
+		const data = await res.json();
+
+		if (data.exists && data.item) {
+			warningText.innerText = `"${data.item.title}" (${data.item.type}) is already in your library.`;
+			warningEl.classList.remove('hidden');
+		} else {
+			warningEl.classList.add('hidden');
+		}
+	} catch (e) {
+		console.warn('Duplicate check failed:', e);
+		warningEl.classList.add('hidden');
+	}
+}
+
+const checkDuplicate = debounce(checkDuplicateImpl, 500);
+
+/**
+ * Initializes duplicate check listeners.
+ */
+export function initDuplicateCheck() {
+	const titleInput = document.getElementById('title');
+	if (titleInput) {
+		titleInput.addEventListener('input', checkDuplicate);
+	}
+}
+
+/**
+ * Manually trigger a duplicate check (e.g. when type changes).
+ */
+export function triggerDuplicateCheck() {
+	checkDuplicate();
+}
+window.triggerDuplicateCheck = triggerDuplicateCheck;
 
 // Global Handlers for Drag & Drop
 window.handleDragOver = (e) => {
@@ -771,6 +832,7 @@ export function selectType(t) {
 	selectTypeVisuals(t);
 	updateWizardUI();
 	updateFormUI(); // Apply field visibility
+	triggerDuplicateCheck(); // Check for duplicates with new type
 
 	// Auto-fill Status if only 1 available (and not in edit mode to avoid overriding existing)
 	if (!state.isEditMode) {

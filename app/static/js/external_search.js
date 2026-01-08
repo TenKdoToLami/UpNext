@@ -264,7 +264,7 @@ window.performSecondarySearch = async function (source, detailsEl) {
     // Only fetch if opening
     if (!detailsEl.open) return;
 
-    // Check if already loaded to prevent refetch
+    // Check if already loaded
     const resultsContainer = document.getElementById(`secondary-results-${source}`);
     if (resultsContainer && resultsContainer.children.length > 0) return;
 
@@ -805,6 +805,11 @@ function prefillWizardFromExternal(data) {
         }
 
         if (window.renderChildren) window.renderChildren();
+    }
+
+    // Trigger duplicate check after filling data
+    if (window.triggerDuplicateCheck) {
+        window.triggerDuplicateCheck();
     }
 
     // Book specific: Approximate Words from Page Count
