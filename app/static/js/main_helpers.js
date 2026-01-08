@@ -439,9 +439,9 @@ export function renderAltTitles() {
 
 	state.currentAlternateTitles.forEach(title => {
 		const tag = document.createElement('span');
-		tag.className = 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 text-xs px-2 py-1 rounded flex items-center gap-1 font-medium';
+		tag.className = 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 text-xs px-2 py-1 rounded flex items-center gap-1 font-medium group';
 		const safeTitle = title.replace(/'/g, "\\'");
-		tag.innerHTML = `${title} <button type="button" onclick="window.removeAltTitle('${safeTitle}')" class="hover:text-red-400 flex items-center"><i data-lucide="x" class="w-3 h-3"></i></button>`;
+		tag.innerHTML = `<span onclick="window.swapTitle('${safeTitle}')" class="cursor-pointer hover:text-indigo-500 hover:underline transition-colors" title="Click to swap with Main Title">${title}</span> <button type="button" onclick="window.removeAltTitle('${safeTitle}')" class="hover:text-red-400 flex items-center"><i data-lucide="x" class="w-3 h-3"></i></button>`;
 		container.insertBefore(tag, input);
 	});
 
@@ -456,6 +456,35 @@ export function removeAltTitle(val) {
 	state.currentAlternateTitles = state.currentAlternateTitles.filter(t => t !== val);
 	renderAltTitles();
 }
+
+/**
+ * Swaps an alternate title with the main title.
+ * @param {string} altTitle - The alternate title to swap in
+ */
+window.swapTitle = function (altTitle) {
+	const titleInput = document.getElementById('title');
+	const oldTitle = titleInput.value.trim();
+
+	// 1. Set new title
+	titleInput.value = altTitle;
+
+	// 2. Update Alternate Titles List
+	// Remove the one we just swapped in
+	state.currentAlternateTitles = state.currentAlternateTitles.filter(t => t !== altTitle);
+
+	// Add the old title if it exists
+	if (oldTitle && !state.currentAlternateTitles.includes(oldTitle)) {
+		state.currentAlternateTitles.push(oldTitle);
+	}
+
+	// 3. Re-render
+	renderAltTitles();
+
+	// 4. Trigger Duplicate Check since title changed
+	if (window.triggerDuplicateCheck) {
+		window.triggerDuplicateCheck();
+	}
+};
 
 // =============================================================================
 // REREAD COUNT HELPERS
