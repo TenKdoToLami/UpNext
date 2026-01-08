@@ -353,7 +353,7 @@ class TMDBClient(BaseAPIClient):
                 year = int(date_str[:4])
 
             poster_path = item.get("poster_path")
-            cover_url = f"{self.IMAGE_BASE}/w500{poster_path}" if poster_path else None
+            cover_url = f"{self.IMAGE_BASE}/w780{poster_path}" if poster_path else None
 
             desc = item.get("overview", "") or ""
             desc_preview = desc[:200] + "..." if len(desc) > 200 else desc
@@ -397,7 +397,7 @@ class TMDBClient(BaseAPIClient):
 
         # Cover
         poster_path = data.get("poster_path")
-        cover_url = f"{self.IMAGE_BASE}/w780{poster_path}" if poster_path else None
+        cover_url = f"{self.IMAGE_BASE}/original{poster_path}" if poster_path else None
 
         # Genres
         genres = [g["name"] for g in data.get("genres", [])]

@@ -1161,6 +1161,23 @@ export function updateLink(idx, field, val) { state.currentLinks[idx][field] = v
  * @param {number} idx - Index of the link to update.
  */
 export function pasteLink(idx) {
+	// Try native bridge first (fix for Linux Qt crash)
+	if (window.pywebview && window.pywebview.api && window.pywebview.api.read_clipboard) {
+		window.pywebview.api.read_clipboard().then(text => {
+			if (text) {
+				state.currentLinks[idx].url = text;
+				renderLinks();
+			} else {
+				// Fallback if bridge returns empty/null
+				doBrowserPaste(idx);
+			}
+		}).catch(() => doBrowserPaste(idx));
+		return;
+	}
+	doBrowserPaste(idx);
+}
+
+function doBrowserPaste(idx) {
 	if (!navigator.clipboard) return;
 	navigator.clipboard.readText().then(text => {
 		state.currentLinks[idx].url = text || '';

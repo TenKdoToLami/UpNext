@@ -424,6 +424,49 @@ def run_application_stack(create_app_func: Callable, host: str, port: int, headl
                 logger.error(f"Native download failed: {e}")
                 return f"ERROR: {str(e)}"
 
+        def read_clipboard(self):
+            """
+            Bridge: Read text from system clipboard securely.
+            Prevents crashes on Linux/Qt when using navigator.clipboard.
+            """
+            try:
+                # Try PyQt6 first (since we force it on Linux)
+                if sys.platform == 'linux':
+                    try:
+                        from PyQt6.QtWidgets import QApplication
+                        app = QApplication.instance()
+                        if app:
+                            return app.clipboard().text()
+                    except ImportError:
+                        pass
+                
+                return None
+            except Exception as e:
+                logger.error(f"Clipboard bridge failed: {e}")
+                return None
+
+        def read_clipboard(self):
+            """
+            Bridge: Read text from system clipboard securely.
+            Prevents crashes on Linux/Qt when using navigator.clipboard.
+            """
+            try:
+                # Try PyQt6 first (since we force it on Linux)
+                if sys.platform == 'linux':
+                    try:
+                        from PyQt6.QtWidgets import QApplication
+                        app = QApplication.instance()
+                        if app:
+                            return app.clipboard().text()
+                    except ImportError:
+                        pass
+                
+                # Fallback to internal webview logic or return None to let JS handle it
+                return None
+            except Exception as e:
+                logger.error(f"Clipboard bridge failed: {e}")
+                return None
+
     # Load Config (for other settings)
     from app.utils.config_manager import load_config
     config = load_config()
