@@ -1221,6 +1221,8 @@ export function resetWizardFields(startStep = 1) {
 				const type = id.replace('Input', '');
 				if (input && window.checkEnterKey) input.addEventListener('keydown', (e) => window.checkEnterKey(e, type === 'abbr' ? 'abbr' : (type === 'altTitle' ? 'altTitle' : type)));
 			});
+			// Reinitialize tag autocomplete dropdown (it was destroyed when tagTagsContainer was reset)
+			if (window.renderGenericTags) window.renderGenericTags();
 		}, 0);
 	}
 
