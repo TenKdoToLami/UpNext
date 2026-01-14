@@ -150,7 +150,7 @@ export function renderFilters() {
 	};
 
 	// TYPE FILTERS
-	// Logic: If only 'All' + 1 other type are available, hide the filter bar entireley (filtering is redundant).
+	// Logic: If only 'All' + 1 other type are available, hide the filter bar entirely (filtering is redundant).
 	// Must handle Desktop (xl:flex) and Mobile separately to prevent ghost elements.
 	const availableTypes = ['All', ...MEDIA_TYPES.filter(t => !state.appSettings?.disabledTypes?.includes(t))];
 	const typeContainer = document.getElementById('typeFilters');
@@ -404,11 +404,9 @@ export function renderGrid() {
 	filtered = sortItems(filtered);
 	state.currentFilteredItems = filtered;
 
-	// Reset limit if it is a fresh render (not a "load more" op)
-	// We can detect this if we are filtering or searching, or we can just always reset in renderGrid
-	// and use a separate function for appending.
-	// Actually, renderGrid implies a full refresh.
-	state.visibleLimit = state.BATCH_SIZE;
+	// Reset limit and start for fresh render
+	state.visibleStart = 0;
+	state.visibleLimit = getBatchSize();
 
 	renderVisibleBatch(container);
 }
@@ -429,16 +427,32 @@ function renderVisibleBatch(container) {
 	document.getElementById('emptyState').classList.add('hidden');
 	document.getElementById('emptyState').classList.remove('flex');
 
-	const visibleItems = filtered.slice(0, state.visibleLimit);
+	// Ensure visibleStart is defined
+	if (typeof state.visibleStart === 'undefined') state.visibleStart = 0;
+
+	const visibleItems = filtered.slice(state.visibleStart, state.visibleLimit);
 	const html = visibleItems.map(item => generateCardHtml(item)).join('');
 
-	// Append Sentinel for Infinite Scroll
-	const sentinel = '<div id="scroll-sentinel" class="w-full h-20 bg-transparent flex items-center justify-center pointer-events-none p-4"><div class="w-2 h-2 bg-zinc-300 dark:bg-zinc-700 rounded-full animate-bounce"></div></div>';
+	// Handle Footer / Sentinel
+	container.innerHTML = html;
 
-	container.innerHTML = html + sentinel;
+	if (state.visibleLimit < filtered.length || state.appSettings?.paginationMode === 'combined') {
+		if (state.appSettings?.paginationMode === 'combined') {
+			renderPaginationFooter();
+		} else {
+			// Append Sentinel for Infinite Scroll if not combined
+			const sentinel = '<div id="scroll-sentinel" class="w-full h-20 bg-transparent flex items-center justify-center pointer-events-none p-4"><div class="w-2 h-2 bg-zinc-300 dark:bg-zinc-700 rounded-full animate-bounce"></div></div>';
+			container.innerHTML += sentinel;
+			setupIntersectionObserver();
+		}
+	} else {
+		// Even if all items shown, combined mode might want to show page numbers (e.g. if we are on page 5 of 5)
+		if (state.appSettings?.paginationMode === 'combined' && Math.ceil(filtered.length / getBatchSize()) > 1) {
+			renderPaginationFooter();
+		}
+	}
 
 	safeCreateIcons();
-	setupIntersectionObserver();
 
 	// Check truncation for new items
 	const visibleIds = visibleItems.map(i => i.id);
@@ -447,9 +461,16 @@ function renderVisibleBatch(container) {
 
 /**
  * Sets up the IntersectionObserver for infinite scrolling.
+ * Only used if paginationMode is 'infinite'.
  */
 function setupIntersectionObserver() {
 	if (gridObserver) gridObserver.disconnect();
+	if (state.appSettings?.paginationMode === 'combined') {
+		// In combined mode, we don't use auto-scroll
+		// We use the footer.
+		renderPaginationFooter();
+		return;
+	}
 
 	const options = {
 		root: null, // viewport
@@ -471,22 +492,26 @@ function setupIntersectionObserver() {
 
 /**
  * Loads the next batch of items.
+ * Can be called automatically (infinite) or manually (combined).
  */
-function loadMoreItems() {
+export function loadMoreItems() {
+	const batchSize = getBatchSize();
 	if (state.visibleLimit >= state.currentFilteredItems.length) return;
 
-	state.visibleLimit += state.BATCH_SIZE;
+	// Calculate next limit
+	const oldLimit = state.visibleLimit;
+	state.visibleLimit += batchSize;
+
 	const container = document.getElementById('gridContainer');
+	const filtered = state.currentFilteredItems;
 
-	// Optimization: Instead of re-rendering everything, append only new items.
-	// But simply replacing innerHTML is safer for simplicity unless performance is critical.
-	// Re-rendering full innerHTML on large lists (e.g. 1000 items) is slow.
-	// Let's implement APPEND logic.
-
+	// Remove old sentinel/footer
 	const sentinel = document.getElementById('scroll-sentinel');
 	if (sentinel) sentinel.remove();
+	const footer = document.getElementById('pagination-footer');
+	if (footer) footer.remove();
 
-	const nextBatch = state.currentFilteredItems.slice(state.visibleLimit - state.BATCH_SIZE, state.visibleLimit);
+	const nextBatch = filtered.slice(oldLimit, state.visibleLimit);
 	const html = nextBatch.map(item => generateCardHtml(item)).join('');
 
 	// Create temp container to parse HTML string into nodes
@@ -497,19 +522,163 @@ function loadMoreItems() {
 		container.appendChild(tempDiv.firstChild);
 	}
 
-	// Re-add sentinel if more items exist
-	if (state.visibleLimit < state.currentFilteredItems.length) {
-		const newSentinel = document.createElement('div');
-		newSentinel.id = 'scroll-sentinel';
-		newSentinel.className = 'w-full h-10 bg-transparent flex items-center justify-center pointer-events-none opacity-0';
-		// newSentinel.innerHTML = '<div class="w-2 h-2 bg-zinc-300 dark:bg-zinc-700 rounded-full animate-bounce"></div>';
-		container.appendChild(newSentinel);
-		if (gridObserver) gridObserver.observe(newSentinel);
+	// Logic for next step
+	if (state.visibleLimit < filtered.length) {
+		if (state.appSettings?.paginationMode === 'combined') {
+			renderPaginationFooter();
+		} else {
+			const newSentinel = document.createElement('div');
+			newSentinel.id = 'scroll-sentinel';
+			newSentinel.className = 'w-full h-10 bg-transparent flex items-center justify-center pointer-events-none opacity-0';
+			container.appendChild(newSentinel);
+			if (gridObserver) gridObserver.observe(newSentinel);
+		}
 	}
 
 	safeCreateIcons();
 	const nextBatchIds = nextBatch.map(i => i.id);
 	setTimeout(() => updateGridTruncation(nextBatchIds), 50);
+}
+
+/**
+ * Renders the pagination footer (Load More + Page Numbers).
+ */
+function renderPaginationFooter() {
+	const container = document.getElementById('gridContainer');
+	if (!container) return;
+
+	// Remove existing if any
+	const existing = document.getElementById('pagination-footer');
+	if (existing) existing.remove();
+
+	const totalItems = state.currentFilteredItems.length;
+	const batchSize = getBatchSize();
+	const totalPages = Math.ceil(totalItems / batchSize);
+	// Current page is loosely defined by the END of the list.
+	// If we show 0-120 (batch 60), we are at end of page 2.
+	const currentPage = Math.ceil(state.visibleLimit / batchSize);
+
+	if (totalItems <= state.visibleLimit && state.visibleStart === 0) return; // All shown
+
+	const footer = document.createElement('div');
+	footer.id = 'pagination-footer';
+	footer.className = 'w-full py-8 flex flex-col items-center gap-4 col-span-full';
+
+	// Load More Button
+	const canLoadMore = state.visibleLimit < totalItems;
+	const loadMoreBtn = canLoadMore ? `
+		<button onclick="window.loadMoreItems()" 
+			class="px-6 py-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-full text-zinc-700 dark:text-zinc-300 font-heading font-bold uppercase tracking-widest text-xs hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-indigo-500 dark:hover:text-indigo-400 transition-all shadow-sm hover:shadow-md hover:scale-105 active:scale-95">
+			Load More
+		</button>
+	` : '<div class="text-xs font-bold text-zinc-400 dark:text-zinc-600 uppercase tracking-widest">End of Results</div>';
+
+	// Pages
+	// Simple Logic: Prev [1] ... [Curr] ... [Last] Next
+	let pagesHtml = '';
+	if (totalPages > 1) {
+		const generatePageBtn = (p) => {
+			// Highlights the current page based on the end of the list.
+			// If we are viewing 0-120 (Page 1 & 2), currentPage is 2. We highlight 2.
+			const isActive = p === currentPage;
+
+			const activeClass = isActive
+				? 'bg-indigo-600 text-white border-transparent'
+				: 'bg-transparent text-zinc-500 hover:text-zinc-900 dark:text-zinc-500 dark:hover:text-zinc-300 border-transparent hover:bg-black/5 dark:hover:bg-white/5';
+
+			return `<button onclick="window.goToPage(${p})" 
+				class="w-8 h-8 rounded-lg text-xs font-bold transition-all ${activeClass}">
+				${p}
+			</button>`;
+		};
+
+		// Range logic
+		const range = [];
+		if (totalPages <= 7) {
+			for (let i = 1; i <= totalPages; i++) range.push(i);
+		} else {
+			range.push(1);
+			if (currentPage > 3) range.push('...');
+			const start = Math.max(2, currentPage - 1);
+			const end = Math.min(totalPages - 1, currentPage + 1);
+			for (let i = start; i <= end; i++) range.push(i);
+			if (currentPage < totalPages - 2) range.push('...');
+			range.push(totalPages);
+		}
+
+		// Previous Button
+		const prevDisabled = currentPage === 1;
+		const prevBtn = `
+			<button onclick="${prevDisabled ? '' : `window.goToPage(${currentPage - 1})`}" 
+				class="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-500 dark:text-zinc-400 hover:bg-black/5 dark:hover:bg-white/5 transition-all ${prevDisabled ? 'opacity-30 cursor-not-allowed' : 'hover:text-indigo-500'}">
+				<i data-lucide="chevron-left" class="w-4 h-4"></i>
+			</button>
+		`;
+
+		// Next Button
+		const nextDisabled = currentPage === totalPages;
+		const nextBtn = `
+			<button onclick="${nextDisabled ? '' : `window.goToPage(${currentPage + 1})`}" 
+				class="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-500 dark:text-zinc-400 hover:bg-black/5 dark:hover:bg-white/5 transition-all ${nextDisabled ? 'opacity-30 cursor-not-allowed' : 'hover:text-indigo-500'}">
+				<i data-lucide="chevron-right" class="w-4 h-4"></i>
+			</button>
+		`;
+
+		pagesHtml = `<div class="flex items-center gap-1">
+			${prevBtn}
+			${range.map(r => r === '...' ? '<span class="text-zinc-400 text-xs px-2">...</span>' : generatePageBtn(r)).join('')}
+			${nextBtn}
+		</div>`;
+	}
+
+	footer.innerHTML = `
+		${canLoadMore ? loadMoreBtn : ''}
+		${pagesHtml}
+	`;
+
+	container.appendChild(footer);
+	safeCreateIcons(footer);
+}
+
+/**
+ * Jumps to a specific page.
+ * @param {number} page 
+ */
+export function goToPage(page) {
+	const batchSize = getBatchSize();
+	state.visibleStart = (page - 1) * batchSize;
+	state.visibleLimit = page * batchSize;
+
+	// Ensure bounds
+	if (state.visibleStart < 0) state.visibleStart = 0;
+	if (state.visibleLimit > state.currentFilteredItems.length) state.visibleLimit = state.currentFilteredItems.length;
+
+	renderVisibleBatch(document.getElementById('gridContainer'));
+
+	// Scroll to top of grid
+	const grid = document.getElementById('gridContainer');
+	if (grid) {
+		const top = grid.getBoundingClientRect().top + window.scrollY - 100;
+		window.scrollTo({ top, behavior: 'smooth' });
+	}
+}
+
+/**
+ * Helper to get the current configured batch size based on view.
+ */
+export function getBatchSize() {
+	const s = state.appSettings;
+	if (!s || !s.itemsPerPage) return state.BATCH_SIZE || 60;
+
+	let key = 'grid';
+	if (state.viewMode === 'list') {
+		key = state.showDetails ? 'list_details' : 'list';
+	} else {
+		key = state.showDetails ? 'grid_details' : 'grid';
+	}
+
+	// Fallback to default BATCH_SIZE if setting missing
+	return parseInt(s.itemsPerPage[key], 10) || 60;
 }
 
 /**
@@ -529,8 +698,6 @@ export function updateGridTruncation(itemIds = null) {
 		itemIds.forEach(id => processOverflow(id));
 	} else {
 		// Check all (e.g. on resize)
-		// We can select elements by ID prefix to avoid getting non-items
-		// But document.querySelectorAll is fast enough for selection, the layout thrashing comes from checkOverflow
 		document.querySelectorAll('[id^="desc-"]').forEach(el => {
 			const id = el.id.replace('desc-', '');
 			// Avoid double processing if we accidentally select multiple (unlikely with ID)
@@ -538,7 +705,6 @@ export function updateGridTruncation(itemIds = null) {
 		});
 	}
 }
-
 
 /**
  * Displays a skeleton loading state in the grid container.
@@ -555,3 +721,7 @@ export function hideGridLoading() {
 	const grid = document.getElementById('gridContainer');
 	if (grid) grid.classList.remove('opacity-40', 'pointer-events-none', 'animate-pulse');
 }
+
+// Expose globals for onclick handlers
+window.loadMoreItems = loadMoreItems;
+window.goToPage = goToPage;

@@ -34,9 +34,13 @@
 				class="settings-tab-btn px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-white dark:hover:bg-zinc-900 border border-transparent hover:border-zinc-200 dark:hover:border-zinc-800">
 				Images
 			</button>
+			<button onclick="switchSettingsTab('layout')" id="tab-layout"
+				class="settings-tab-btn px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-white dark:hover:bg-zinc-900 border border-transparent hover:border-zinc-200 dark:hover:border-zinc-800">
+				Layout
+			</button>
 			<button onclick="switchSettingsTab('other')" id="tab-other"
 				class="settings-tab-btn px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-white dark:hover:bg-zinc-900 border border-transparent hover:border-zinc-200 dark:hover:border-zinc-800">
-				other
+				Other
 			</button>
 		</div>
 
@@ -214,6 +218,113 @@
 									class="px-4 py-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-bold text-xs hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors border border-zinc-200 dark:border-zinc-700">
 									Configure Optimization
 								</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div id="settings-layout" class="settings-panel hidden space-y-6">
+				<div class="space-y-4">
+					<h3 class="text-sm font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 mb-2">
+						Pagination & Display
+					</h3>
+
+					<div
+						class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 flex items-center justify-between">
+						<div>
+							<div class="font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+								<i data-lucide="scroll" class="w-4 h-4 text-indigo-500"></i>
+								Pagination Style
+							</div>
+							<div class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">Choose how to navigate large
+								lists</div>
+						</div>
+						<select id="setting-paginationMode" onchange="window.setPaginationMode(this.value)"
+							class="bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:text-white min-w-[150px]">
+							<option value="infinite">Infinite Scroll (Auto)</option>
+							<option value="combined">Load More Button + Pages</option>
+						</select>
+					</div>
+
+					<div
+						class="flex items-start gap-3 p-3 bg-zinc-50 dark:bg-white/5 border border-zinc-200 dark:border-zinc-800 rounded-xl">
+						<i data-lucide="info" class="w-4 h-4 text-indigo-500 mt-0.5 shrink-0"></i>
+						<div class="space-y-1">
+							<p class="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
+								<span class="font-bold text-zinc-900 dark:text-white">Batch Size Control:</span>
+								These limits apply to both pagination modes. For Infinite Scroll, they determine how
+								many items load automatically as you scroll.
+							</p>
+							<p class="text-xs text-zinc-500 dark:text-zinc-500 leading-relaxed">
+								<strong class="text-zinc-700 dark:text-zinc-300">Tip:</strong> You can set a high number
+								to load your full library, but performance may decrease in complex layouts.
+							</p>
+						</div>
+					</div>
+
+					<div
+						class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 space-y-4">
+						<div class="flex items-center gap-2 font-bold text-zinc-900 dark:text-white">
+							<i data-lucide="list" class="w-4 h-4 text-emerald-500"></i>
+							Entries Per Page
+						</div>
+
+						<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+							<div>
+								<label class="block text-xs font-bold text-zinc-500 dark:text-zinc-400 mb-1.5">Standard
+									Grid View</label>
+								<input type="number" id="setting-ipp-grid"
+									onchange="window.setItemsPerPage('grid', this.value)" min="10" max="500" step="10"
+									class="w-full bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm px-3 py-2 focus:ring-2 focus:ring-indigo-500 dark:text-white">
+								<button onclick="window.resetToRecommended('grid', 198)"
+									class="text-[10px] text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300 font-bold mt-1 tracking-wide hover:underline">
+									Reset to Recommended (198)
+								</button>
+							</div>
+							<div>
+								<label class="block text-xs font-bold text-zinc-500 dark:text-zinc-400 mb-1.5">Grid View
+									(Details Open)</label>
+								<input type="number" id="setting-ipp-grid_details"
+									onchange="window.setItemsPerPage('grid_details', this.value)" min="10" max="500"
+									step="10"
+									class="w-full bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm px-3 py-2 focus:ring-2 focus:ring-indigo-500 dark:text-white">
+								<button onclick="window.resetToRecommended('grid_details', 198)"
+									class="text-[10px] text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300 font-bold mt-1 tracking-wide hover:underline">
+									Reset to Recommended (198)
+								</button>
+							</div>
+							<div>
+								<label class="block text-xs font-bold text-zinc-500 dark:text-zinc-400 mb-1.5">Standard
+									List View</label>
+								<input type="number" id="setting-ipp-list"
+									onchange="window.setItemsPerPage('list', this.value)" min="10" max="500" step="10"
+									class="w-full bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm px-3 py-2 focus:ring-2 focus:ring-indigo-500 dark:text-white">
+								<button onclick="window.resetToRecommended('list', 198)"
+									class="text-[10px] text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300 font-bold mt-1 tracking-wide hover:underline">
+									Reset to Recommended (198)
+								</button>
+							</div>
+							<div>
+								<label class="block text-xs font-bold text-zinc-500 dark:text-zinc-400 mb-1.5">List View
+									(Details Open)</label>
+								<input type="number" id="setting-ipp-list_details"
+									onchange="window.setItemsPerPage('list_details', this.value)" min="10" max="200"
+									step="10"
+									class="w-full bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm px-3 py-2 focus:ring-2 focus:ring-indigo-500 dark:text-white">
+								<button onclick="window.resetToRecommended('list_details', 50)"
+									class="text-[10px] text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300 font-bold mt-1 tracking-wide hover:underline">
+									Reset to Recommended (50)
+								</button>
+								<div
+									class="flex gap-2 mt-2 px-2 py-1.5 bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 rounded-lg">
+									<i data-lucide="alert-triangle"
+										class="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5"></i>
+									<p class="text-[10px] text-amber-700 dark:text-amber-400 leading-tight">
+										<strong>Performance Warning:</strong> Setting this above 100 can significantly
+										slow down the page due to high DOM complexity.
+									</p>
+								</div>
 							</div>
 						</div>
 					</div>

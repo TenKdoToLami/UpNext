@@ -653,6 +653,25 @@ export function renderSettings() {
 	// 7. Sync Guide & Quality Slider
 	syncImageSettingsUI();
 
+	// 8. Layout & Pagination Settings
+	const pagModeSelect = document.getElementById('setting-paginationMode');
+	if (pagModeSelect) {
+		pagModeSelect.value = currentSettings.paginationMode || 'combined';
+	}
+
+	['grid', 'grid_details', 'list', 'list_details'].forEach(k => {
+		const input = document.getElementById(`setting-ipp-${k}`);
+		if (input) {
+			const defaults = {
+				grid: 198,
+				grid_details: 198,
+				list: 198,
+				list_details: 50
+			};
+			input.value = currentSettings.itemsPerPage?.[k] || defaults[k] || 60;
+		}
+	});
+
 	// Scope icon creation to the modal content to avoid global flicker/reflow
 	const modalContent = document.getElementById('settingsModalContent');
 	safeCreateIcons(modalContent);
@@ -692,6 +711,26 @@ export function setTrayClickAction(value) {
 export function setCloseBehavior(value) {
 	if (!pendingAppSettings) pendingAppSettings = JSON.parse(JSON.stringify(state.appSettings));
 	pendingAppSettings.closeBehavior = value;
+}
+
+/**
+ * Sets the pagination mode.
+ * @param {string} value 
+ */
+export function setPaginationMode(value) {
+	if (!pendingAppSettings) pendingAppSettings = JSON.parse(JSON.stringify(state.appSettings));
+	pendingAppSettings.paginationMode = value;
+}
+
+/**
+ * Sets items per page for a specific view.
+ * @param {string} key - grid, grid_details, list, list_details
+ * @param {number} value 
+ */
+export function setItemsPerPage(key, value) {
+	if (!pendingAppSettings) pendingAppSettings = JSON.parse(JSON.stringify(state.appSettings));
+	if (!pendingAppSettings.itemsPerPage) pendingAppSettings.itemsPerPage = {};
+	pendingAppSettings.itemsPerPage[key] = parseInt(value, 10) || 60;
 }
 
 /**
@@ -1168,6 +1207,20 @@ window.toggleOpenWindowOnStart = toggleOpenWindowOnStart;
 window.setTrayClickAction = setTrayClickAction;
 window.setCloseBehavior = setCloseBehavior;
 window.setImageSetting = setImageSetting;
+window.setPaginationMode = setPaginationMode;
+window.setItemsPerPage = setItemsPerPage;
+/**
+ * Resets the entries per page for a specific view to its recommended value.
+ * @param {string} key - grid, grid_details, list, list_details
+ * @param {number} value - The recommended value
+ */
+window.resetToRecommended = function (key, value) {
+	const input = document.getElementById(`setting-ipp-${key}`);
+	if (input) {
+		input.value = value;
+		setItemsPerPage(key, value);
+	}
+};
 /**
  * =============================================================================
  * IMAGE OPTIMIZATION LOGIC

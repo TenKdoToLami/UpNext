@@ -80,6 +80,13 @@ export const state = {
 		disabledTypes: [],    // Media Types to hide (e.g. 'Manga')
 		disabledStatuses: [], // Statuses to hide (e.g. 'Dropped')
 		trayClickAction: 'native', // 'native' or 'browser'
+		paginationMode: 'combined', // 'infinite' | 'combined'
+		itemsPerPage: {
+			grid: 198,
+			grid_details: 198,
+			list: 198,
+			list_details: 50
+		},
 		imageSettings: {
 			format: 'image/webp',
 			quality: 0.85,
