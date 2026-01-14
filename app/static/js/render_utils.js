@@ -441,7 +441,8 @@ function renderVisibleBatch(container) {
 	setupIntersectionObserver();
 
 	// Check truncation for new items
-	setTimeout(updateGridTruncation, 50);
+	const visibleIds = visibleItems.map(i => i.id);
+	setTimeout(() => updateGridTruncation(visibleIds), 50);
 }
 
 /**
@@ -507,26 +508,35 @@ function loadMoreItems() {
 	}
 
 	safeCreateIcons();
-	setTimeout(updateGridTruncation, 50);
+	const nextBatchIds = nextBatch.map(i => i.id);
+	setTimeout(() => updateGridTruncation(nextBatchIds), 50);
 }
 
 /**
  * Checks all truncate-able elements in the grid/list for overflow.
  * Should be called on window resize and after any rendering operation.
+ * @param {Array<string>} [itemIds] - Optional list of item IDs to check. If omitted, checks all.
  */
-export function updateGridTruncation() {
-	document.querySelectorAll('[id^="desc-"]').forEach(el => {
-		const id = el.id.replace('desc-', '');
+export function updateGridTruncation(itemIds = null) {
+	const processOverflow = (id) => {
 		checkOverflow(`desc-${id}`, `btn-desc-${id}`);
-	});
-	document.querySelectorAll('[id^="list-notes-"]').forEach(el => {
-		const id = el.id.replace('list-notes-', '');
 		checkOverflow(`list-notes-${id}`, `btn-list-notes-${id}`);
-	});
-	document.querySelectorAll('[id^="review-"]').forEach(el => {
-		const id = el.id.replace('review-', '');
 		checkOverflow(`review-${id}`, `btn-review-${id}`);
-	});
+	};
+
+	if (itemIds && Array.isArray(itemIds)) {
+		// Optimization: Only check specific items (e.g. new batch)
+		itemIds.forEach(id => processOverflow(id));
+	} else {
+		// Check all (e.g. on resize)
+		// We can select elements by ID prefix to avoid getting non-items
+		// But document.querySelectorAll is fast enough for selection, the layout thrashing comes from checkOverflow
+		document.querySelectorAll('[id^="desc-"]').forEach(el => {
+			const id = el.id.replace('desc-', '');
+			// Avoid double processing if we accidentally select multiple (unlikely with ID)
+			processOverflow(id);
+		});
+	}
 }
 
 
