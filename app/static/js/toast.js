@@ -41,6 +41,8 @@ function getContainer() {
  * @param {Object} options - Toast options
  */
 export function enqueueToast(options) {
+    if (document.body.classList.contains('quick-add-mode')) return;
+
     queue.push({
         id: `toast-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         ...options,

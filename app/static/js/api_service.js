@@ -247,3 +247,4 @@ export async function deleteTag(name) {
 }
 
 
+window.loadItems = loadItems;

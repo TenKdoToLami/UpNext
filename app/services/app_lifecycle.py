@@ -256,6 +256,7 @@ def run_application_stack(create_app_func: Callable, host: str, port: int, headl
     window_ref = [None] # Mutable container to hold window reference for closures
     tray_icon = [None]
     tray_available = [False]
+    quick_add_ref = [None]
 
     # Try to import pystray safely
     # Linux often requires AppIndicator3/AyatanaAppIndicator3 which might be missing
@@ -312,6 +313,18 @@ def run_application_stack(create_app_func: Callable, host: str, port: int, headl
             window_ref[0].destroy()
         os._exit(0)
 
+    def on_quick_add(icon, item):
+        """Opens a small window directly to the add modal."""
+        quick_add_url = f"{target_url}/quick_add"
+        
+        if window_ref[0]:
+            # If main window exists, try to create a secondary window sharing the same API instance
+             try:
+                 api_instance = JsApi(window_ref, target_url)
+                 quick_add_ref[0] = webview.create_window('Add Entry', quick_add_url, width=700, height=800, resizable=False, js_api=api_instance)
+             except Exception as e:
+                 logger.error(f"Failed to create quick add window: {e}")
+
     def setup_tray():
         if not tray_available[0] or not pystray:
             return
@@ -319,8 +332,11 @@ def run_application_stack(create_app_func: Callable, host: str, port: int, headl
         try:
             image = Image.open(tray_icon_path)
             menu = pystray.Menu(
-                pystray.MenuItem("Open UpNext", on_open, default=True),
+                pystray.MenuItem("Open", on_open, default=True),
                 pystray.MenuItem("Open in Browser", on_open_browser),
+                pystray.Menu.SEPARATOR,
+                pystray.MenuItem("Add", on_quick_add),
+                pystray.Menu.SEPARATOR,
                 pystray.MenuItem("Exit", on_exit)
             )
             icon = pystray.Icon("UpNext", image, "UpNext", menu)
@@ -440,32 +456,31 @@ def run_application_stack(create_app_func: Callable, host: str, port: int, headl
                     except ImportError:
                         pass
                 
-                return None
-            except Exception as e:
-                logger.error(f"Clipboard bridge failed: {e}")
-                return None
-
-        def read_clipboard(self):
-            """
-            Bridge: Read text from system clipboard securely.
-            Prevents crashes on Linux/Qt when using navigator.clipboard.
-            """
-            try:
-                # Try PyQt6 first (since we force it on Linux)
-                if sys.platform == 'linux':
-                    try:
-                        from PyQt6.QtWidgets import QApplication
-                        app = QApplication.instance()
-                        if app:
-                            return app.clipboard().text()
-                    except ImportError:
-                        pass
-                
                 # Fallback to internal webview logic or return None to let JS handle it
                 return None
             except Exception as e:
                 logger.error(f"Clipboard bridge failed: {e}")
                 return None
+
+        def notify_update(self):
+            """Bridge: Reload main window data."""
+            if window_ref[0]:
+                try:
+                    # Reload items in the main window to reflect changes
+                    window_ref[0].evaluate_js("if(window.loadItems) window.loadItems();")
+                except Exception as e:
+                    logger.error(f"Failed to refresh main window: {e}")
+            return "OK"
+
+        def close_quick_add(self):
+            """Bridge: Close the quick add window."""
+            try:
+                if quick_add_ref[0]:
+                    quick_add_ref[0].destroy()
+                    quick_add_ref[0] = None
+            except Exception as e:
+                logger.error(f"Failed to close quick add window: {e}")
+            return "OK"
 
     # Load Config (for other settings)
     from app.utils.config_manager import load_config

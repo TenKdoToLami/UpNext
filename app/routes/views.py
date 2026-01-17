@@ -15,6 +15,11 @@ def index():
     """Serves the main application page."""
     return render_template('index.html')
 
+@bp.route('/quick_add')
+def quick_add():
+    """Serves the standalone quick add window."""
+    return render_template('quick_add.html')
+
 @bp.route('/images/<item_id>')
 def serve_image(item_id: str):
     """

@@ -757,9 +757,6 @@ class MangaDexClient(BaseAPIClient):
             return None
 
     def search(self, query: str, media_type: Optional[str] = None) -> List[Dict[str, Any]]:
-        if media_type and media_type != "Manga":
-            pass
-
         params = {
             "title": query,
             "limit": 10,

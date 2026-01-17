@@ -499,3 +499,53 @@ html.dark #calendarDayDetail {
 html.dark #addEventSuggestions::-webkit-scrollbar-thumb {
 	background-color: rgba(255, 255, 255, 0.2);
 }
+
+/* Quick Add Mode */
+body.quick-add-mode header,
+body.quick-add-mode main,
+body.quick-add-mode #dbSelectModal {
+	display: none !important;
+}
+
+body.quick-add-mode #modal {
+	display: flex !important;
+	opacity: 1 !important;
+	visibility: visible !important;
+	background: transparent !important;
+	backdrop-filter: none !important;
+	padding: 0 !important;
+}
+
+body.quick-add-mode #modalContent {
+	transform: none !important;
+	width: 100% !important;
+	height: 100% !important;
+	max-width: none !important;
+	max-height: none !important;
+	border-radius: 0 !important;
+	border: none !important;
+	box-shadow: none !important;
+	background: transparent !important;
+	/* Let body bg show through or handle natively */
+}
+
+/* Ensure body has the correct background since modal is transparent */
+body.quick-add-mode {
+	background-color: #ffffff;
+}
+
+html.dark body.quick-add-mode {
+	background-color: #09090b;
+}
+
+body.quick-add-mode #closeModalBtn {
+	display: none !important;
+}
+
+body.quick-add-mode #modalContent>div.border-b {
+	display: none !important;
+}
+
+body.quick-add-mode #formScrollWrapper {
+	background: transparent !important;
+}

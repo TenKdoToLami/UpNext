@@ -98,6 +98,12 @@ export function closeModal() {
  * Internal helper to force close the modal without checks.
  */
 function forceCloseModal() {
+	// If in Quick Add mode, closing the modal should close the window
+	if (document.body.classList.contains('quick-add-mode')) {
+		window.close(); // Closes the native webview window
+		return;
+	}
+
 	const modal = document.getElementById('modal');
 	modal.classList.add('opacity-0');
 	document.getElementById('modalContent').classList.add('scale-95');

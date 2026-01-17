@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block title %}Add Entry{% endblock %}
+
+{% block header %}
+<!-- No Header in Quick Add Mode -->
+{% endblock %}
+
+{% block content %}
+<!-- Content is handled by modals, but we need an empty container to satisfy base structure if needed -->
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Enable Quick Add styling immediately
+    document.body.classList.add('quick-add-mode');
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // Open the modal immediately
+        if (window.openModal) {
+            window.openModal();
+        } else {
+            console.error("openModal not found");
+        }
+    });
+</script>
+{% endblock %}

@@ -184,7 +184,14 @@ async function checkDatabaseSelection() {
         // 2. AND (Auto-launch is ON AND active DB is valid OR only one DB exists).
         const shouldSkip = !forcedRestart && ((available.length <= 1) || (autoLaunch && active && available.includes(active)));
 
-        if (shouldSkip) {
+        if (shouldSkip || document.body.classList.contains('quick-add-mode')) {
+            // In Quick Add mode, we must ensure a DB is active.
+            // If active is not valid, try to select the first available one to unblock.
+            if (document.body.classList.contains('quick-add-mode')) {
+                if (!active && available.length > 0) {
+                    await selectDatabase(available[0]);
+                }
+            }
             loadItems();
             return;
         }
@@ -855,6 +862,36 @@ window.saveEntry = async () => {
             }
         }
 
+        // Quick Add Mode: Update Main Window & Close Self
+        if (document.body.classList.contains('quick-add-mode')) {
+            // Show Feedback Overlay
+            const overlay = document.createElement('div');
+            overlay.className = 'fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-enter';
+            overlay.innerHTML = `
+                <div class="bg-white dark:bg-zinc-900 rounded-3xl p-8 flex flex-col items-center gap-4 shadow-2xl transform scale-110 border border-zinc-200 dark:border-zinc-800">
+                    <div class="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                        <i data-lucide="check" class="w-8 h-8 text-emerald-500"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-zinc-800 dark:text-white">Saved</h3>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            safeCreateIcons();
+
+            // Wait for visual feedback
+            await new Promise(r => setTimeout(r, 1000));
+
+            if (window.pywebview && window.pywebview.api) {
+                // Notify main window to reload
+                await window.pywebview.api.notify_update();
+                // Close this window
+                await window.pywebview.api.close_quick_add();
+            }
+            // Fallback: Attempt to close logic
+            window.close();
+            return;
+        }
+
         state.isDirty = false;
         closeModal();
         loadItems();
@@ -1423,6 +1460,20 @@ async function initApp() {
         entryForm.addEventListener('change', (e) => {
             if (!state.isDirty) state.isDirty = true;
         });
+    }
+
+    // Quick Add Mode Check
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('quick_add') === 'true') {
+        document.body.classList.add('quick-add-mode');
+        // Wait slightly for DOM
+        setTimeout(() => {
+            // Open Modal
+            if (window.openModal) window.openModal();
+
+            // Remove 'Close' buttons or styling handled by CSS
+            // Hide other modals just in case
+        }, 100);
     }
 }
 

@@ -239,6 +239,12 @@ async function performSearch(query) {
 
         currentResults = data.results || [];
 
+        // Update current source to what was actually returned (e.g. fallback to TVMaze)
+        if (currentResults.length > 0 && currentResults[0].source) {
+            currentSearchSource = currentResults[0].source;
+            updateSearchHeader();
+        }
+
         if (currentResults.length === 0) {
             resultsContainer.innerHTML = renderNoResults(query) + renderSecondarySearchOptions(query);
         } else {
