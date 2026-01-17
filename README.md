@@ -81,4 +81,5 @@ The `manage.py` script is the central hub for development and distribution:
 ---
 
 ## 📄 License
-This project is licensed under the [MIT License](LICENSE).
+This project is licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE).
+**Free for non-commercial use.**
