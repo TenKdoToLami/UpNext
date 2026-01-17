@@ -659,6 +659,10 @@ export function renderChildren() {
 		return;
 	}
 
+	// Attach container-level handlers for "Live Sort"
+	container.ondragover = window.handleChildDragOver;
+	container.ondrop = window.handleChildDrop; // Drop on container to catch the end event
+
 	container.innerHTML = state.currentChildren.map((child, idx) => {
 		const starsHtml = [1, 2, 3, 4].map(i => {
 			const fillClass = child.rating >= i ? STAR_FILLS[child.rating] : 'text-zinc-300 dark:text-zinc-700';
@@ -731,8 +735,12 @@ export function renderChildren() {
 		` : '';
 
 		return `
-            <div class="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 space-y-2">
+            <div data-child-idx="${idx}" draggable="true" 
+				ondragstart="window.handleChildDragStart(event, ${idx})"
+				ondragend="window.handleChildDragEnd(event)"
+				class="child-item bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 space-y-2 transition-all cursor-move group hover:border-zinc-300 dark:hover:border-zinc-700">
 				<div class="flex items-center gap-3">
+					<i data-lucide="grip-vertical" class="w-4 h-4 text-zinc-400 cursor-move"></i>
 					<input value="${child.title}" oninput="window.updateChild(${idx}, 'title', this.value)" 
 						class="bg-transparent border-b border-zinc-300 dark:border-zinc-700 outline-none text-sm pb-1 text-zinc-700 dark:text-zinc-200 flex-1 font-bold placeholder-zinc-400">
 					<div class="flex gap-0.5">${starsHtml}</div>
@@ -797,6 +805,82 @@ export function updateChild(idx, field, val) {
 		updateChildrenTotals();
 	}
 }
+
+
+// Drag and drop handlers for children reordering
+window.handleChildDragStart = (e, index) => {
+	e.dataTransfer.effectAllowed = 'move';
+	e.dataTransfer.setData('text/plain', index); // Legacy fallback
+	e.target.closest('.child-item').classList.add('dragging');
+	setTimeout(() => e.target.closest('.child-item').classList.add('opacity-50'), 0);
+};
+
+window.handleChildDragEnd = (e) => {
+	const el = e.target.closest('.child-item');
+	if (el) {
+		el.classList.remove('dragging');
+		el.classList.remove('opacity-50');
+	}
+};
+
+window.handleChildDragOver = (e) => {
+	e.preventDefault();
+	const container = document.getElementById('childrenContainer');
+	const dragging = document.querySelector('.dragging');
+	if (!container || !dragging) return;
+
+	const afterElement = getDragAfterElement(container, e.clientY);
+	if (afterElement == null) {
+		container.appendChild(dragging);
+	} else {
+		container.insertBefore(dragging, afterElement);
+	}
+};
+
+/**
+ * Helper to determine where to place the dragged element.
+ * Returns the element directly after the cursor position.
+ */
+function getDragAfterElement(container, y) {
+	const draggableElements = [...container.querySelectorAll('.child-item:not(.dragging)')];
+
+	return draggableElements.reduce((closest, child) => {
+		const box = child.getBoundingClientRect();
+		const offset = y - box.top - box.height / 2;
+		if (offset < 0 && offset > closest.offset) {
+			return { offset: offset, element: child };
+		} else {
+			return closest;
+		}
+	}, { offset: Number.NEGATIVE_INFINITY }).element;
+}
+
+window.handleChildDrop = (e) => {
+	e.preventDefault();
+	const container = document.getElementById('childrenContainer');
+	if (!container) return;
+
+	const newOrder = [];
+	const children = container.querySelectorAll('.child-item');
+
+	// Reconstruct state based on DOM order
+	children.forEach(child => {
+		const originalIdx = parseInt(child.getAttribute('data-child-idx'));
+		if (!isNaN(originalIdx) && state.currentChildren[originalIdx]) {
+			newOrder.push(state.currentChildren[originalIdx]);
+		}
+	});
+
+	// Safety check: Ensure we didn't lose items
+	if (newOrder.length === state.currentChildren.length) {
+		state.currentChildren = newOrder;
+		renderChildren(); // Re-render to normalize indices and listeners
+	} else {
+		console.error("Drop mismatch", newOrder.length, state.currentChildren.length);
+		renderChildren(); // Revert on error
+	}
+};
+
 
 /**
  * Updates the rating of a child item and re-renders to show the new stars.
