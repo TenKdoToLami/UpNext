@@ -211,6 +211,41 @@ def create_database():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
+@bp.route("/database/delete", methods=["POST"])
+def delete_database():
+    """Deletes a database file."""
+    data = request.get_json()
+    db_name = data.get("db_name")
+
+    if not db_name:
+        return jsonify({"status": "error", "message": "Database name is required"}), 400
+
+    # Prevent deleting the currently active database
+    if current_app.config.get("ACTIVE_DB") == db_name:
+         return jsonify({"status": "error", "message": "Cannot delete the currently active database"}), 400
+         
+    # Prevent deleting critical files (basic safety)
+    if db_name.lower() in ['config.json', 'users.db']: 
+         return jsonify({"status": "error", "message": "Cannot delete system files"}), 400
+
+    try:
+        db_path = get_sqlite_db_path(db_name)
+        if not os.path.exists(db_path):
+             return jsonify({"status": "error", "message": "Database does not exist"}), 404
+
+        os.remove(db_path)
+        logger.info(f"Deleted database: {db_name}")
+        
+        # If deleted DB was in config as last_db (but not currently active in this session which is weird but possible if config loaded but app state different?), clear it?
+        # Actually validation above prevents deleting active one.
+        
+        return jsonify({"status": "success", "message": f"Deleted {db_name}"})
+
+    except Exception as e:
+        logger.error(f"Failed to delete database: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
 # =============================================================================
 # SETTINGS ENDPOINTS
 # =============================================================================

@@ -1,0 +1,89 @@
+<!-- Create Database Modal -->
+<div id="createDbModal"
+    class="hidden fixed inset-0 z-[110] flex items-center justify-center opacity-0 transition-opacity duration-300">
+    <!-- Backdrop -->
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="window.closeCreateDbModal()"></div>
+
+    <!-- Modal Content -->
+    <div
+        class="relative bg-white dark:bg-zinc-900 w-full max-w-md mx-4 rounded-2xl shadow-2xl transform scale-95 transition-all duration-300 border border-zinc-200 dark:border-zinc-800 overflow-hidden">
+
+        <!-- Header -->
+        <div class="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
+            <h3 class="text-lg font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                <div
+                    class="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                    <i data-lucide="database" class="w-4 h-4"></i>
+                </div>
+                New Library
+            </h3>
+            <button onclick="window.closeCreateDbModal()"
+                class="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <!-- Body -->
+        <div class="p-6">
+            <p class="text-sm text-zinc-500 dark:text-zinc-400 mb-4">
+                Enter a name for your new library. It will be created as a separate database file.
+            </p>
+
+            <div class="space-y-4">
+                <div>
+                    <label
+                        class="block text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1.5">Library
+                        Name</label>
+                    <input type="text" id="newDbNameInput"
+                        class="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-zinc-900 dark:text-zinc-100 placeholder-zinc-400"
+                        placeholder="e.g., My Collection" onkeydown="if(event.key === 'Enter') window.submitCreateDb()">
+                    <p class="mt-2 text-xs text-zinc-400">
+                        Only alphanumeric characters, hyphens, and underscores are allowed.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div
+            class="px-6 py-4 bg-zinc-50/50 dark:bg-zinc-900/50 border-t border-zinc-100 dark:border-zinc-800 flex justify-end gap-3">
+            <button onclick="window.closeCreateDbModal()"
+                class="px-4 py-2 rounded-xl text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/50 dark:hover:bg-zinc-800 transition-colors">
+                Cancel
+            </button>
+            <button onclick="window.submitCreateDb()"
+                class="px-4 py-2 rounded-xl text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-500 shadow-lg shadow-indigo-500/20 transition-all flex items-center gap-2">
+                <i data-lucide="plus" class="w-4 h-4"></i>
+                Create Library
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    window.openCreateDbModal = () => {
+        const modal = document.getElementById('createDbModal');
+        const input = document.getElementById('newDbNameInput');
+        if (modal && input) {
+            input.value = '';
+            modal.classList.remove('hidden');
+            // Animate in
+            requestAnimationFrame(() => {
+                modal.classList.remove('opacity-0');
+                modal.querySelector('div.transform').classList.remove('scale-95');
+            });
+            input.focus();
+        }
+    };
+
+    window.closeCreateDbModal = () => {
+        const modal = document.getElementById('createDbModal');
+        if (modal) {
+            modal.classList.add('opacity-0');
+            modal.querySelector('div.transform').classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+    };
+</script>

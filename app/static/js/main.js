@@ -5,7 +5,7 @@
  */
 
 import { state, setState, loadUIState, saveAppSettings } from './state.js';
-import { loadItems, deleteItem, saveItem, getDbStatus, selectDatabase, createDatabase } from './api_service.js';
+import { loadItems, deleteItem, saveItem, getDbStatus, selectDatabase, createDatabase, deleteDatabase } from './api_service.js';
 import { renderFilters, renderGrid, updateGridTruncation } from './render_utils.js';
 import { safeCreateIcons, toggleExpand, debounce } from './dom_utils.js';
 import { RATING_LABELS, TEXT_COLORS } from './constants.js';
@@ -165,8 +165,9 @@ function updateThemeIcon() {
 /**
  * Checks if multiple databases exist and prompts user if needed.
  * Supports Auto-Launch, Create New DB, and Forced Restart.
+ * @param {boolean} forceRender - If true, bypasses checks and forces rendering of the list.
  */
-async function checkDatabaseSelection() {
+async function checkDatabaseSelection(forceRender = false) {
     try {
         const { available, active, hasConfig } = await getDbStatus();
 
@@ -180,9 +181,10 @@ async function checkDatabaseSelection() {
         const autoLaunch = state.appSettings?.autoLaunchDb ?? false;
 
         // Condition to skip modal:
-        // 1. Not forced restart.
-        // 2. AND (Auto-launch is ON AND active DB is valid OR only one DB exists).
-        const shouldSkip = !forcedRestart && ((available.length <= 1) || (autoLaunch && active && available.includes(active)));
+        // 1. Not forced rendering.
+        // 2. Not forced restart.
+        // 3. AND (Auto-launch is ON AND active DB is valid OR only one DB exists).
+        const shouldSkip = !forceRender && !forcedRestart && ((available.length <= 1) || (autoLaunch && active && available.includes(active)));
 
         if (shouldSkip || document.body.classList.contains('quick-add-mode')) {
             // In Quick Add mode, we must ensure a DB is active.
@@ -211,30 +213,38 @@ async function checkDatabaseSelection() {
 
         if (modal && container) {
             container.innerHTML = available.map(db => `
-                <button onclick="window.handleDbSelect('${db}')" 
-                    class="w-full text-left px-5 py-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800/50 hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:border-indigo-500 dark:hover:border-indigo-500 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 group flex items-center justify-between relative overflow-hidden">
+                <div class="group relative flex items-center justify-between gap-3 w-full p-2 pr-2 rounded-2xl bg-white dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 hover:border-indigo-500 dark:hover:border-indigo-500 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 overflow-hidden">
                     
-                    <div class="flex items-center gap-4 relative z-10 w-full">
-                         <div class="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-900 flex-shrink-0 flex items-center justify-center text-zinc-400 group-hover:text-indigo-500 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-500/10 transition-colors">
+                    <button onclick="window.handleDbSelect('${db}', this)" 
+                        class="flex-grow text-left px-4 py-3 flex items-center gap-4 relative z-10">
+                         <div class="icon-container w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-900 flex-shrink-0 flex items-center justify-center text-zinc-400 group-hover:text-indigo-500 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-500/10 transition-colors">
                             <i data-lucide="database" class="w-5 h-5"></i>
                          </div>
                          <div class="flex flex-col flex-grow min-w-0">
                             <span class="font-bold text-zinc-700 dark:text-zinc-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors text-lg truncate">${db.replace('.db', '')}</span>
                             <span class="text-xs text-zinc-400 font-mono truncate">${db}</span>
                          </div>
+                    </button>
+
+                    <div class="flex items-center gap-2 pr-2">
                          ${db === active ? `
                             <span class="flex-shrink-0 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-500/10 px-3 py-1.5 rounded-full border border-emerald-200 dark:border-emerald-500/20">
-                                <i data-lucide="check" class="w-3 h-3"></i> Last Active
+                                <i data-lucide="check" class="w-3 h-3"></i> Active
                             </span>
                         ` : `
+                            <button onclick="window.handleDeleteDb('${db}')" 
+                                class="p-2 rounded-lg text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors opacity-0 group-hover:opacity-100" 
+                                title="Delete Library">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
                             <i data-lucide="chevron-right" class="w-5 h-5 text-zinc-300 dark:text-zinc-700 group-hover:text-indigo-400 group-hover:translate-x-1 transition-all"></i>
                         `}
                     </div>
-                </button>
+                </div>
             `).join('');
 
             footer.innerHTML = `
-                <button onclick="window.handleCreateDb()" 
+                <button onclick="window.openCreateDbModal()" 
                     class="w-full py-4 rounded-2xl border-2 border-dashed border-zinc-300 dark:border-zinc-700 text-zinc-400 dark:text-zinc-500 font-bold hover:border-indigo-500 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-all flex items-center justify-center gap-2 group">
                     <div class="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center group-hover:bg-indigo-100 dark:group-hover:bg-indigo-500/20 transition-colors">
                         <i data-lucide="plus" class="w-4 h-4"></i>
@@ -276,15 +286,34 @@ window.restartToDbSelect = () => {
 };
 
 /** Handles database selection click. */
-window.handleDbSelect = async (dbName) => {
+window.handleDbSelect = async (dbName, btnElement) => {
+    // Show Loading Feature
+    let originalIconHtml = '';
+    let iconContainer = null;
+
+    if (btnElement) {
+        iconContainer = btnElement.querySelector('.icon-container');
+        if (iconContainer) {
+            originalIconHtml = iconContainer.innerHTML;
+            // Spinner
+            iconContainer.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin text-indigo-500"></i>`;
+            safeCreateIcons(iconContainer); // Re-init icon
+        }
+        // Disable interaction
+        btnElement.style.pointerEvents = 'none';
+        btnElement.classList.add('opacity-80');
+    }
+
     const res = await selectDatabase(dbName);
     if (res.status === 'success') {
         const modal = document.getElementById('dbSelectModal');
         // Close modal and load items (No Reload!)
+        // Render spinner until items are loaded for large DBs
+        await loadItems();
+
         modal.classList.add('opacity-0');
         setTimeout(() => modal.classList.add('hidden'), 300);
 
-        loadItems();
         showRichToast({
             title: 'Library Loaded',
             message: `Switched to ${dbName}`,
@@ -292,34 +321,73 @@ window.handleDbSelect = async (dbName) => {
         });
     } else {
         alert('Failed to switch database: ' + res.message);
+        // Reset button state on error
+        if (iconContainer) {
+            iconContainer.innerHTML = originalIconHtml;
+            safeCreateIcons(iconContainer);
+        }
+        if (btnElement) {
+            btnElement.style.pointerEvents = 'auto';
+            btnElement.classList.remove('opacity-80');
+        }
     }
 };
 
-/** Handles creating a new database. */
-window.handleCreateDb = async () => {
-    const name = prompt("Enter a name for the new library (alphanumeric only, no extension needed):");
+/** Handles creating a new database via Custom Modal */
+window.submitCreateDb = async () => {
+    const input = document.getElementById('newDbNameInput');
+    const name = input ? input.value.trim() : "";
+
     if (!name) return;
+
+    // Basic frontend validation
+    if (!/^[a-zA-Z0-9_-]+$/.test(name)) {
+        showToast("Invalid name. Use only letters, numbers, hyphens, and underscores.", "error");
+        return;
+    }
 
     const res = await createDatabase(name);
     if (res.status === 'success') {
-        const switchRes = await selectDatabase(res.db_name);
-        if (switchRes.status === 'success') {
-            // Close modal and load (No reload)
-            const modal = document.getElementById('dbSelectModal');
-            modal.classList.add('opacity-0');
-            setTimeout(() => modal.classList.add('hidden'), 300);
+        window.closeCreateDbModal();
 
-            loadItems();
-            showRichToast({
-                title: 'Library Created',
-                message: `Created and switched to ${res.db_name}`,
-                type: 'success'
-            });
-        } else {
-            alert('Database created but failed to switch: ' + switchRes.message);
-        }
+        // Refresh the selection list instead of switching
+        // We re-run checkDatabaseSelection which will rebuild the list with the new item
+        checkDatabaseSelection(true);
+
+        showToast(`Library "${res.db_name}" created`, 'success');
     } else {
-        alert('Failed to create database: ' + res.message);
+        showToast('Failed to create database: ' + res.message, "error");
+    }
+};
+
+/** Handles deleting a database. */
+window.handleDeleteDb = async (dbName) => {
+    if (window.showConfirmationModal) {
+        window.showConfirmationModal(
+            'Delete Library?',
+            `Are you sure you want to delete "${dbName}"? This action cannot be undone and will permanently remove all data in this library.`,
+            async () => {
+                const res = await deleteDatabase(dbName);
+                if (res.status === 'success') {
+                    showToast(`Library "${dbName}" deleted`, "success");
+                    // Refresh the list
+                    checkDatabaseSelection(true);
+                } else {
+                    showToast('Failed to delete library: ' + res.message, "error");
+                }
+            },
+            'danger'
+        );
+    } else {
+        if (confirm(`Are you sure you want to delete "${dbName}"? This cannot be undone.`)) {
+            const res = await deleteDatabase(dbName);
+            if (res.status === 'success') {
+                showToast(`Library "${dbName}" deleted`, "success");
+                checkDatabaseSelection(true);
+            } else {
+                showToast('Failed to delete library: ' + res.message, "error");
+            }
+        }
     }
 };
 
