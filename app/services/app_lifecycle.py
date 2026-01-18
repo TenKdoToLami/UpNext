@@ -325,6 +325,17 @@ def run_application_stack(create_app_func: Callable, host: str, port: int, headl
              except Exception as e:
                  logger.error(f"Failed to create quick add window: {e}")
 
+    def on_switch_db(icon, item):
+        """Restores window and triggers DB selection."""
+        if window_ref[0]:
+            window_ref[0].restore()
+            window_ref[0].show()
+            try:
+                # Trigger the restartToDbSelect function in main.js
+                window_ref[0].evaluate_js("if(window.restartToDbSelect) window.restartToDbSelect();")
+            except Exception as e:
+                logger.error(f"Failed to switch DB from tray: {e}")
+
     def setup_tray():
         if not tray_available[0] or not pystray:
             return
@@ -336,6 +347,8 @@ def run_application_stack(create_app_func: Callable, host: str, port: int, headl
                 pystray.MenuItem("Open in Browser", on_open_browser),
                 pystray.Menu.SEPARATOR,
                 pystray.MenuItem("Add", on_quick_add),
+                pystray.Menu.SEPARATOR,
+                pystray.MenuItem("Switch Library", on_switch_db),
                 pystray.Menu.SEPARATOR,
                 pystray.MenuItem("Exit", on_exit)
             )
