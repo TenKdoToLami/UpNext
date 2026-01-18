@@ -236,9 +236,6 @@ def delete_database():
         os.remove(db_path)
         logger.info(f"Deleted database: {db_name}")
         
-        # If deleted DB was in config as last_db (but not currently active in this session which is weird but possible if config loaded but app state different?), clear it?
-        # Actually validation above prevents deleting active one.
-        
         return jsonify({"status": "success", "message": f"Deleted {db_name}"})
 
     except Exception as e:

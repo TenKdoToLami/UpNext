@@ -287,19 +287,8 @@ window.restartToDbSelect = () => {
 
 /** Handles database selection click. */
 window.handleDbSelect = async (dbName, btnElement) => {
-    // Show Loading Feature
-    let originalIconHtml = '';
-    let iconContainer = null;
-
+    // Disable interaction immediately to prevent double clicks
     if (btnElement) {
-        iconContainer = btnElement.querySelector('.icon-container');
-        if (iconContainer) {
-            originalIconHtml = iconContainer.innerHTML;
-            // Spinner
-            iconContainer.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin text-indigo-500"></i>`;
-            safeCreateIcons(iconContainer); // Re-init icon
-        }
-        // Disable interaction
         btnElement.style.pointerEvents = 'none';
         btnElement.classList.add('opacity-80');
     }
@@ -307,8 +296,8 @@ window.handleDbSelect = async (dbName, btnElement) => {
     const res = await selectDatabase(dbName);
     if (res.status === 'success') {
         const modal = document.getElementById('dbSelectModal');
-        // Close modal and load items (No Reload!)
-        // Render spinner until items are loaded for large DBs
+
+        // Trigger load items which now shows the global overlay
         await loadItems();
 
         modal.classList.add('opacity-0');
@@ -321,11 +310,6 @@ window.handleDbSelect = async (dbName, btnElement) => {
         });
     } else {
         alert('Failed to switch database: ' + res.message);
-        // Reset button state on error
-        if (iconContainer) {
-            iconContainer.innerHTML = originalIconHtml;
-            safeCreateIcons(iconContainer);
-        }
         if (btnElement) {
             btnElement.style.pointerEvents = 'auto';
             btnElement.classList.remove('opacity-80');
@@ -350,8 +334,6 @@ window.submitCreateDb = async () => {
     if (res.status === 'success') {
         window.closeCreateDbModal();
 
-        // Refresh the selection list instead of switching
-        // We re-run checkDatabaseSelection which will rebuild the list with the new item
         checkDatabaseSelection(true);
 
         showToast(`Library "${res.db_name}" created`, 'success');

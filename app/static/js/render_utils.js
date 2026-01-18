@@ -707,19 +707,68 @@ export function updateGridTruncation(itemIds = null) {
 }
 
 /**
- * Displays a skeleton loading state in the grid container.
+ * Displays a prominent loading state over the grid container.
+ * Creates the overlay if it doesn't exist.
  */
 export function showGridLoading() {
 	const grid = document.getElementById('gridContainer');
-	if (grid) grid.classList.add('opacity-40', 'pointer-events-none', 'animate-pulse');
+	if (!grid) return;
+
+	// Add visual cue to grid content
+	grid.classList.add('opacity-40', 'pointer-events-none');
+
+	// Check for existing overlay
+	let overlay = document.getElementById('globalLoadingOverlay');
+	if (!overlay) {
+		overlay = document.createElement('div');
+		overlay.id = 'globalLoadingOverlay';
+		overlay.className = 'absolute inset-0 flex flex-col items-center justify-center z-10';
+		// Position relative to the main content area (which should be the parent of gridContainer's parent usually, or we fix the parent)
+		// Actually, let's make it fixed within the viewport or absolute covering the main content.
+		// If we append to body it covers everything (like sidebar). The user requested "universal".
+		// Let's make it cover the main content view.
+
+		// Find main content wrapper
+		const main = document.querySelector('main');
+		if (main) {
+			if (getComputedStyle(main).position === 'static') main.style.position = 'relative';
+			main.appendChild(overlay);
+		} else {
+			// Fallback to appending near grid
+			grid.parentElement.appendChild(overlay);
+		}
+
+		overlay.innerHTML = `
+            <div class="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm p-6 rounded-2xl shadow-xl border border-zinc-200 dark:border-zinc-800 flex flex-col items-center gap-4 animate-enter">
+                <i data-lucide="loader-2" class="w-8 h-8 text-indigo-500 animate-spin"></i>
+                <div class="text-sm font-bold text-zinc-600 dark:text-zinc-300 tracking-wide uppercase">
+                    Loading Library...
+                </div>
+            </div>
+        `;
+		safeCreateIcons(overlay);
+	}
+
+	overlay.classList.remove('hidden', 'opacity-0');
+	overlay.classList.add('flex', 'opacity-100');
 }
 
 /**
- * Hides the skeleton loading state.
+ * Hides the loading state.
  */
 export function hideGridLoading() {
 	const grid = document.getElementById('gridContainer');
-	if (grid) grid.classList.remove('opacity-40', 'pointer-events-none', 'animate-pulse');
+	if (grid) grid.classList.remove('opacity-40', 'pointer-events-none');
+
+	const overlay = document.getElementById('globalLoadingOverlay');
+	if (overlay) {
+		overlay.classList.add('opacity-0');
+		// Wait for transition then hide
+		setTimeout(() => {
+			overlay.classList.remove('flex');
+			overlay.classList.add('hidden');
+		}, 300);
+	}
 }
 
 // Expose globals for onclick handlers

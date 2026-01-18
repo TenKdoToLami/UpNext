@@ -70,7 +70,7 @@ export async function createDatabase(dbName) {
 export async function deleteDatabase(dbName) {
 	try {
 		const response = await fetch('/api/database/delete', {
-			method: 'POST', // Using POST for safety/body content, though DELETE verb works too if body supported
+			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ db_name: dbName })
 		});
