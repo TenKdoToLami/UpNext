@@ -1442,29 +1442,33 @@ async function initApp() {
             }
         }
 
-        // --- Wizard/Edit Modal: Stepper Navigation (Ctrl+A/D, Ctrl+←/→) ---
-        if (isAnyModalOpen) {
-            const isCtrl = e.ctrlKey || e.metaKey;
-            const key = e.key.toLowerCase();
-
-            if (isCtrl && (key === 'd' || key === 'arrowright' || key === 'a' || key === 'arrowleft')) {
-                e.preventDefault();
-                const isNext = (key === 'd' || key === 'arrowright');
-                if (!state.isEditMode) {
-                    const btn = document.getElementById(isNext ? 'nextBtn' : 'prevBtn');
-                    if (btn && !btn.classList.contains('hidden')) btn.click();
-                } else {
-                    window.navigateEditSection?.(isNext ? 1 : -1);
-                }
-                return;
-            }
-        }
-
         // Skip shortcuts if focused on input
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
         // Block other shortcuts if modal is open
-        if (isAnyModalOpen) return;
+        if (isAnyModalOpen) {
+            // --- Wizard/Edit Modal: Stepper Navigation (Ctrl+A/D, Ctrl+←/→) ---
+            // Only allow if External Search is NOT open (prevent phantom navigation)
+            const extSearch = document.getElementById('externalSearchModal');
+            if (!extSearch || extSearch.classList.contains('hidden')) {
+                const isCtrl = e.ctrlKey || e.metaKey;
+                const key = e.key.toLowerCase();
+
+                if (isCtrl && (key === 'd' || key === 'arrowright' || key === 'a' || key === 'arrowleft')) {
+                    e.preventDefault();
+                    const isNext = (key === 'd' || key === 'arrowright');
+                    if (!state.isEditMode) {
+                        const btn = document.getElementById(isNext ? 'nextBtn' : 'prevBtn');
+                        if (btn && !btn.classList.contains('hidden')) btn.click();
+                    } else {
+                        window.navigateEditSection?.(isNext ? 1 : -1);
+                    }
+                    return; // Stop here if we handled a modal shortcut
+                }
+            }
+            // If we are in a modal, we generally stop other global shortcuts (like 'n' for new), so return
+            return;
+        }
 
         // --- Global Shortcuts (no modal open) ---
         const key = e.key.toLowerCase();
