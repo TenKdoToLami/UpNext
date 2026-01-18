@@ -243,6 +243,57 @@ def delete_database():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
+
+@bp.route('/system/check_update', methods=['GET'])
+def check_update():
+    """
+    Checks for the latest application release via GitHub.
+    Returns version comparison status and release details.
+    """
+    from app.services.updater import get_latest_release
+    
+    current_version = current_app.config.get("APP_VERSION", "0.0.0")
+    latest = get_latest_release()
+    
+    if not latest:
+        return jsonify({
+            "current_version": current_version,
+            "error": "Could not fetch latest release info"
+        }), 502
+        
+    def parse_version(v):
+        try:
+            return [int(x) for x in v.split('.')]
+        except ValueError:
+            return [0, 0, 0]
+
+    cur_parts = parse_version(current_version)
+    lat_parts = parse_version(latest['tag_name'])
+    
+    return jsonify({
+        "current_version": current_version,
+        "latest_version": latest['tag_name'],
+        "update_available": (lat_parts > cur_parts),
+        "download_url": latest['html_url'],
+        "release_notes": latest['body'],
+        "published_at": latest['published_at']
+    })
+
+@bp.route('/system/shutdown', methods=['POST'])
+def shutdown_app():
+    """Shuts down the application."""
+    def shutdown():
+        import time
+        time.sleep(1)
+        # Using os._exit to force kill including threads
+        os._exit(0)
+
+    # Start shutdown in thread to allow response to send
+    import threading
+    threading.Thread(target=shutdown).start()
+    return jsonify({"status": "success", "message": "Shutting down..."})
+
+
 # =============================================================================
 # SETTINGS ENDPOINTS
 # =============================================================================

@@ -1,0 +1,634 @@
+<div id="updateGuideModal" class="fixed inset-0 z-[100] hidden" aria-labelledby="modal-title" role="dialog"
+    aria-modal="true">
+    <!-- Backdrop -->
+    <div class="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity opacity-0" id="updateGuideBackdrop"></div>
+
+    <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+        <div class="flex min-h-full items-center justify-center p-4">
+            <!-- Modal Panel -->
+            <div class="relative transform flex flex-col rounded-2xl bg-white dark:bg-zinc-900 text-left shadow-2xl transition-all w-full max-w-2xl border border-zinc-200 dark:border-zinc-800 opacity-0 scale-95 max-h-[85vh]"
+                id="updateGuidePanel">
+
+                <!-- Header -->
+                <div class="flex-shrink-0 bg-indigo-600 px-8 py-8 relative overflow-hidden rounded-t-2xl">
+                    <div
+                        class="absolute inset-0 opacity-10 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjIiIGZpbGw9IiNmZmYiLz48L2NpcmNsZT4=')]">
+                    </div>
+
+                    <div class="relative z-10 flex flex-col gap-6">
+                        <div class="flex items-start justify-between">
+                            <div class="flex items-center gap-4">
+                                <div
+                                    class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/20 shadow-inner backdrop-blur-sm">
+                                    <i data-lucide="sparkles" class="h-7 w-7 text-white"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-2xl font-bold text-white tracking-tight">Update Available</h3>
+                                    <p class="text-indigo-100/80 text-sm font-medium">A new version of UpNext is ready
+                                        to install.</p>
+                                </div>
+                            </div>
+                            <button onclick="closeUpdateGuide()"
+                                class="text-white/60 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-xl">
+                                <i data-lucide="x" class="h-6 w-6"></i>
+                            </button>
+                        </div>
+
+                        <div
+                            class="flex items-center justify-between bg-white/10 rounded-xl p-4 border border-white/10 backdrop-blur-sm">
+                            <div class="flex items-center gap-6">
+                                <div class="flex flex-col">
+                                    <span
+                                        class="text-xs font-semibold uppercase text-indigo-200 tracking-wider">Current</span>
+                                    <span class="text-xl font-bold text-white/70 font-mono"
+                                        id="currentVersionDisplay">v{{ APP_VERSION }}</span>
+                                </div>
+                                <i data-lucide="arrow-right" class="w-6 h-6 text-indigo-300 opacity-60"></i>
+                                <div class="flex flex-col">
+                                    <span
+                                        class="text-xs font-semibold uppercase text-indigo-200 tracking-wider">New</span>
+                                    <span class="text-2xl font-bold text-white font-mono"
+                                        id="updateGuideVersion">v?.?.?</span>
+                                </div>
+                            </div>
+
+                            <a href="https://github.com/TenKdoToLami/UpNext/releases" target="_blank"
+                                class="hidden sm:inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-100 text-xs font-medium transition-colors border border-indigo-400/20">
+                                <i data-lucide="github" class="w-3.5 h-3.5"></i>
+                                View Releases
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Content Area -->
+                <div class="flex-1 overflow-y-auto p-0 min-h-[300px] bg-white dark:bg-zinc-900">
+                    <!-- Step 1: Release Notes -->
+                    <div id="stepReleaseNotes" class="space-y-4 p-6">
+                        <article class="prose dark:prose-invert prose-sm max-w-none" id="markdownContent">
+                            <!-- Markdown Content Injected Here -->
+                        </article>
+                    </div>
+
+                    <!-- Step 2: Install Guide -->
+                    <div id="stepInstallGuide" class="hidden space-y-8 animate-fade-in p-6">
+                        <div class="text-center mb-6">
+                            <h4 class="text-lg font-bold text-zinc-900 dark:text-white">How to Install</h4>
+                            <p class="text-sm text-zinc-500 dark:text-zinc-400">Follow these steps carefully to update
+                                UpNext.</p>
+                        </div>
+
+                        <div class="grid gap-6">
+                            <!-- Step 1 -->
+                            <div class="flex gap-4">
+                                <div class="flex-shrink-0 flex flex-col items-center">
+                                    <div
+                                        class="h-10 w-10 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-base shadow-sm ring-4 ring-white dark:ring-zinc-900">
+                                        1</div>
+                                </div>
+                                <div class="flex-1 pt-1">
+                                    <h4 class="text-base font-bold text-zinc-900 dark:text-white">Download Update</h4>
+                                    <p class="text-sm text-zinc-500 dark:text-zinc-400 mt-1 mb-3">
+                                        Download the correct version for your system (Windows .exe or Linux .AppImage).
+                                    </p>
+                                    <a id="updateGuideDownloadBtn" href="#" target="_blank"
+                                        class="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl transition-all shadow-md hover:shadow-lg w-full sm:w-auto justify-center group">
+                                        <i data-lucide="external-link"
+                                            class="w-4 h-4 group-hover:scale-110 transition-transform"></i>
+                                        Open Download Page
+                                    </a>
+                                </div>
+                            </div>
+
+                            <!-- Step 2 -->
+                            <div class="flex gap-4">
+                                <div class="flex-shrink-0 flex flex-col items-center">
+                                    <div
+                                        class="h-10 w-10 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 flex items-center justify-center font-bold text-base shadow-sm ring-4 ring-white dark:ring-zinc-900">
+                                        2</div>
+                                </div>
+                                <div class="flex-1 pt-1">
+                                    <h4 class="text-base font-bold text-zinc-900 dark:text-white">Close Application</h4>
+                                    <p class="text-sm text-zinc-500 dark:text-zinc-400 mt-1 mb-3">
+                                        You MUST close UpNext completely before replacing the file.
+                                    </p>
+                                    <button onclick="triggerAppShutdown()"
+                                        class="inline-flex items-center gap-2 px-5 py-2.5 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 text-sm font-bold rounded-xl transition-colors ring-1 ring-inset ring-red-600/20 dark:ring-red-500/30 w-full sm:w-auto justify-center">
+                                        <i data-lucide="power" class="w-4 h-4"></i>
+                                        Close UpNext Now
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Step 3 -->
+                            <div class="flex gap-4">
+                                <div class="flex-shrink-0 flex flex-col items-center">
+                                    <div
+                                        class="h-10 w-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-base shadow-sm ring-4 ring-white dark:ring-zinc-900">
+                                        3</div>
+                                </div>
+                                <div class="flex-1 pt-1">
+                                    <h4 class="text-base font-bold text-zinc-900 dark:text-white">Replace File</h4>
+                                    <p class="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+                                        Move the downloaded file into your installation folder and overwrite the
+                                        existing executable. Then restart the app.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div
+                    class="flex-shrink-0 bg-zinc-50 dark:bg-zinc-800/50 px-6 py-4 flex items-center justify-between border-t border-zinc-200 dark:border-zinc-800 rounded-b-2xl">
+                    <button id="btnBack" onclick="showStep(1)"
+                        class="hidden text-sm font-semibold text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors">
+                        &larr; Release Notes
+                    </button>
+                    <!-- Spacer for layout balance if Back is hidden -->
+                    <div id="spacerLeft" class="w-20"></div>
+
+                    <div class="flex gap-3">
+                        <button onclick="closeUpdateGuide()"
+                            class="px-4 py-2 text-sm font-semibold text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors">
+                            Dismiss
+                        </button>
+                        <button id="btnNext" onclick="showStep(2)"
+                            class="inline-flex items-center gap-2 px-6 py-2 bg-zinc-900 dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-200 text-white dark:text-zinc-900 text-sm font-bold rounded-lg transition-all shadow-sm">
+                            Install Guide &rarr;
+                        </button>
+                        <button id="btnDone" onclick="closeUpdateGuide()"
+                            class="hidden inline-flex items-center gap-2 px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-lg transition-all shadow-sm">
+                            Done
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { shutdownApp } from '/static/js/api_service.js';
+    window.shutdownApp = shutdownApp;
+</script>
+
+<style>
+    /* Custom Markdown Styles */
+    #markdownContent {
+        line-height: 1.6;
+        color: #3f3f46;
+        /* zinc-700 */
+    }
+
+    .dark #markdownContent {
+        color: #d4d4d8;
+        /* zinc-300 */
+    }
+
+    #markdownContent h1,
+    #markdownContent h2,
+    #markdownContent h3 {
+        margin-top: 1.5em;
+        /* More space above headers */
+        margin-bottom: 0.75em;
+        font-weight: 700;
+        line-height: 1.25;
+        color: #18181b;
+        /* zinc-900 */
+    }
+
+    .dark #markdownContent h1,
+    .dark #markdownContent h2,
+    .dark #markdownContent h3 {
+        color: #ffffff;
+    }
+
+    #markdownContent h1 {
+        font-size: 1.5rem;
+        border-bottom: 1px solid #e4e4e7;
+        padding-bottom: 0.3em;
+    }
+
+    .dark #markdownContent h1 {
+        border-color: #27272a;
+    }
+
+    #markdownContent h2 {
+        font-size: 1.25rem;
+        border-bottom: 1px solid #e4e4e7;
+        padding-bottom: 0.3em;
+    }
+
+    .dark #markdownContent h2 {
+        border-color: #27272a;
+    }
+
+    #markdownContent h3 {
+        font-size: 1.125rem;
+        margin-top: 1.25em;
+    }
+
+    #markdownContent p {
+        margin-bottom: 1em;
+        margin-top: 0;
+    }
+
+    /* Lists - enforce styles that tailwind might reset */
+    #markdownContent ul {
+        list-style-type: disc !important;
+        padding-left: 1.5em !important;
+        margin-bottom: 1em;
+        margin-top: 0;
+    }
+
+    #markdownContent ol {
+        list-style-type: decimal !important;
+        padding-left: 1.5em !important;
+        margin-bottom: 1em;
+        margin-top: 0;
+    }
+
+    #markdownContent li {
+        margin-bottom: 0.25em;
+        padding-left: 0.25em;
+    }
+
+    /* Nested lists */
+    #markdownContent ul ul,
+    #markdownContent ol ul,
+    #markdownContent ul ol,
+    #markdownContent ol ol {
+        margin-bottom: 0;
+        margin-top: 0;
+    }
+
+    #markdownContent a {
+        color: #4f46e5;
+        /* indigo-600 */
+        text-decoration: none;
+        font-weight: 500;
+    }
+
+    .dark #markdownContent a {
+        color: #818cf8;
+        /* indigo-400 */
+    }
+
+    #markdownContent a:hover {
+        text-decoration: underline;
+    }
+
+    #markdownContent strong {
+        font-weight: 700;
+        color: #18181b;
+    }
+
+    .dark #markdownContent strong {
+        color: #fff;
+    }
+
+    #markdownContent code {
+        background-color: #f4f4f5;
+        /* zinc-100 */
+        padding: 0.125rem 0.25rem;
+        border-radius: 0.25rem;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 0.875em;
+        color: #be185d;
+        /* pink-700 */
+    }
+
+    .dark #markdownContent code {
+        background-color: #27272a;
+        /* zinc-800 */
+        color: #f472b6;
+        /* pink-400 */
+    }
+
+    #markdownContent pre {
+        background-color: #18181b;
+        /* zinc-900 */
+        color: #f4f4f5;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        overflow-x: auto;
+        margin-bottom: 1em;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 0.875em;
+    }
+
+    #markdownContent pre code {
+        background-color: transparent;
+        padding: 0;
+        color: inherit;
+    }
+
+    #markdownContent blockquote {
+        border-left: 4px solid #d4d4d8;
+        padding-left: 1rem;
+        font-style: italic;
+        color: #52525b;
+        margin: 1.5em 0;
+    }
+
+    .dark #markdownContent blockquote {
+        border-color: #52525b;
+        color: #a1a1aa;
+    }
+
+    #markdownContent table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 1em;
+        font-size: 0.875rem;
+    }
+
+    #markdownContent th {
+        border: 1px solid #d4d4d8;
+        background-color: #f4f4f5;
+        padding: 0.5rem;
+        text-align: left;
+        font-weight: 600;
+    }
+
+    .dark #markdownContent th {
+        border-color: #3f3f46;
+        background-color: #27272a;
+    }
+
+    #markdownContent td {
+        border: 1px solid #d4d4d8;
+        padding: 0.5rem;
+    }
+
+    .dark #markdownContent td {
+        border-color: #3f3f46;
+    }
+
+    #markdownContent hr {
+        border: 0;
+        border-top: 1px solid #e4e4e7;
+        margin: 2em 0;
+    }
+
+    .dark #markdownContent hr {
+        border-color: #3f3f46;
+    }
+
+    /* GitHub Alerts */
+    .gh-alert {
+        margin-bottom: 1rem;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        border-left-width: 4px;
+    }
+
+    .gh-alert-title {
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .gh-alert-note {
+        background-color: #eff6ff;
+        border-color: #3b82f6;
+        color: #1e40af;
+    }
+
+    .dark .gh-alert-note {
+        background-color: rgba(30, 64, 175, 0.2);
+        color: #93c5fd;
+    }
+
+    .gh-alert-tip {
+        background-color: #ecfdf5;
+        border-color: #10b981;
+        color: #065f46;
+    }
+
+    .dark .gh-alert-tip {
+        background-color: rgba(6, 95, 70, 0.2);
+        color: #6ee7b7;
+    }
+
+    .gh-alert-important {
+        background-color: #fafaeb;
+        border-color: #8b5cf6;
+        color: #5b21b6;
+    }
+
+    .dark .gh-alert-important {
+        background-color: rgba(91, 33, 182, 0.2);
+        color: #c4b5fd;
+    }
+
+    .gh-alert-warning {
+        background-color: #fffbeb;
+        border-color: #f59e0b;
+        color: #92400e;
+    }
+
+    .dark .gh-alert-warning {
+        background-color: rgba(146, 64, 14, 0.2);
+        color: #fcd34d;
+    }
+
+    .gh-alert-caution {
+        background-color: #fef2f2;
+        border-color: #ef4444;
+        color: #991b1b;
+    }
+
+    .dark .gh-alert-caution {
+        background-color: rgba(153, 27, 27, 0.2);
+        color: #fca5a5;
+    }
+
+    .animate-fade-in {
+        animation: fadeIn 0.2s ease-out;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(5px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>
+
+<script>
+    let currentStep = 1;
+
+    function openUpdateGuide(version, downloadUrl, releaseNotesArg, currentVersionArg) {
+        const modal = document.getElementById('updateGuideModal');
+        const backdrop = document.getElementById('updateGuideBackdrop');
+        const panel = document.getElementById('updateGuidePanel');
+
+        // Version info
+        document.getElementById('updateGuideVersion').textContent = version;
+
+        // Handle Current Version
+        let curVer = currentVersionArg;
+        if ((!curVer || curVer === 'undefined' || curVer === '?.?.?')) {
+            if (window.latestUpdateData && window.latestUpdateData.currentVersion) {
+                curVer = window.latestUpdateData.currentVersion;
+            }
+        }
+
+        // Ultimate fallback
+        if (!curVer || curVer === '?.?.?') {
+            if (window.UPNEXT_VERSION && window.UPNEXT_VERSION !== '0.0.0') {
+                curVer = window.UPNEXT_VERSION;
+            }
+        }
+
+        document.getElementById('currentVersionDisplay').textContent = curVer ? 'v' + curVer : 'Unknown';
+
+        document.getElementById('updateGuideDownloadBtn').href = downloadUrl;
+
+        // Handle Release Notes
+        let notes = releaseNotesArg;
+        if ((!notes || notes === 'undefined') && window.latestUpdateData && window.latestUpdateData.releaseNotes) {
+            notes = window.latestUpdateData.releaseNotes;
+        }
+
+        const mdContainer = document.getElementById('markdownContent');
+
+        if (notes && notes.trim().length > 0 && String(notes) !== "undefined") {
+            const alertRegex = /^>\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*(.*?)(?=\n^>|\n\n|\n$)/gms;
+
+            // Simple string replacement for marked
+            let processedNotes = notes.replace(/>\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]/g, (match, type) => {
+                return `!!!${type}!!!`; // Temporary marker
+            });
+
+            let html = marked.parse(notes);
+            mdContainer.innerHTML = html;
+
+            // Post-process alerts in DOM
+            mdContainer.querySelectorAll('blockquote').forEach(bq => {
+                const firstP = bq.querySelector('p');
+                if (firstP) {
+                    const content = firstP.textContent;
+                    const match = content.match(/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]/i);
+                    if (match) {
+                        const type = match[1].toLowerCase();
+                        const alertDiv = document.createElement('div');
+                        alertDiv.className = `gh-alert gh-alert-${type}`;
+
+                        const iconMap = {
+                            note: 'info', tip: 'lightbulb', important: 'message-square', warning: 'alert-triangle', caution: 'alert-octagon'
+                        };
+
+                        const title = type.charAt(0).toUpperCase() + type.slice(1);
+
+                        let html = bq.innerHTML;
+                        html = html.replace(/<p>\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*/i, '<p>');
+
+                        alertDiv.innerHTML = `<div class="gh-alert-title"><i data-lucide="${iconMap[type] || 'info'}" class="w-4 h-4"></i> ${title}</div>` + html;
+                        bq.replaceWith(alertDiv);
+                        if (window.lucide) window.lucide.createIcons();
+                    }
+                }
+            });
+
+        } else {
+            mdContainer.innerHTML = "<p class='text-zinc-500 italic text-center py-8'>No release notes available.</p>";
+        }
+
+        showStep(1);
+        modal.classList.remove('hidden');
+
+        setTimeout(() => {
+            backdrop.classList.remove('opacity-0');
+            panel.classList.remove('opacity-0', 'scale-95');
+        }, 10);
+    }
+
+    function showStep(step) {
+        currentStep = step;
+        const s1 = document.getElementById('stepReleaseNotes');
+        const s2 = document.getElementById('stepInstallGuide');
+        const btnBack = document.getElementById('btnBack');
+        const btnNext = document.getElementById('btnNext');
+        const btnDone = document.getElementById('btnDone');
+        const spacer = document.getElementById('spacerLeft');
+
+        if (step === 1) {
+            s1.classList.remove('hidden');
+            s2.classList.add('hidden');
+
+            btnBack.classList.add('hidden');
+            spacer.classList.remove('hidden');
+
+            btnNext.classList.remove('hidden');
+            btnDone.classList.add('hidden');
+        } else {
+            s1.classList.add('hidden');
+            s2.classList.remove('hidden');
+
+            btnBack.classList.remove('hidden');
+            spacer.classList.add('hidden'); // Free up space
+
+            btnNext.classList.add('hidden');
+            btnDone.classList.remove('hidden');
+        }
+    }
+
+    function closeUpdateGuide() {
+        const modal = document.getElementById('updateGuideModal');
+        const backdrop = document.getElementById('updateGuideBackdrop');
+        const panel = document.getElementById('updateGuidePanel');
+
+        backdrop.classList.add('opacity-0');
+        panel.classList.add('opacity-0', 'scale-95');
+
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 300);
+    }
+
+    window.triggerAppShutdown = async () => {
+        const performShutdown = async () => {
+            try {
+                document.body.innerHTML = `
+                    <div class="fixed inset-0 bg-zinc-900 flex items-center justify-center flex-col gap-4 text-white z-[9999]">
+                        <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+                        <h1 class="text-xl font-bold">Shutting Down...</h1>
+                        <p class="text-zinc-400">Please wait while UpNext closes.</p>
+                    </div>
+                `;
+
+                await fetch('/api/system/shutdown', { method: 'POST' });
+            } catch (e) {
+                alert("Failed to initiate shutdown: " + e);
+                window.location.reload();
+            }
+        };
+
+        if (window.showConfirmationModal) {
+            window.showConfirmationModal(
+                'Close UpNext?',
+                'Are you sure you want to close the application to perform the update?',
+                performShutdown,
+                'warning'
+            );
+        } else {
+            if (confirm("Are you sure you want to close UpNext to update?")) {
+                performShutdown();
+            }
+        }
+    };
+
+    window.openUpdateGuide = openUpdateGuide;
+    window.closeUpdateGuide = closeUpdateGuide;
+</script>

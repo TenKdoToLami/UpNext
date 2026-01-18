@@ -9,7 +9,21 @@ import { safeCreateIcons, hslToHex } from './dom_utils.js';
 import { renderGrid, renderFilters } from './render_utils.js';
 import { showToast } from './toast.js';
 import { MEDIA_TYPES, STATUS_TYPES, STATUS_ICON_MAP, TYPE_COLOR_MAP, ICON_MAP, FEATURE_GROUPS } from './constants.js';
-import { saveTag, renameTag, deleteTag } from './api_service.js';
+import { saveTag, renameTag, deleteTag, checkSystemUpdate } from './api_service.js';
+// saveAppSettings is already imported from state.js in line 7, but let's check line 7.
+// Line 7: import { state, saveAppSettings } from './state.js';
+// So I should remove the second import at line 13 entirely.
+
+/**
+ * Persist dismissed version.
+ * @param {string} version 
+ */
+export function dismissUpdateWarning(version) {
+	if (!state.appSettings) state.appSettings = {};
+	state.appSettings.dismissedUpdate = version;
+	saveAppSettings({ dismissedUpdate: version });
+}
+
 
 // =============================================================================
 // STATE MANAGEMENT
@@ -793,6 +807,65 @@ export async function saveApiKeys() {
 		showToast('Failed to save API keys', 'error');
 	}
 }
+
+/**
+ * Manually checks for application updates when triggered from Settings.
+ * Updates the UI with the result (success, update available, or error).
+ */
+window.checkForUpdates = async function () {
+	const btn = document.getElementById('btnCheckUpdates');
+	const statusText = document.getElementById('updateStatusText');
+	const resultContainer = document.getElementById('updateResultContainer');
+	const currentVerDisplay = document.getElementById('currentVersionDisplay');
+
+	if (btn) {
+		btn.disabled = true;
+		btn.innerHTML = '<i class="animate-spin" data-lucide="loader-2"></i> Checking...';
+	}
+	if (resultContainer) resultContainer.classList.add('hidden');
+
+	try {
+		const data = await checkSystemUpdate();
+
+		if (data.current_version && currentVerDisplay) {
+			currentVerDisplay.textContent = `v${data.current_version}`;
+		}
+
+		if (data.error) {
+			if (statusText) statusText.textContent = "Error checking for updates.";
+			showToast("Could not check for updates", "error");
+		} else if (data.update_available) {
+			if (statusText) statusText.textContent = "New update available!";
+
+			// Show Update Card
+			if (resultContainer) {
+				resultContainer.classList.remove('hidden');
+				if (document.getElementById('latestVersionDisplay')) {
+					document.getElementById('latestVersionDisplay').textContent = data.latest_version;
+				}
+				window.latestUpdateData = {
+					version: data.latest_version,
+					currentVersion: data.current_version,
+					url: data.download_url,
+					releaseNotes: data.release_notes
+				};
+			}
+		} else {
+			if (statusText) statusText.textContent = "You are most likely using the latest version.";
+			showToast("You are using the latest version", "success");
+		}
+
+	} catch (e) {
+		console.error("Update check failed", e);
+		if (statusText) statusText.textContent = "Connection failed.";
+	} finally {
+		if (btn) {
+			btn.disabled = false;
+			btn.innerHTML = '<i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Check Now';
+		}
+		if (window.lucide) window.lucide.createIcons();
+	}
+};
 
 /**
  * Legacy wrapper for TMDB specific save (keeping for backward compat if needed, or remove)

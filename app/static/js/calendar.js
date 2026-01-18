@@ -1771,5 +1771,4 @@ window.toggleReleaseSeen = toggleReleaseSeen;
 window.handleReleaseClick = handleReleaseClick;
 window.catchUpCal = catchUpCal;
 window.prepareEditEvent = prepareEditEvent;
-window.showConfirmationModal = showConfirmationModal;
-window.closeConfirmationModal = closeConfirmationModal;
+

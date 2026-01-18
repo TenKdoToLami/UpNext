@@ -82,6 +82,40 @@ export async function deleteDatabase(dbName) {
 }
 
 /**
+ * Checks for system updates via the backend.
+ * @returns {Promise<Object>} Update status object.
+ */
+
+/**
+ * Checks for system updates via the backend.
+ * @returns {Promise<Object>} Update status object.
+ */
+export async function checkSystemUpdate() {
+	try {
+		const response = await fetch('/api/system/check_update');
+		if (!response.ok) throw new Error('Failed to check for updates');
+		return await response.json();
+	} catch (e) {
+		console.error('Failed to check updates:', e);
+		return { error: e.message };
+	}
+}
+
+/**
+ * Shuts down the backend application.
+ */
+export async function shutdownApp() {
+	try {
+		await fetch('/api/system/shutdown', { method: 'POST' });
+		return true;
+	} catch (e) {
+		console.error('Shutdown failed:', e);
+		return false;
+	}
+}
+
+
+/**
  * Fetches all library items from the API and updates the local state and UI.
  * This is the primary data loading function called on app initialization and refreshes.
  * @returns {Promise<void>}

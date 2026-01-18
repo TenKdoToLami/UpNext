@@ -24,6 +24,11 @@ def create_app():
     # Initialize Flask app
     app = Flask(__name__, template_folder=TEMPLATE_DIR, static_folder=STATIC_DIR)
     app.config.from_object("app.config")
+    app.config['APP_VERSION'] = "1.2.1"
+
+    @app.context_processor
+    def inject_version():
+        return dict(APP_VERSION=app.config.get('APP_VERSION', '0.0.0'))
 
     # Register Blueprints for API, Exports, and HTML Views
     from app.routes import api, export, views, releases

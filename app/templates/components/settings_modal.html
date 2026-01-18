@@ -333,6 +333,59 @@
 
 			<div id="settings-other" class="settings-panel hidden space-y-6">
 				<div class="space-y-4">
+					<!-- Software Updates -->
+					<div class="mb-6">
+						<h3
+							class="text-sm font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 mb-2 flex items-center gap-2">
+							<i data-lucide="download-cloud" class="w-4 h-4 text-sky-500"></i>
+							Software Updates
+						</h3>
+						<div
+							class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 flex items-center justify-between">
+							<div>
+								<div class="font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+									Current Version
+									<span id="currentVersionDisplay"
+										class="px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 rounded text-xs bg-zinc-50 font-mono border border-zinc-200 dark:border-zinc-700">v{{
+										APP_VERSION }}</span>
+									<a href="https://github.com/TenKdoToLami/UpNext/releases" target="_blank"
+										class="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors ml-1"
+										title="View Releases on GitHub">
+										<i data-lucide="github" class="w-4 h-4"></i>
+									</a>
+								</div>
+								<div id="updateStatusText" class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+									Check for the latest features and fixes.
+								</div>
+							</div>
+							<button onclick="window.checkForUpdates()" id="btnCheckUpdates"
+								class="px-4 py-2 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 text-xs font-bold rounded-lg transition-colors flex items-center gap-2 border border-zinc-200 dark:border-zinc-700">
+								<i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+								Check Now
+							</button>
+						</div>
+						<div id="updateResultContainer"
+							class="hidden mt-3 p-4 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 rounded-xl">
+							<div class="flex items-start gap-3">
+								<div
+									class="p-2 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-lg">
+									<i data-lucide="sparkles" class="w-5 h-5"></i>
+								</div>
+								<div class="flex-1">
+									<h4 class="font-bold text-emerald-700 dark:text-emerald-400 text-sm">Update
+										Available!</h4>
+									<p class="text-xs text-emerald-600 dark:text-emerald-500 mt-1 mb-3">Version <span
+											id="latestVersionDisplay" class="font-bold"></span> is available.</p>
+									<button id="updateDownloadLink" onclick="window.openUpdateGuideWithState()"
+										class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition-colors shadow-sm">
+										<i data-lucide="download" class="w-3.5 h-3.5"></i>
+										Update Now
+									</button>
+								</div>
+							</div>
+						</div>
+					</div>
+
 					<h3 class="text-sm font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 mb-2">
 						App Connections & System
 					</h3>
@@ -357,6 +410,8 @@
 							</div>
 						</label>
 					</div>
+
+
 
 					<div class="border-t border-zinc-200 dark:border-zinc-800 pt-6 mt-6">
 						<h3

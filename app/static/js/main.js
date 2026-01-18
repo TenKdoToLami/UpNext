@@ -38,6 +38,101 @@ import {
     saveTmdbApiKey
 } from './settings_logic.js';
 import { openExternalSearchModal, closeExternalSearchModal } from './external_search.js';
+import { checkSystemUpdate } from './api_service.js';
+import { dismissUpdateWarning } from './settings_logic.js';
+import { showToast, showRichToast } from './toast.js';
+
+/**
+ * Checks for updates on startup.
+ */
+async function checkUpdateOnStartup() {
+    try {
+        const data = await checkSystemUpdate();
+
+        if (data.update_available) {
+            const latest = data.latest_version;
+
+            // Store data globally safely
+            window.latestUpdateData = {
+                version: data.latest_version,
+                currentVersion: data.current_version,
+                url: data.download_url,
+                releaseNotes: data.release_notes
+            };
+
+            // Ensure appSettings exists
+            if (!state.appSettings) state.appSettings = {};
+            const dismissed = state.appSettings.dismissedUpdate;
+
+            // If user hasn't dismissed THIS version
+            if (latest !== dismissed) {
+                createUpdateToast(latest, data.download_url, data.current_version);
+            }
+        } else {
+            // If we are current, clear the dismissed version
+            if (state.appSettings && state.appSettings.dismissedUpdate) {
+                dismissUpdateWarning(null);
+            }
+        }
+    } catch (e) {
+        console.warn("Startup update check failed", e);
+    }
+}
+
+/**
+ * Creates a special interactive toast for updates.
+ */
+function createUpdateToast(version, url, currentVersion) {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+
+    // Default fallback if missing
+    const curVer = currentVersion || '?.?.?';
+
+    const toast = document.createElement('div');
+    toast.className = "pointer-events-auto w-full max-w-sm overflow-hidden rounded-xl border border-indigo-200 dark:border-indigo-500/30 bg-white dark:bg-zinc-900 shadow-2xl ring-1 ring-black/5 transition-all duration-300 translate-y-0 opacity-100 flex flex-col slide-in-bottom";
+
+    toast.innerHTML = `
+        <div class="p-4 flex items-start gap-4">
+            <div class="shrink-0 rounded-full bg-indigo-100 dark:bg-indigo-500/20 p-2 text-indigo-600 dark:text-indigo-400">
+                <i data-lucide="download-cloud" class="h-6 w-6"></i>
+            </div>
+            <div class="flex-1 pt-0.5">
+                <p class="text-sm font-bold text-zinc-900 dark:text-white">Update v${version} Available</p>
+                <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">A new version of UpNext is ready.</p>
+                <div class="mt-3 flex gap-3">
+                    <button onclick="window.openUpdateGuide('${version}', '${url}', null, '${curVer}')"
+                       class="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-indigo-500 text-center">
+                       View Update
+                    </button>
+                    <button id="btn-dismiss-${version.replace(/\./g, '-')}"
+                            class="rounded-lg bg-white dark:bg-zinc-800 px-3 py-1.5 text-xs font-bold text-zinc-900 dark:text-white ring-1 ring-inset ring-zinc-300 dark:ring-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-700">
+                            Skip this version
+                    </button>
+                </div>
+            </div>
+            <button onclick="this.parentElement.parentElement.remove()" class="inline-flex shrink-0 rounded-md bg-white dark:bg-zinc-900 text-zinc-400 hover:text-zinc-500 focus:outline-none">
+                <span class="sr-only">Close</span>
+                <i data-lucide="x" class="h-5 w-5"></i>
+            </button>
+        </div>
+    `;
+
+    container.appendChild(toast);
+
+    // Bind dismiss handler
+    // We bind it here to avoid global pollution if possible, but cleaner to use ID
+    const btn = toast.querySelector(`#btn-dismiss-${version.replace(/\./g, '-')}`);
+    if (btn) {
+        btn.onclick = () => {
+            dismissUpdateWarning(version);
+            toast.remove();
+            showToast('Update warning dismissed for v' + version, 'info');
+        };
+    }
+
+    if (window.lucide) window.lucide.createIcons();
+}
 
 // =============================================================================
 // GLOBAL WINDOW BINDINGS
@@ -112,7 +207,26 @@ window.openSettingsModal = openSettingsModal;
 window.closeSettingsModal = closeSettingsModal;
 window.saveSettingsAndClose = saveSettingsAndClose;
 window.switchSettingsTab = switchSettingsTab;
-window.toggleFeature = toggleFeature;
+
+/**
+ * Opens the update guide using data presently in the Settings modal.
+ * Used when the user clicks "Update Now" inside Settings.
+ */
+window.openUpdateGuideWithState = () => {
+    // Use globally stored update data (populated by settings or startup check)
+    if (window.latestUpdateData) {
+        window.openUpdateGuide(
+            window.latestUpdateData.version,
+            window.latestUpdateData.url,
+            window.latestUpdateData.releaseNotes,
+            window.latestUpdateData.currentVersion || '?.?.?'
+        );
+    } else {
+        // Fallback or retry check (shouldn't happen if button is visible)
+        console.warn("Update data missing");
+        window.openUpdateGuide('?.?.?', '#', null, '?.?.?');
+    }
+};
 window.toggleHiddenField = toggleHiddenField;
 window.toggleGroupCollapse = toggleGroupCollapse;
 window.toggleMediaType = toggleMediaType;
@@ -1293,6 +1407,7 @@ async function initApp() {
     initDuplicateCheck();
     populateAutocomplete();
     applyStateToUI();
+    checkUpdateOnStartup();
 
     setTimeout(checkOverdueReleases, 1000);
 
