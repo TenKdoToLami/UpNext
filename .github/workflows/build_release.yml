@@ -103,7 +103,9 @@ jobs:
              cp app/static/img/icon.png $PKG_NAME/
              cp packaging/linux/UpNext.desktop $PKG_NAME/
              cp packaging/linux/install.sh $PKG_NAME/
+             cp packaging/linux/uninstall.sh $PKG_NAME/
              chmod +x $PKG_NAME/install.sh
+             chmod +x $PKG_NAME/uninstall.sh
              
              # Archive
              tar -czvf ${PKG_NAME}.tar.gz $PKG_NAME

@@ -95,6 +95,14 @@ def _create_linux_desktop_entry(root_dir: str, target_exe: str):
         os.chmod(dst_install, 0o755)
         logger.info("Installer script copied.")
 
+    # 3. Copy Uninstaller Script
+    src_uninstall = os.path.join(pkg_dir, 'uninstall.sh')
+    dst_uninstall = os.path.join(root_dir, 'uninstall.sh')
+    if os.path.exists(src_uninstall):
+        shutil.copy(src_uninstall, dst_uninstall)
+        os.chmod(dst_uninstall, 0o755)
+        logger.info("Uninstaller script copied.")
+
 
 def _cleanup_build_artifacts(root_dir: str, target_exe: str):
     """Removes temporary filesystem objects created during the build."""
