@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=UpNext
+Comment=Manage your anime, manga, and books collection
+Exec="__APP_DIR__/UpNext"
+Icon="__APP_DIR__/icon.png"
+Type=Application
+Terminal=false
+Categories=Utility;Office;Database;
+StartupNotify=true

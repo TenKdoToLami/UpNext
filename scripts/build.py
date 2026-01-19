@@ -28,11 +28,14 @@ def build_project():
 
     # 1. Compilation Stage
     try:
-        subprocess.run([python_exe, '-m', 'PyInstaller', spec_file, '--clean', '--noconfirm'], check=True)
+        # Removed --clean to speed up repeated builds by using cache
+        subprocess.run([python_exe, '-m', 'PyInstaller', spec_file, '--noconfirm'], check=True)
         logger.info("PyInstaller compilation successful.")
     except Exception as e:
         logger.error(f"Build failed during compilation phase: {e}")
-        return
+    except Exception as e:
+        logger.error(f"Build failed during compilation phase: {e}")
+        sys.exit(1)
 
     # 2. Artifact Management
     dist_exe = os.path.join(root_dir, 'dist', 'UpNext' + ('.exe' if os.name == 'nt' else ''))
@@ -52,7 +55,8 @@ def build_project():
         except Exception as e:
             logger.error(f"Post-build artifact move failed: {e}")
     else:
-        logger.warning("Build artifact not found in 'dist' directory.")
+        logger.error("Build artifact not found in 'dist' directory.")
+        sys.exit(1)
 
     # 3. Finalization
     _cleanup_build_artifacts(root_dir, target_exe)
@@ -60,21 +64,36 @@ def build_project():
 
 
 def _create_linux_desktop_entry(root_dir: str, target_exe: str):
-    """Generates a .desktop file for Linux desktop environments."""
-    desktop_file = os.path.join(root_dir, 'UpNext.desktop')
-    icon_path = os.path.join(root_dir, 'app', 'static', 'img', 'icon.png')
-    content = f"""[Desktop Entry]
-Name=UpNext
-Exec={target_exe}
-Icon={icon_path}
-Type=Application
-Terminal=false
-Categories=Utility;
-"""
-    with open(desktop_file, 'w') as f:
-        f.write(content)
-    os.chmod(desktop_file, 0o755)
-    logger.info("Linux Desktop entry generated.")
+    """Copies Linux packaging files to the root directory."""
+    pkg_dir = os.path.join(root_dir, 'packaging', 'linux')
+    
+    # 1. Copy Desktop File
+    src_desktop = os.path.join(pkg_dir, 'UpNext.desktop')
+    dst_desktop = os.path.join(root_dir, 'UpNext.desktop')
+    if os.path.exists(src_desktop):
+        shutil.copy(src_desktop, dst_desktop)
+        
+        # Update the placeholder in the local copy to point to current dir
+        with open(dst_desktop, 'r') as f:
+            content = f.read()
+        
+        # For local dev builds, point absolute path to root_dir
+        content = content.replace('__APP_DIR__', root_dir)
+        
+        with open(dst_desktop, 'w') as f:
+            f.write(content)
+        os.chmod(dst_desktop, 0o755)
+        logger.info("Linux Desktop entry created from template.")
+    else:
+        logger.warning(f"Template not found: {src_desktop}")
+
+    # 2. Copy Installer Script
+    src_install = os.path.join(pkg_dir, 'install.sh')
+    dst_install = os.path.join(root_dir, 'install.sh')
+    if os.path.exists(src_install):
+        shutil.copy(src_install, dst_install)
+        os.chmod(dst_install, 0o755)
+        logger.info("Installer script copied.")
 
 
 def _cleanup_build_artifacts(root_dir: str, target_exe: str):

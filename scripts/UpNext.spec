@@ -1,4 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
+import os
 
 block_cipher = None
 
@@ -14,7 +15,8 @@ a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+
+    excludes=['tkinter'] + (['PyQt6', 'PyQt6.QtWebEngine', 'PyQt6.QtWebEngineWidgets', 'PyQt5'] if os.name == 'nt' else []),
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=block_cipher,
@@ -33,7 +35,7 @@ exe = EXE(
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,
+    upx=False, # Disable UPX compression for faster builds
     upx_exclude=[],
     runtime_tmpdir=None,
     console=False,

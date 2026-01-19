@@ -53,11 +53,30 @@ jobs:
       - name: Build Tray Version
         run: python manage.py build
 
-      - name: Rename Tray Artifact
+      - name: Prepare Tray Artifact
         shell: bash
         run: |
-          # Rename based on matrix config
-          mv ${{ matrix.artifact_name }} UpNext-${{ matrix.os_short }}-Tray-x64${{ matrix.ext }}
+          if [ "${{ matrix.os_short }}" == "Linux" ]; then
+            # Linux: Package into tar.gz with installer
+            PKG_NAME="UpNext-Linux-Tray-x64"
+            mkdir -p $PKG_NAME
+            
+            # Move Binary
+            mv ${{ matrix.artifact_name }} $PKG_NAME/UpNext
+            chmod +x $PKG_NAME/UpNext
+            
+            # Copy Assets
+            cp app/static/img/icon.png $PKG_NAME/
+            cp packaging/linux/UpNext.desktop $PKG_NAME/
+            cp packaging/linux/install.sh $PKG_NAME/
+            chmod +x $PKG_NAME/install.sh
+            
+            # Archive
+            tar -czvf ${PKG_NAME}.tar.gz $PKG_NAME
+          else
+            # Windows: Just rename the executable
+            mv ${{ matrix.artifact_name }} UpNext-${{ matrix.os_short }}-Tray-x64${{ matrix.ext }}
+          fi
 
       # --- BUILD PROCESS (STANDARD VERSION) ---
       - name: Configure for Standard Build
@@ -68,10 +87,30 @@ jobs:
       - name: Build Standard Version
         run: python manage.py build
 
-      - name: Rename Standard Artifact
+      - name: Prepare Standard Artifact
         shell: bash
         run: |
-           mv ${{ matrix.artifact_name }} UpNext-${{ matrix.os_short }}-Standard-x64${{ matrix.ext }}
+           if [ "${{ matrix.os_short }}" == "Linux" ]; then
+             # Linux: Package into tar.gz with installer
+             PKG_NAME="UpNext-Linux-Standard-x64"
+             mkdir -p $PKG_NAME
+             
+             # Move Binary
+             mv ${{ matrix.artifact_name }} $PKG_NAME/UpNext
+             chmod +x $PKG_NAME/UpNext
+             
+             # Copy Assets
+             cp app/static/img/icon.png $PKG_NAME/
+             cp packaging/linux/UpNext.desktop $PKG_NAME/
+             cp packaging/linux/install.sh $PKG_NAME/
+             chmod +x $PKG_NAME/install.sh
+             
+             # Archive
+             tar -czvf ${PKG_NAME}.tar.gz $PKG_NAME
+           else
+             # Windows: Just rename the executable
+             mv ${{ matrix.artifact_name }} UpNext-${{ matrix.os_short }}-Standard-x64${{ matrix.ext }}
+           fi
 
       # --- UPLOAD ASSETS ---
       - name: Upload Release Assets
@@ -79,7 +118,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: |
-            UpNext-${{ matrix.os_short }}-Tray-x64${{ matrix.ext }}
-            UpNext-${{ matrix.os_short }}-Standard-x64${{ matrix.ext }}
+            UpNext-${{ matrix.os_short }}-Tray-x64*
+            UpNext-${{ matrix.os_short }}-Standard-x64*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
