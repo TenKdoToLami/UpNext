@@ -537,9 +537,14 @@ def run_application_stack(create_app_func: Callable, host: str, port: int, headl
     if ENABLE_TRAY:
         window.events.closing += on_closing
 
-    # Initialize System Tray
+    # Initialize System Tray (Platform Specific)
     if ENABLE_TRAY:
-        setup_tray()
+        if sys.platform == 'win32':
+             if tray_available[0]:
+                setup_tray()
+        elif sys.platform == 'linux':
+             # Linux tray setup will be handled in startup_handler to ensure it runs on Main Loop
+             pass
 
     # Start single-instance listener and create lock file
     ipc_port = start_single_instance_listener(window_ref, target_url)
@@ -558,6 +563,96 @@ def run_application_stack(create_app_func: Callable, host: str, port: int, headl
             pass
 
     logger.info("Starting GUI...")
+    
+    # Initialize Manual Application/Tray on Linux (Must happen before webview.start)
+    if ENABLE_TRAY and sys.platform == 'linux':
+        try:
+             from PyQt6.QtWidgets import QApplication, QSystemTrayIcon, QMenu
+             from PyQt6.QtGui import QIcon, QAction
+
+             # CRITICAL: Prevent "QtWebEngineWidgets must be imported before a QCoreApplication instance is created" error
+             # We must import this before creating QApplication if we intend to use WebEngine later (which pywebview does)
+             try:
+                 from PyQt6.QtWebEngineWidgets import QWebEnginePage
+             except ImportError:
+                 pass
+             
+             # Create/Get Application Instance
+             app = QApplication.instance()
+             if not app:
+                 app = QApplication(sys.argv)
+            
+             # IMPORTANT: Prevent app from quitting when the "Add" window (or last visible window) is closed.
+             # Since the main window might be hidden in the tray, we don't want the loop to exit.
+             app.setQuitOnLastWindowClosed(False)
+
+             # Create Icon
+             if os.path.exists(tray_icon_path):
+                 qicon = QIcon(tray_icon_path)
+                 tray = QSystemTrayIcon(qicon, app)
+                 tray.setToolTip("UpNext")
+                 
+                 # Create Menu
+                 menu = QMenu()
+                 
+                 # Helper for Threaded Execution (Prevents Deadlock with pywebview)
+                 def run_threaded(target, *args):
+                     threading.Thread(target=target, args=args).start()
+
+
+                 # Actions
+                 action_open = QAction("Open", menu)
+                 action_open.triggered.connect(lambda: run_threaded(on_restore_native, None, None))
+                 
+                 action_browser = QAction("Open in Browser", menu)
+                 action_browser.triggered.connect(lambda: run_threaded(on_open_browser, None, None))
+                 
+                 action_add = QAction("Add", menu)
+                 action_add.triggered.connect(lambda: run_threaded(on_quick_add, None, None))
+                 
+                 action_switch = QAction("Switch Library", menu)
+                 action_switch.triggered.connect(lambda: run_threaded(on_switch_db, None, None))
+                 
+                 action_exit = QAction("Exit", menu)
+                 # Handle Exit Manually for Linux to avoid icon.stop() crash
+                 def linux_exit():
+                     tray.hide() # Hide tray
+                     if window_ref[0]:
+                         window_ref[0].destroy()
+                     os._exit(0)
+                 action_exit.triggered.connect(lambda: run_threaded(linux_exit))
+                 
+                 # Assemble
+                 menu.addAction(action_open)
+                 menu.addAction(action_browser)
+                 menu.addSeparator()
+                 menu.addAction(action_add)
+                 menu.addSeparator()
+                 menu.addAction(action_switch)
+                 menu.addSeparator()
+                 menu.addAction(action_exit)
+                 
+                 tray.setContextMenu(menu)
+                 tray.show()
+                 
+                 # Handle activation (click)
+                 def on_tray_activated(reason):
+                     if reason == QSystemTrayIcon.ActivationReason.Trigger:
+                         # Left click - check pref
+                         on_open(None, None)
+                         
+                 tray.activated.connect(on_tray_activated)
+                 
+                 # Store ref
+                 tray_icon[0] = tray
+                 tray_available[0] = True
+             else:
+                 logger.error(f"Linux Tray: Icon not found at {tray_icon_path}")
+
+        except Exception as e:
+            logger.error(f"Failed to setup Linux tray (Manual Mode): {e}", exc_info=True)
+
+    logger.info("Starting GUI...")
     # Start Webview (Blocks Main Thread)
     # Force QT on Linux to prevent flickering issues with GTK/WebKit
     gui_engine = 'qt' if sys.platform == 'linux' else None
@@ -566,7 +661,16 @@ def run_application_stack(create_app_func: Callable, host: str, port: int, headl
     # Cleanup after loop exit
     remove_lock_file()
     if ENABLE_TRAY and tray_icon[0]:
-        tray_icon[0].stop()
+        if hasattr(tray_icon[0], 'stop'):
+            try:
+                tray_icon[0].stop()
+            except Exception:
+                pass
+        elif hasattr(tray_icon[0], 'hide'):
+            try:
+                tray_icon[0].hide()
+            except Exception:
+                pass
     
     logger.info("Exiting...")
     sys.exit(0)
