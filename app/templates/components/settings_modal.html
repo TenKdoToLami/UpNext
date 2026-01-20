@@ -411,6 +411,34 @@
 						</label>
 					</div>
 
+					<div
+						class="bg-zinc-100 dark:bg-zinc-900/50 rounded-xl p-4 border border-zinc-200 dark:border-zinc-800/50 flex items-center justify-between">
+						<div class="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-2">
+							<i data-lucide="arrow-left-right" class="w-4 h-4"></i>
+							<span>Return to library selection screen.</span>
+						</div>
+						<button onclick="window.restartToDbSelect()"
+							class="px-3 py-1.5 bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-lg text-xs font-bold hover:bg-indigo-500 hover:text-white transition-all shadow-sm">
+							Switch Database
+						</button>
+					</div>
+
+					<div
+						class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 flex items-center justify-between">
+						<div>
+							<div class="font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+								<i data-lucide="archive" class="w-4 h-4 text-emerald-500"></i>
+								Database Backups
+							</div>
+							<div class="text-xs text-zinc-500 dark:text-zinc-400 mt-1 ml-6">Create, restore, and manage
+								library backups
+							</div>
+						</div>
+						<button onclick="closeSettingsModal(); setTimeout(() => window.openBackupModal(), 100)"
+							class="px-4 py-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold text-xs hover:bg-emerald-500 hover:text-white dark:hover:bg-emerald-600 transition-colors border border-emerald-200 dark:border-emerald-500/20">
+							Manage Backups
+						</button>
+					</div>
 
 
 					<div class="border-t border-zinc-200 dark:border-zinc-800 pt-6 mt-6">
@@ -623,18 +651,7 @@
 							</div>
 							{% endif %}
 						</div>
-					</div>
 
-					<div
-						class="bg-zinc-100 dark:bg-zinc-900/50 rounded-xl p-4 border border-zinc-200 dark:border-zinc-800/50 flex items-center justify-between">
-						<div class="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-2">
-							<i data-lucide="arrow-left-right" class="w-4 h-4"></i>
-							<span>Return to library selection screen.</span>
-						</div>
-						<button onclick="window.restartToDbSelect()"
-							class="px-3 py-1.5 bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-lg text-xs font-bold hover:bg-indigo-500 hover:text-white transition-all shadow-sm">
-							Switch Database
-						</button>
 					</div>
 				</div>
 			</div>

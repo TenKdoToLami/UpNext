@@ -5,7 +5,7 @@
  */
 
 import { state, setState, loadUIState, saveAppSettings } from './state.js';
-import { loadItems, deleteItem, saveItem, getDbStatus, selectDatabase, createDatabase, deleteDatabase } from './api_service.js';
+import { loadItems, deleteItem, saveItem, getDbStatus, selectDatabase, createDatabase, deleteDatabase, getBackups, createBackup, restoreBackup, deleteBackup, getBackupSettings, saveBackupSettings } from './api_service.js';
 import { renderFilters, renderGrid, updateGridTruncation } from './render_utils.js';
 import { safeCreateIcons, toggleExpand, debounce } from './dom_utils.js';
 import { RATING_LABELS, TEXT_COLORS } from './constants.js';
@@ -365,6 +365,12 @@ async function checkDatabaseSelection(forceRender = false) {
                     </div>
                     <span>Create New Library</span>
                 </button>
+
+                <button onclick="window.openBackupModal()" 
+                    class="w-full py-3 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 font-bold text-sm hover:bg-emerald-500 hover:text-white dark:hover:bg-emerald-600 transition-all flex items-center justify-center gap-2 group border border-zinc-200 dark:border-zinc-700">
+                    <i data-lucide="archive" class="w-4 h-4"></i>
+                    <span>Manage Backups</span>
+                </button>
                 
                 <label class="flex items-center justify-center gap-2.5 cursor-pointer group opacity-60 hover:opacity-100 transition-all py-2">
                         <input type="checkbox" id="autoLaunchCheckbox" 
@@ -506,6 +512,239 @@ window.toggleAutoLaunch = async (checked) => {
         console.error("Failed to save auto-launch pref to backend:", e);
     }
 };
+
+// =============================================================================
+// BACKUP MODAL HANDLERS
+// =============================================================================
+
+/** Current backup state */
+let currentBackupSettings = { enabled: true, frequencyDays: 7, maxBackups: 3 };
+let availableDatabases = [];
+
+/** Opens the backup management modal */
+window.openBackupModal = async () => {
+    const modal = document.getElementById('backupModal');
+    if (!modal) return;
+
+    // Load available databases (including deleted ones with backups)
+    try {
+        // Fetch databases that have backups (includes deleted DBs)
+        const dbListRes = await fetch('/api/backups/databases');
+        const dbListData = await dbListRes.json();
+
+        const dbStatus = await getDbStatus();
+
+        const selector = document.getElementById('backupDbSelector');
+        if (selector && dbListData.status === 'success') {
+            const databases = dbListData.databases || [];
+            selector.innerHTML = databases.map(db => {
+                const label = db.name.replace('.db', '');
+                const suffix = !db.exists ? ' (deleted)' : (!db.hasBackups ? ' (no backups)' : '');
+                return `<option value="${db.name}">${label}${suffix}</option>`;
+            }).join('');
+
+            // Select active DB by default if it exists in the list
+            if (dbStatus.active && databases.some(d => d.name === dbStatus.active)) {
+                selector.value = dbStatus.active;
+            }
+        }
+
+        // Load backup settings
+        const settingsRes = await getBackupSettings();
+        if (settingsRes.status === 'success' && settingsRes.settings) {
+            currentBackupSettings = settingsRes.settings;
+            _updateBackupSettingsUI();
+        }
+
+        // Load backups for selected DB
+        const selectedDb = selector?.value;
+        if (selectedDb) await window.loadBackupsForDb(selectedDb);
+
+    } catch (e) {
+        console.error('Failed to initialize backup modal:', e);
+    }
+
+    // Show modal
+    modal.classList.remove('hidden');
+    void modal.offsetWidth;
+    modal.classList.remove('opacity-0');
+    modal.querySelector('#backupModalContent')?.classList.remove('scale-95');
+    safeCreateIcons();
+};
+
+/** Closes the backup modal */
+window.closeBackupModal = () => {
+    const modal = document.getElementById('backupModal');
+    if (!modal) return;
+
+    modal.classList.add('opacity-0');
+    setTimeout(() => modal.classList.add('hidden'), 300);
+};
+
+/** Loads backups for a specific database */
+window.loadBackupsForDb = async (dbName) => {
+    const container = document.getElementById('backupListContainer');
+    const countEl = document.getElementById('backupCount');
+
+    if (!container) return;
+
+    container.innerHTML = `
+        <div class="py-8 text-center text-zinc-400 text-sm">
+            <i data-lucide="loader-2" class="w-6 h-6 mx-auto mb-2 animate-spin"></i>
+            Loading backups...
+        </div>
+    `;
+    safeCreateIcons();
+
+    try {
+        const result = await getBackups(dbName);
+        const backups = result.backups || [];
+
+        if (countEl) countEl.textContent = `${backups.length} backup${backups.length !== 1 ? 's' : ''}`;
+
+        if (backups.length === 0) {
+            container.innerHTML = `
+                <div class="py-8 text-center">
+                    <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
+                        <i data-lucide="archive-x" class="w-6 h-6 text-zinc-400"></i>
+                    </div>
+                    <p class="text-sm text-zinc-500 dark:text-zinc-400">No backups yet</p>
+                    <p class="text-xs text-zinc-400 mt-1">Create your first backup using the button above</p>
+                </div>
+            `;
+        } else {
+            container.innerHTML = backups.map(backup => `
+                <div class="group bg-white dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-xl p-4 flex items-center justify-between hover:border-emerald-500 dark:hover:border-emerald-500 transition-colors">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center">
+                            <i data-lucide="hard-drive" class="w-5 h-5 text-emerald-600 dark:text-emerald-400"></i>
+                        </div>
+                        <div>
+                            <div class="font-bold text-zinc-900 dark:text-white text-sm">${backup.date_formatted}</div>
+                            <div class="text-xs text-zinc-500 dark:text-zinc-400">${backup.size_human}</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onclick="window.restoreBackupConfirm('${backup.path.replace(/\\/g, '/')}', '${dbName}')"
+                            class="p-2 rounded-lg text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors" title="Restore">
+                            <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                        </button>
+                        <button onclick="window.deleteBackupConfirm('${dbName}', '${backup.filename}')"
+                            class="p-2 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors" title="Delete">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        safeCreateIcons();
+    } catch (e) {
+        console.error('Failed to load backups:', e);
+        container.innerHTML = `
+            <div class="py-8 text-center text-red-500 text-sm">
+                Failed to load backups
+            </div>
+        `;
+    }
+};
+
+/** Triggers manual backup creation */
+window.triggerManualBackup = async () => {
+    const selector = document.getElementById('backupDbSelector');
+    const dbName = selector?.value;
+
+    if (!dbName) {
+        showToast('Please select a database first', 'warning');
+        return;
+    }
+
+    const btn = document.getElementById('btnCreateBackup');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Creating...';
+        safeCreateIcons();
+    }
+
+    try {
+        const result = await createBackup(dbName);
+
+        if (result.status === 'success') {
+            showToast(`Backup created: ${result.backup?.filename}`, 'success');
+            await window.loadBackupsForDb(dbName);
+        } else {
+            showToast('Failed to create backup: ' + result.message, 'error');
+        }
+    } catch (e) {
+        showToast('Backup failed: ' + e.message, 'error');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i data-lucide="plus" class="w-4 h-4"></i> Create Backup Now';
+            safeCreateIcons();
+        }
+    }
+};
+
+/** Confirms and executes backup restoration */
+window.restoreBackupConfirm = (backupPath, dbName) => {
+    if (window.showConfirmationModal) {
+        window.showConfirmationModal(
+            'Restore Backup?',
+            `This will replace "${dbName}" with the selected backup. A safety copy will be created before restoration. This action cannot be undone.`,
+            async () => {
+                const result = await restoreBackup(backupPath, dbName, true);
+                if (result.status === 'success') {
+                    showToast('Backup restored successfully. Please restart the app.', 'success');
+                } else {
+                    showToast('Restore failed: ' + result.message, 'error');
+                }
+            },
+            'warning'
+        );
+    }
+};
+
+/** Confirms and deletes a backup */
+window.deleteBackupConfirm = (dbName, filename) => {
+    if (window.showConfirmationModal) {
+        window.showConfirmationModal(
+            'Delete Backup?',
+            `Are you sure you want to delete this backup? This cannot be undone.`,
+            async () => {
+                const result = await deleteBackup(dbName, filename);
+                if (result.status === 'success') {
+                    showToast('Backup deleted', 'success');
+                    await window.loadBackupsForDb(dbName);
+                } else {
+                    showToast('Delete failed: ' + result.message, 'error');
+                }
+            },
+            'danger'
+        );
+    }
+};
+
+/** Updates a backup setting */
+window.updateBackupSetting = async (key, value) => {
+    currentBackupSettings[key] = value;
+
+    try {
+        await saveBackupSettings(currentBackupSettings);
+    } catch (e) {
+        console.error('Failed to save backup setting:', e);
+    }
+};
+
+/** Updates the backup settings UI */
+function _updateBackupSettingsUI() {
+    const enabledEl = document.getElementById('setting-backupEnabled');
+    const frequencyEl = document.getElementById('setting-backupFrequency');
+    const maxBackupsEl = document.getElementById('setting-maxBackups');
+
+    if (enabledEl) enabledEl.checked = currentBackupSettings.enabled !== false;
+    if (frequencyEl) frequencyEl.value = currentBackupSettings.frequencyDays || 7;
+    if (maxBackupsEl) maxBackupsEl.value = currentBackupSettings.maxBackups || 3;
+}
 
 /**
  * Sets the media type filter.

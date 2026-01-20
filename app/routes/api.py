@@ -160,6 +160,18 @@ def select_database():
         except Exception as e:
             logger.warning(f"Failed to persist DB selection: {e}")
         
+        # Run auto-backup check if enabled
+        try:
+            from app.utils.backup_manager import run_auto_backup
+            config = load_config()
+            backup_settings = config.get('appSettings', {}).get('backupSettings', {})
+            if backup_settings.get('enabled', True):
+                backup_result = run_auto_backup(db_name, backup_settings)
+                if backup_result and backup_result.get('status') == 'success':
+                    logger.info(f"Auto-backup created: {backup_result.get('backup', {}).get('filename')}")
+        except Exception as e:
+            logger.warning(f"Auto-backup check failed: {e}")
+        
         logger.info(f"Database switched to: {db_name}")
         return jsonify({"status": "success", "message": f"Switched to {db_name}"})
         
@@ -242,6 +254,148 @@ def delete_database():
         logger.error(f"Failed to delete database: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
+
+# =============================================================================
+# BACKUP ENDPOINTS
+# =============================================================================
+
+@bp.route("/backups/<db_name>", methods=["GET"])
+def get_backups(db_name):
+    """Lists all backups for a specific database."""
+    from app.utils.backup_manager import list_backups
+    
+    try:
+        backups = list_backups(db_name)
+        return jsonify({"status": "success", "backups": backups})
+    except Exception as e:
+        logger.error(f"Failed to list backups for {db_name}: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@bp.route("/backups/<db_name>", methods=["POST"])
+def create_backup(db_name):
+    """Creates a manual backup for a database."""
+    from app.utils.backup_manager import create_backup
+    
+    try:
+        config = load_config()
+        backup_settings = config.get('appSettings', {}).get('backupSettings', {})
+        max_backups = backup_settings.get('maxBackups', 3)
+        
+        result = create_backup(db_name, max_backups)
+        
+        if result['status'] == 'success':
+            return jsonify(result)
+        else:
+            return jsonify(result), 400
+    except Exception as e:
+        logger.error(f"Failed to create backup for {db_name}: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@bp.route("/backups/restore", methods=["POST"])
+def restore_backup():
+    """Restores a backup to a database."""
+    from app.utils.backup_manager import restore_backup
+    
+    data = request.get_json()
+    backup_path = data.get("backup_path")
+    db_name = data.get("db_name")
+    
+    if not backup_path or not db_name:
+        return jsonify({"status": "error", "message": "backup_path and db_name are required"}), 400
+    
+    # Prevent restoring to currently active database without force
+    active_db = current_app.config.get("ACTIVE_DB")
+    if active_db == db_name and not data.get("force"):
+        return jsonify({
+            "status": "error", 
+            "message": "Cannot restore to active database. Switch to another database first or use force=true.",
+            "requiresForce": True
+        }), 409
+    
+    try:
+        result = restore_backup(backup_path, db_name)
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"Failed to restore backup: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@bp.route("/backups/<db_name>/<backup_file>", methods=["DELETE"])
+def delete_backup(db_name, backup_file):
+    """Deletes a specific backup file."""
+    from app.utils.backup_manager import delete_backup, get_backup_dir
+    import os
+    
+    try:
+        backup_dir = get_backup_dir(db_name)
+        backup_path = os.path.join(backup_dir, backup_file)
+        
+        result = delete_backup(backup_path)
+        
+        if result['status'] == 'success':
+            return jsonify(result)
+        else:
+            return jsonify(result), 400
+    except Exception as e:
+        logger.error(f"Failed to delete backup {backup_file}: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@bp.route("/backups/databases", methods=["GET"])
+def list_backup_databases():
+    """Lists all databases that have backups, including deleted ones."""
+    from app.utils.backup_manager import list_databases_with_backups
+    
+    try:
+        # Get databases with backups (includes deleted DBs)
+        backup_dbs = set(list_databases_with_backups())
+        
+        # Get currently available databases
+        available_dbs = set(list_available_databases())
+        
+        # Merge both sets - available DBs and DBs with backups
+        all_dbs = sorted(available_dbs | backup_dbs)
+        
+        # Mark which ones are deleted
+        result = [{
+            'name': db,
+            'exists': db in available_dbs,
+            'hasBackups': db in backup_dbs
+        } for db in all_dbs]
+        
+        return jsonify({"status": "success", "databases": result})
+    except Exception as e:
+        logger.error(f"Failed to list backup databases: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@bp.route("/backups/settings", methods=["GET"])
+def get_backup_settings():
+    """Returns current backup settings."""
+    from app.utils.backup_manager import DEFAULT_BACKUP_SETTINGS
+    
+    config = load_config()
+    settings = config.get('appSettings', {}).get('backupSettings', DEFAULT_BACKUP_SETTINGS)
+    return jsonify({"status": "success", "settings": settings})
+
+
+@bp.route("/backups/settings", methods=["POST"])
+def save_backup_settings():
+    """Saves backup settings."""
+    try:
+        new_settings = request.get_json()
+        
+        config = load_config()
+        app_settings = config.get('appSettings', {})
+        app_settings['backupSettings'] = new_settings
+        save_config({'appSettings': app_settings})
+        
+        return jsonify({"status": "success", "message": "Backup settings saved"})
+    except Exception as e:
+        logger.error(f"Failed to save backup settings: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 
 @bp.route('/system/check_update', methods=['GET'])

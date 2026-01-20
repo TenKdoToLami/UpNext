@@ -81,10 +81,114 @@ export async function deleteDatabase(dbName) {
 	}
 }
 
+// =============================================================================
+// BACKUP API FUNCTIONS
+// =============================================================================
+
 /**
- * Checks for system updates via the backend.
- * @returns {Promise<Object>} Update status object.
+ * Fetches all backups for a specific database.
+ * @param {string} dbName - The database filename.
+ * @returns {Promise<{status: string, backups: Array}>}
  */
+export async function getBackups(dbName) {
+	try {
+		const response = await fetch(`/api/backups/${encodeURIComponent(dbName)}`);
+		return await response.json();
+	} catch (e) {
+		console.error('Failed to fetch backups:', e);
+		return { status: 'error', message: e.message, backups: [] };
+	}
+}
+
+/**
+ * Creates a manual backup for a database.
+ * @param {string} dbName - The database filename.
+ * @returns {Promise<{status: string, backup?: Object, message?: string}>}
+ */
+export async function createBackup(dbName) {
+	try {
+		const response = await fetch(`/api/backups/${encodeURIComponent(dbName)}`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' }
+		});
+		return await response.json();
+	} catch (e) {
+		console.error('Failed to create backup:', e);
+		return { status: 'error', message: e.message };
+	}
+}
+
+/**
+ * Restores a backup to a database.
+ * @param {string} backupPath - Full path to the backup file.
+ * @param {string} dbName - Target database filename.
+ * @param {boolean} force - Force restore even if database is active.
+ * @returns {Promise<{status: string, message?: string}>}
+ */
+export async function restoreBackup(backupPath, dbName, force = false) {
+	try {
+		const response = await fetch('/api/backups/restore', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ backup_path: backupPath, db_name: dbName, force })
+		});
+		return await response.json();
+	} catch (e) {
+		console.error('Failed to restore backup:', e);
+		return { status: 'error', message: e.message };
+	}
+}
+
+/**
+ * Deletes a specific backup file.
+ * @param {string} dbName - The database name.
+ * @param {string} backupFile - The backup filename.
+ * @returns {Promise<{status: string, message?: string}>}
+ */
+export async function deleteBackup(dbName, backupFile) {
+	try {
+		const response = await fetch(`/api/backups/${encodeURIComponent(dbName)}/${encodeURIComponent(backupFile)}`, {
+			method: 'DELETE'
+		});
+		return await response.json();
+	} catch (e) {
+		console.error('Failed to delete backup:', e);
+		return { status: 'error', message: e.message };
+	}
+}
+
+/**
+ * Fetches backup settings.
+ * @returns {Promise<{status: string, settings: Object}>}
+ */
+export async function getBackupSettings() {
+	try {
+		const response = await fetch('/api/backups/settings');
+		return await response.json();
+	} catch (e) {
+		console.error('Failed to fetch backup settings:', e);
+		return { status: 'error', settings: {} };
+	}
+}
+
+/**
+ * Saves backup settings.
+ * @param {Object} settings - The backup settings object.
+ * @returns {Promise<{status: string, message?: string}>}
+ */
+export async function saveBackupSettings(settings) {
+	try {
+		const response = await fetch('/api/backups/settings', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(settings)
+		});
+		return await response.json();
+	} catch (e) {
+		console.error('Failed to save backup settings:', e);
+		return { status: 'error', message: e.message };
+	}
+}
 
 /**
  * Checks for system updates via the backend.
