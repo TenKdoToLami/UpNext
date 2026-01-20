@@ -576,6 +576,7 @@
 							System Behavior
 						</h3>
 						<div class="space-y-3">
+							{% if ENABLE_TRAY %}
 							<div
 								class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 flex items-center justify-between">
 								<div>
@@ -620,6 +621,7 @@
 									<option value="exit">Exit Completely</option>
 								</select>
 							</div>
+							{% endif %}
 						</div>
 					</div>
 

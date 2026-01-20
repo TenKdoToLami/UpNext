@@ -4,6 +4,7 @@ import os
 from flask import Flask
 
 from app.config import DATA_DIR, STATIC_DIR, TEMPLATE_DIR
+from app.build_config import ENABLE_TRAY
 from app.utils.logging_setup import setup_logging
 
 
@@ -27,8 +28,11 @@ def create_app():
     app.config['APP_VERSION'] = "1.2.1"
 
     @app.context_processor
-    def inject_version():
-        return dict(APP_VERSION=app.config.get('APP_VERSION', '0.0.0'))
+    def inject_globals():
+        return dict(
+            APP_VERSION=app.config.get('APP_VERSION', '0.0.0'),
+            ENABLE_TRAY=ENABLE_TRAY
+        )
 
     # Register Blueprints for API, Exports, and HTML Views
     from app.routes import api, export, views, releases
