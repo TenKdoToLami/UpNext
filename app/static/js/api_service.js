@@ -246,6 +246,8 @@ export async function loadItems() {
 		renderGrid();
 		safeCreateIcons();
 		hideGridLoading();
+
+		if (window.populateAutocomplete) window.populateAutocomplete();
 	} catch (error) {
 		console.error('Error loading library items:', error);
 		hideGridLoading();
