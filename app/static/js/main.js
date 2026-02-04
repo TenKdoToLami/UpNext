@@ -14,7 +14,7 @@ import {
     populateAutocomplete, addSpecificLink, addLink, removeLink, updateLink, pasteLink,
     removeAuthor, addChild, removeChildIdx, updateChild, updateChildRating, renderChildren,
     removeAltTitle, checkEnterKey, renderDetailView, updateDetailTruncation, updateRatingVisuals,
-    renderAbbrTags, removeAbbreviation, toggleAbbrField, generateAbbreviation, renderLinks,
+    renderAbbrTags, removeAbbreviation, toggleAutoAbbrevs, generateAbbreviation, renderLinks,
     renderGenericTags, removeTag, incrementRereadCount, decrementRereadCount,
     toggleChildDetails, incrementChildField, decrementChildField,
     toggleTotalsOverride, updateTotalsUIForType,
@@ -173,7 +173,7 @@ window.updateDetailTruncation = updateDetailTruncation;
 window.updateRatingVisuals = updateRatingVisuals;
 window.renderAbbrTags = renderAbbrTags;
 window.removeAbbreviation = removeAbbreviation;
-window.toggleAbbrField = toggleAbbrField;
+window.toggleAutoAbbrevs = toggleAutoAbbrevs;
 window.generateAbbreviation = generateAbbreviation;
 window.renderGenericTags = renderGenericTags;
 window.removeTag = removeTag;
@@ -1211,6 +1211,9 @@ window.saveEntry = async () => {
         const pendingAltTitle = document.getElementById('altTitleInput').value.trim();
         if (pendingAltTitle && !data.alternateTitles.includes(pendingAltTitle)) data.alternateTitles.push(pendingAltTitle);
 
+        const pendingAbbr = document.getElementById('abbrInput').value.trim().toUpperCase();
+        if (pendingAbbr && !data.abbreviations.includes(pendingAbbr)) data.abbreviations.push(pendingAbbr);
+
         formData.append('data', JSON.stringify(data));
 
         const file = document.getElementById('coverImage').files[0];
@@ -1709,8 +1712,8 @@ async function initApp() {
     // Auto-fill abbr if enabled and list is empty/single
     addListener('title', 'input', (e) => {
         const val = e.target.value;
-        const disableAbbr = document.getElementById('disableAbbr');
-        if (disableAbbr && !disableAbbr.checked) {
+        const autoGenAbbr = document.getElementById('autoGenAbbr');
+        if (autoGenAbbr && autoGenAbbr.checked) {
             const abbr = generateAbbreviation(val);
             // Only auto-update if list is empty or has exactly 1 item (assuming it was auto-generated)
             if (state.currentAbbreviations.length <= 1) {

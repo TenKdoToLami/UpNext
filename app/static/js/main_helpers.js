@@ -253,8 +253,8 @@ function resetFormState() {
 	safeHtml('linksContainer', '');
 	safeHtml('childrenContainer', '');
 	safeCheck('isHidden', false);
-	safeCheck('disableAbbr', true);
-	toggleAbbrField(true);
+	safeCheck('autoGenAbbr', true);
+	toggleAutoAbbrevs(true);
 	safeHtml('abbrTagsContainer', '<input id="abbrInput" class="bg-transparent text-sm outline-none flex-1 min-w-[80px] text-zinc-700 dark:text-zinc-200 p-1 placeholder-zinc-400" placeholder="Auto-filled from title...">');
 	setTimeout(() => {
 		const abbrInput = document.getElementById('abbrInput');
@@ -1576,32 +1576,35 @@ export function removeAbbreviation(val) {
 }
 
 /**
- * Helper function to toggle the abbreviation field disabled state.
- * @param {boolean} checked - Whether the 'disable toggle' is checked.
+ * Helper function to toggle the auto-abbreviation feature.
+ * @param {boolean} checked - Whether the 'auto-generate' toggle is checked.
  */
-export function toggleAbbrField(checked) {
+export function toggleAutoAbbrevs(checked) {
 	const input = document.getElementById('abbrInput');
+	const titleVal = document.getElementById('title').value;
+	const abbr = generateAbbreviation(titleVal);
+
 	if (checked) {
-		state.currentAbbreviations = [];
-		renderAbbrTags();
-		if (input) {
-			input.disabled = true;
-			input.placeholder = 'Disabled';
-			input.classList.add('opacity-50', 'cursor-not-allowed');
-		}
-	} else {
-		if (input) {
-			input.disabled = false;
-			input.placeholder = 'Auto-filled from title...';
-			input.classList.remove('opacity-50', 'cursor-not-allowed');
-		}
-		// Trigger auto-fill from current title
-		const titleVal = document.getElementById('title').value;
-		const abbr = generateAbbreviation(titleVal);
-		if (abbr) {
-			state.currentAbbreviations = [abbr];
+		// Enabled: Attempt to add the abbreviation
+		if (abbr && !state.currentAbbreviations.includes(abbr)) {
+			// If list is empty, just add it. 
+			// If not, we might append or leave it. 
+			// User request: "clicking it should add the current abbreaviation"
+			state.currentAbbreviations.push(abbr);
 			renderAbbrTags();
 		}
+	} else {
+		// Disabled: Remove the auto-generated abbreviation if present
+		if (abbr && state.currentAbbreviations.includes(abbr)) {
+			state.currentAbbreviations = state.currentAbbreviations.filter(a => a !== abbr);
+			renderAbbrTags();
+		}
+	}
+	// Never disable the input
+	if (input) {
+		input.disabled = false;
+		input.placeholder = 'Auto-filled from title...';
+		input.classList.remove('opacity-50', 'cursor-not-allowed');
 	}
 }
 
