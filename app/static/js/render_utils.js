@@ -342,6 +342,8 @@ export function renderFilters() {
  */
 export function renderGrid() {
 	const container = document.getElementById('gridContainer');
+	if (!container) return;
+
 	const searchInput = document.getElementById('searchInput');
 	const searchVal = searchInput.value.toLowerCase();
 	const clearBtn = document.getElementById('clearSearchBtn');
