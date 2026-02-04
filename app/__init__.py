@@ -25,7 +25,7 @@ def create_app():
     # Initialize Flask app
     app = Flask(__name__, template_folder=TEMPLATE_DIR, static_folder=STATIC_DIR)
     app.config.from_object("app.config")
-    app.config['APP_VERSION'] = "1.2.1"
+    app.config['APP_VERSION'] = "1.2.2"
 
     @app.context_processor
     def inject_globals():
