@@ -147,6 +147,17 @@
 							<!-- Populated by JS -->
 						</div>
 					</div>
+
+					<!-- Reordering Building Blocks -->
+					<div id="clipboardOrderContainer" class="space-y-4 shrink-0">
+						<div class="flex items-center justify-between">
+							<label class="text-xs font-bold text-zinc-500 uppercase tracking-wider">Output Order & Sorting</label>
+							<span class="text-[10px] text-zinc-400 italic">Drag to reorder fields & sorting priority</span>
+						</div>
+						<div id="clipboardBlocksList" class="flex flex-wrap gap-2 p-3 bg-white dark:bg-zinc-900/30 rounded-xl border border-zinc-200 dark:border-zinc-800/50 min-h-[52px]">
+							<!-- Populated by JS -->
+						</div>
+					</div>
 					
 					<!-- Bottom: Preview & Action (Takes remaining height) -->
 					<div class="flex flex-col flex-1 min-h-0 gap-2">
@@ -155,6 +166,9 @@
 								Preview <span id="clipboardTimestamp" class="ml-2 font-normal text-zinc-400 capitalize-none"></span>
 							</label>
 							<div class="flex items-center gap-2 sm:gap-3">
+								<button type="button" onclick="toggleClipboardWrap()" class="text-[10px] sm:text-xs font-medium text-zinc-500 hover:text-indigo-500 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-2 py-1.5 rounded-lg shadow-sm flex items-center gap-1.5 transition-colors">
+									<i data-lucide="wrap-text" id="clipboardWrapIcon" class="w-3.5 h-3.5"></i> <span class="hidden sm:inline" id="clipboardWrapText">Wrap On</span>
+								</button>
 								<button type="button" onclick="toggleClipboardMaximize()" class="text-[10px] sm:text-xs font-medium text-zinc-500 hover:text-indigo-500 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-2 py-1.5 rounded-lg shadow-sm flex items-center gap-1.5 transition-colors">
 									<i data-lucide="maximize" id="clipboardMaximizeIcon" class="w-3.5 h-3.5"></i> <span class="hidden sm:inline" id="clipboardMaximizeText">Maximize</span>
 								</button>
@@ -168,7 +182,7 @@
 						</div>
 						
 						<div id="clipboardPreviewWrapper" class="flex-1 relative transition-all duration-300 min-h-[800px]">
-							<textarea id="clipboardTextarea" class="w-full h-full absolute inset-0 p-3 text-sm font-mono text-zinc-800 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none resize-none custom-scrollbar transition-all duration-300" spellcheck="false" placeholder="Generating preview..."></textarea>
+							<textarea id="clipboardTextarea" class="w-full h-full absolute inset-0 p-3 text-sm font-mono text-zinc-800 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none resize-none custom-scrollbar transition-all duration-300 whitespace-pre" spellcheck="false" placeholder="Generating preview..."></textarea>
 							<div class="absolute top-4 right-4 flex items-center gap-2 z-[70]">
 								<button id="clipboardCopyFloatingBtn" type="button" onclick="copyClipboardText()" class="hidden bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-full shadow-lg transition-all active:scale-95 flex items-center gap-2 px-4 py-2 rounded-xl">
 									<i data-lucide="copy" class="w-4 h-4"></i>
@@ -406,3 +420,6 @@
 		</div>
 	</div>
 </div>
+
+<!-- Sortable.js for Drag and Drop -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>

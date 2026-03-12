@@ -26,7 +26,8 @@ let exportState = {
 	filterTypes: [],
 	filterStatuses: [],
 	filterRatings: [],
-	fieldStates: {}
+	fieldStates: {},
+	fieldOrder: []
 };
 
 // ============================================================================
@@ -88,7 +89,8 @@ function resetExportModal() {
 		filterTypes: [],
 		filterStatuses: [],
 		filterRatings: [],
-		fieldStates: {}
+		fieldStates: {},
+		fieldOrder: []
 	};
 
 	const step1 = document.getElementById('exportStep1');
@@ -157,7 +159,7 @@ export function selectExportCategory(category) {
 	if (category !== 'full') {
 		renderExportFilters();
 		updateExportOptions();
-		
+
 		// Auto-generate clipboard text if that's the category selected
 		if (category === 'clipboard' && typeof generateClipboardText === 'function') {
 			generateClipboardText();
@@ -183,7 +185,7 @@ export function backToExportCategories() {
  */
 function getCurrentFormat() {
 	if (exportState.category === 'clipboard') return 'clipboard';
-	
+
 	const selector = exportState.category === 'visual'
 		? 'input[name="visualFormat"]:checked'
 		: 'input[name="rawFormat"]:checked';
@@ -202,6 +204,10 @@ export function updateExportOptions() {
 	if (!config) return;
 
 	renderFieldCheckboxes(format, config);
+	// Handle clipboard blocks specifically
+	if (format === 'clipboard') {
+		renderClipboardBlocks();
+	}
 	refreshIcons();
 }
 
@@ -220,7 +226,7 @@ function renderFieldCheckboxes(format, config) {
 	if (exportState.category === 'visual') containerId = 'visualFieldsContainer';
 	if (exportState.category === 'raw') containerId = 'rawFieldsContainer';
 	if (exportState.category === 'clipboard') containerId = 'clipboardFieldsContainer';
-	
+
 	const container = document.getElementById(containerId);
 	if (!container) return;
 
@@ -414,18 +420,102 @@ export function toggleVisualField(id) {
 
 	const isDefaultOn = config.defaultOn?.includes(id) ?? true;
 	const currentState = exportState.fieldStates[id] !== undefined ? exportState.fieldStates[id] : isDefaultOn;
-	
+
 	exportState.fieldStates[id] = !currentState;
 	updateExportOptions();
-	
-	if (exportState.category === 'clipboard' && typeof generateClipboardText === 'function') {
-		generateClipboardText();
+
+	if (exportState.category === 'clipboard') {
+		syncClipboardOrder(id);
+		if (typeof generateClipboardText === 'function') {
+			generateClipboardText();
+		}
 	}
 }
 
 // ============================================================================
-// FILTER RENDERING
+// CLIPBOARD BLOCKS
 // ============================================================================
+
+/**
+ * Syncs the field order array with selection changes.
+ * @param {string} id - Toggled field ID
+ */
+function syncClipboardOrder(id) {
+	const config = EXPORT_CONFIG['clipboard'];
+	const isDefaultOn = config.defaultOn?.includes(id) ?? true;
+	const isSelected = exportState.fieldStates[id] !== undefined ? exportState.fieldStates[id] : isDefaultOn;
+
+	if (isSelected) {
+		// Field was just selected, add to end if not present
+		if (!exportState.fieldOrder.includes(id)) {
+			exportState.fieldOrder.push(id);
+		}
+	} else {
+		// Field was deselected, remove from order
+		exportState.fieldOrder = exportState.fieldOrder.filter(fid => fid !== id);
+	}
+	renderClipboardBlocks();
+}
+
+/**
+ * Renders the draggable field blocks for clipboard export.
+ */
+function renderClipboardBlocks() {
+	const container = document.getElementById('clipboardBlocksList');
+	if (!container) return;
+
+	const format = 'clipboard';
+	const config = EXPORT_CONFIG[format];
+
+	// Initialize order if empty
+	if (exportState.fieldOrder.length === 0) {
+		const selectedFieldIds = [...(config.mandatory || [])];
+		ALL_EXPORT_FIELDS.forEach(f => {
+			if (!f.id || config.excluded?.includes(f.id) || selectedFieldIds.includes(f.id)) return;
+			const isDefaultOn = config.defaultOn?.includes(f.id) ?? true;
+			const isSelected = exportState.fieldStates[f.id] !== undefined ? exportState.fieldStates[f.id] : isDefaultOn;
+			if (isSelected) selectedFieldIds.push(f.id);
+		});
+		exportState.fieldOrder = selectedFieldIds;
+	}
+
+	// Generate blocks HTML
+	const blocksHtml = exportState.fieldOrder
+		.map(id => {
+			const field = ALL_EXPORT_FIELDS.find(f => f.id === id);
+			if (!field) return '';
+
+			return `
+				<div class="clipboard-block flex items-center gap-2 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-3 py-1.5 rounded-lg cursor-move transition-all hover:bg-zinc-200 dark:hover:bg-zinc-700 select-none shadow-sm" data-id="${id}">
+					<i data-lucide="grip-vertical" class="w-3 h-3 text-zinc-400"></i>
+					<span class="text-xs font-bold text-zinc-700 dark:text-zinc-200">${field.label}</span>
+				</div>
+			`;
+		}).join('');
+
+	container.innerHTML = blocksHtml;
+
+	// Initializing SortableJS
+	if (window.Sortable) {
+		// Destroy existing instance if it exists
+		const existing = Sortable.get(container);
+		if (existing) existing.destroy();
+
+		new Sortable(container, {
+			animation: 150,
+			ghostClass: 'opacity-50',
+			onEnd: (evt) => {
+				const blocks = container.querySelectorAll('.clipboard-block');
+				exportState.fieldOrder = Array.from(blocks).map(b => b.getAttribute('data-id'));
+				generateClipboardText();
+			}
+		});
+	}
+
+	if (window.lucide && window.lucide.createIcons) {
+		window.lucide.createIcons();
+	}
+}
 
 /** Color configurations for filter tiles */
 const FILTER_COLORS = {
@@ -779,12 +869,12 @@ export async function triggerExport() {
 		// Try to get filename from headers or default
 		const contentDisposition = res.headers.get('Content-Disposition');
 		let fileName = 'export.zip';
-		
+
 		// Set correct fallback default based on format
 		const currentFormat = exportState.category === 'full' ? 'zip' : getCurrentFormat();
 		if (currentFormat === 'db') fileName = 'library.db';
 		else if (currentFormat.startsWith('html')) fileName = `upnext_${currentFormat}.html`;
-		
+
 		if (contentDisposition && contentDisposition.includes('filename=')) {
 			fileName = contentDisposition.split('filename=')[1].replace(/['"]/g, '');
 		}
@@ -837,10 +927,10 @@ function refreshIcons() {
 export async function generateClipboardText() {
 	const textarea = document.getElementById('clipboardTextarea');
 	if (!textarea) return;
-	
+
 	textarea.value = '';
 	textarea.placeholder = 'Generating preview...';
-	
+
 	try {
 		const format = 'clipboard';
 		const config = EXPORT_CONFIG[format];
@@ -858,7 +948,7 @@ export async function generateClipboardText() {
 		const selectedFields = ALL_EXPORT_FIELDS
 			.filter(f => currentSelectedFieldIds.includes(f.id))
 			.map(f => f.backendField);
-			
+
 		// Fetch clean JSON from backend
 		const params = new URLSearchParams({
 			format: 'json_pure',
@@ -869,73 +959,82 @@ export async function generateClipboardText() {
 			excludeHidden: (!state.isHidden || !(exportState.fieldStates['includeHidden'] ?? true)).toString(),
 			includeCovers: 'false'
 		});
-		
+
 		const response = await fetch(`api/export?${params.toString()}`);
 		if (!response.ok) throw new Error('Failed to fetch data');
-		
+
 		let data = await response.json();
-		
-		// Sort alphabetically by title
+		// Handle dynamic field order
+		const orderedFields = exportState.fieldOrder.length > 0
+			? exportState.fieldOrder.map(id => ALL_EXPORT_FIELDS.find(f => f.id === id)).filter(Boolean)
+			: ALL_EXPORT_FIELDS.filter(f => currentSelectedFieldIds.includes(f.id));
+
+		// Multi-level sorting based on the defined field order
 		data.sort((a, b) => {
-			const tA = (a.title || '').toLowerCase();
-			const tB = (b.title || '').toLowerCase();
-			return tA.localeCompare(tB);
+			for (const fieldId of exportState.fieldOrder) {
+				const field = ALL_EXPORT_FIELDS.find(f => f.id === fieldId);
+				if (!field) continue;
+				const bField = field.backendField;
+
+				const valA = String(a[bField] || '').toLowerCase();
+				const valB = String(b[bField] || '').toLowerCase();
+
+				if (valA < valB) return -1;
+				if (valA > valB) return 1;
+			}
+			return 0;
 		});
-		
-		// Format each entry into text
-		// Desired order: Title - Authors - Universe - Series / Collection - Series Number - Media type - Status - Rating - Review - External links
-		const order = ['title', 'authors', 'universe', 'series', 'seriesNumber', 'type', 'status', 'rating', 'review', 'externalLinks'];
-		
+
 		let textLines = [];
 		for (const item of data) {
 			let lineParts = [];
-			for (const field of order) {
-				// Only include if field was selected in the UI and exists on this item
-				if (selectedFields.includes(field) && item[field] !== undefined && item[field] !== null && item[field] !== '') {
-					let val = item[field];
-					
-					if (field === 'seriesNumber') {
+			for (const fieldId of exportState.fieldOrder) {
+				const fieldObj = ALL_EXPORT_FIELDS.find(f => f.id === fieldId);
+				if (!fieldObj) continue;
+				const bField = fieldObj.backendField;
+
+				if (item[bField] !== undefined && item[bField] !== null && item[bField] !== '') {
+					let val = item[bField];
+
+					// Skip if rating is 0 (as requested by USER)
+					if (bField === 'rating' && (val === 0 || val === '0')) continue;
+
+					if (bField === 'seriesNumber') {
 						val = '#' + val;
 					}
-					
-					if (field === 'rating') {
-						const ratingInt = parseInt(val);
-						if (!isNaN(ratingInt) && RATING_LABELS && RATING_LABELS[ratingInt]) {
-							val = RATING_LABELS[ratingInt];
-						}
+
+					if (bField === 'rating') {
+						const ratingInt = Math.floor(val);
+						val = RATING_LABELS[ratingInt] || val;
 					}
-					
-					if (Array.isArray(val)) {
-						if (field === 'externalLinks') {
-							// For links, maybe just join the URLs or labels
-							val = val.map(l => l.url || l).join(', ');
-						} else {
-							val = val.join(', ');
-						}
+
+					if (bField === 'externalLinks' && Array.isArray(val)) {
+						val = val.map(l => l.url || l).join(', ');
 					}
-					if (val && String(val).trim() !== '') {
-						lineParts.push(String(val).trim());
-					}
+
+					// Final skip for empty/null values after potential formatting
+					if (val === undefined || val === null || String(val).trim() === '') continue;
+
+					lineParts.push(String(val).trim());
 				}
 			}
 			if (lineParts.length > 0) {
 				textLines.push(lineParts.join(' - '));
 			}
 		}
-		
+
 		if (textLines.length === 0) {
-			textarea.value = '';
-			textarea.placeholder = 'No items match the current filters.';
+			textarea.value = 'No items found matching your filters.';
 		} else {
 			textarea.value = textLines.join('\n');
 		}
-		
+
 		const timestampSpan = document.getElementById('clipboardTimestamp');
 		if (timestampSpan) {
 			const now = new Date();
 			timestampSpan.innerText = '(' + now.toLocaleDateString() + ' ' + now.toLocaleTimeString() + ')';
 		}
-		
+
 	} catch (err) {
 		textarea.value = '';
 		textarea.placeholder = `Error generating preview: ${err.message}`;
@@ -950,22 +1049,22 @@ export async function generateClipboardText() {
 export async function copyClipboardText() {
 	const textarea = document.getElementById('clipboardTextarea');
 	if (!textarea) return;
-	
+
 	try {
-		// Use pywebview bridge if available, otherwise browser clipboard API
 		if (window.pywebview && window.pywebview.api && window.pywebview.api.copy_to_clipboard) {
 			await window.pywebview.api.copy_to_clipboard(textarea.value);
-		} else {
+		} else if (navigator.clipboard) {
 			await navigator.clipboard.writeText(textarea.value);
+		} else {
+			throw new Error('Clipboard API not available');
 		}
 		if (window.showToast) window.showToast("Copied to clipboard!", "success");
 	} catch (err) {
 		console.error("Copy failed:", err);
-		// Fallback to execCommand if clipboard API fails
 		try {
 			textarea.select();
 			document.execCommand('copy');
-			textarea.setSelectionRange(0, 0); // Deselect
+			textarea.setSelectionRange(0, 0);
 			if (window.showToast) window.showToast("Copied to clipboard!", "success");
 		} catch (fallbackErr) {
 			if (window.showToast) window.showToast("Failed to copy text", "error");
@@ -981,16 +1080,14 @@ export function toggleClipboardMaximize() {
 	const wrapper = document.getElementById('clipboardPreviewWrapper');
 	const icon = document.getElementById('clipboardMaximizeIcon');
 	const text = document.getElementById('clipboardMaximizeText');
-	
+
 	if (!wrapper) return;
-	
+
 	const isMaximized = wrapper.classList.contains('absolute') && wrapper.classList.contains('inset-0');
-	
 	const floatingBtn = document.getElementById('clipboardMinimizeFloatingBtn');
 	const floatingCopyBtn = document.getElementById('clipboardCopyFloatingBtn');
-	
+
 	if (isMaximized) {
-		// Restore to inline flex item
 		wrapper.classList.remove('absolute', 'inset-0', 'z-[60]', 'bg-white', 'dark:bg-[#0c0c0e]', 'p-6', 'rounded-3xl');
 		wrapper.classList.add('relative', 'flex-1');
 		if (icon) icon.setAttribute('data-lucide', 'maximize');
@@ -998,7 +1095,6 @@ export function toggleClipboardMaximize() {
 		if (floatingBtn) floatingBtn.classList.add('hidden');
 		if (floatingCopyBtn) floatingCopyBtn.classList.add('hidden');
 	} else {
-		// Fill the entire modal content area
 		wrapper.classList.remove('relative', 'flex-1');
 		wrapper.classList.add('absolute', 'inset-0', 'z-[60]', 'bg-white', 'dark:bg-[#0c0c0e]', 'p-6', 'rounded-3xl');
 		if (icon) icon.setAttribute('data-lucide', 'minimize');
@@ -1006,12 +1102,38 @@ export function toggleClipboardMaximize() {
 		if (floatingBtn) floatingBtn.classList.remove('hidden');
 		if (floatingCopyBtn) floatingCopyBtn.classList.remove('hidden');
 	}
-	
-	if (window.lucide && window.lucide.createIcons) {
-		window.lucide.createIcons();
-	}
+
+	refreshIcons();
 }
 
+/**
+ * Toggles text wrapping in the clipboard textarea.
+ * @export
+ */
+export function toggleClipboardWrap() {
+	const textarea = document.getElementById('clipboardTextarea');
+	const icon = document.getElementById('clipboardWrapIcon');
+	const text = document.getElementById('clipboardWrapText');
+
+	if (!textarea) return;
+
+	const isWrapped = !textarea.classList.contains('whitespace-pre');
+
+	if (isWrapped) {
+		textarea.classList.add('whitespace-pre');
+		if (icon) icon.setAttribute('data-lucide', 'wrap-text');
+		if (text) text.innerText = 'Wrap Off';
+	} else {
+		textarea.classList.remove('whitespace-pre');
+		if (icon) icon.setAttribute('data-lucide', 'align-left');
+		if (text) text.innerText = 'Wrap On';
+	}
+
+	refreshIcons();
+}
+
+// Global exposure for event handlers in HTML
 window.generateClipboardText = generateClipboardText;
 window.copyClipboardText = copyClipboardText;
 window.toggleClipboardMaximize = toggleClipboardMaximize;
+window.toggleClipboardWrap = toggleClipboardWrap;
