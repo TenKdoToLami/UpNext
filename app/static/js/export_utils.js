@@ -704,7 +704,8 @@ export async function triggerExport() {
 			let filenameEstimate = 'upnext_export.zip';
 			if (format === 'db') filenameEstimate = 'library.db';
 			if (format === 'csv') filenameEstimate = 'upnext_library.zip'; // CSV is also zipped
-			if (format === 'json_raw' || format === 'xml' || format.startsWith('html')) filenameEstimate = 'upnext_export.zip';
+			if (format === 'json_raw' || format === 'xml') filenameEstimate = 'upnext_export.zip';
+			if (format.startsWith('html')) filenameEstimate = `upnext_${format}.html`;
 
 			const result = await window.pywebview.api.download_file(relativeUrl, filenameEstimate);
 
@@ -743,6 +744,12 @@ export async function triggerExport() {
 		// Try to get filename from headers or default
 		const contentDisposition = res.headers.get('Content-Disposition');
 		let fileName = 'export.zip';
+		
+		// Set correct fallback default based on format
+		const currentFormat = exportState.category === 'full' ? 'zip' : getCurrentFormat();
+		if (currentFormat === 'db') fileName = 'library.db';
+		else if (currentFormat.startsWith('html')) fileName = `upnext_${currentFormat}.html`;
+		
 		if (contentDisposition && contentDisposition.includes('filename=')) {
 			fileName = contentDisposition.split('filename=')[1].replace(/['"]/g, '');
 		}
