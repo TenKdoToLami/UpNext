@@ -321,7 +321,7 @@ def run_application_stack(create_app_func: Callable, host: str, port: int, headl
             # If main window exists, try to create a secondary window sharing the same API instance
              try:
                  api_instance = JsApi(window_ref, target_url)
-                 quick_add_ref[0] = webview.create_window('Add Entry', quick_add_url, width=700, height=800, resizable=False, js_api=api_instance)
+                 quick_add_ref[0] = webview.create_window('Add Entry', quick_add_url, width=700, height=800, resizable=False, text_select=True, js_api=api_instance)
              except Exception as e:
                  logger.error(f"Failed to create quick add window: {e}")
 
@@ -556,8 +556,10 @@ def run_application_stack(create_app_func: Callable, host: str, port: int, headl
         x=initial_x,
         y=initial_y,
         hidden=minimized, 
+        text_select=True,
         js_api=JsApi(window_ref, target_url)
     )
+
     window_ref[0] = window
     
     # Attach closing event to minimize instead of quit if tray is active

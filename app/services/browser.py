@@ -63,9 +63,9 @@ def launch_browser_app(url: str, title: str = "UpNext") -> Optional[webview.Wind
             y=initial_y,
             resizable=True,
             min_size=(800, 600),
-            text_select=False,
             js_api=JsApi()
         )
+
         
         # Bind close event to save window geometry
         def on_closing():
