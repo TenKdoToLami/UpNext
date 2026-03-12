@@ -57,43 +57,72 @@ Speed up your workflow with global shortcuts:
 
 ## 🖼️ Visual Showcase
 
-Experience the elegance of **UpNext**. Our interface combines sophisticated glassmorphism with high-density information display.
+Experience the elegance and depth of **UpNext**. Our interface combines sophisticated glassmorphism with high-density information display and powerful management tools.
 
-### 📚 Library Views
-````carousel
+### 📚 Core Library & Views
+
+The main interface provides multiple ways to view and interact with your collection, from high-fidelity grids to dense lists.
+
 ![Main Grid View](docs/assets/showcase/grid_view_wide.png)
 *The default wide grid layout, showcasing a diverse library and glassmorphic icons.*
-<!-- slide -->
+
 ![Rich Media Details](docs/assets/showcase/grid_view_info.png)
-*Detail Mode: Instantly see titles, authors, and studios directly on the cards.*
-<!-- slide -->
+*Detail Mode: Instantly see titles, authors, and studios directly on the covers.*
+
 ![Advanced Filtering](docs/assets/showcase/grid_view_filters.png)
-*Filtering in action: Switch instantly between media types and consumption statuses.*
-<!-- slide -->
+*Enabled show hidden, fifth item is hidden.*
+
+![Manga Collection](docs/assets/showcase/grid_view_manga.png)
+*A specialized flashbang view of a Manga + Movie collection with custom status indicators.*
+
 ![Compact List View](docs/assets/showcase/list_view.png)
-*For power users: A high-density list view for managing large collections.*
-````
+*For power users: A high-density list view for managing large collections with ease.*
 
-### 🔍 Discovery & Entry
-````carousel
+### 🔍 Discovery & Fast Entry
+
+Adding new items is effortless thanks to deep API integrations and a streamlined entry flow.
+
 ![Search Online](docs/assets/showcase/search_online_anilist.png)
-*Universal Discovery: Searching AniList for Frieren metadata and covers.*
-<!-- slide -->
-![Entry Wizard](docs/assets/showcase/new_entry_wizard.png)
-*Adaptive Wizard: A frictionless 12-step process to add new media to your vault.*
-````
+*Universal Discovery: Searching AniList (and other APIs) for Frieren metadata and covers.*
 
-### 📋 Deep Tracking & Export
-````carousel
+![Entry Wizard](docs/assets/showcase/new_entry_wizard.png)
+*Adaptive Wizard: A frictionless 12-step process that tailors its questions specifically to the media type you are adding.*
+
+### 📋 Deep Tracking & Privacy
+
+UpNext goes beyond simple "watched" counts, offering granular tracking for seasons, volumes, and private entries.
+
 ![Anime Seasons](docs/assets/showcase/detail_view_anime_seasons.png)
-*Granular Anime Tracking: Manage seasons, episodes, and progress with automatic stats.*
-<!-- slide -->
+*Granular Anime Tracking: Manage seasons, episodes, and individual progress with automatic technical stats.*
+
 ![Manga & Privacy](docs/assets/showcase/detail_view_manga.png)
-*Deep Manga info and localized "Hidden" status for private entries.*
-<!-- slide -->
+*Deep Manga information, including local "Hidden" status for private entries in your vault.*
+
+### 📤 Data Management & Export
+
+Export your data exactly how you want it, whether for backup or sharing with a community.
+
 ![Export Building Blocks](docs/assets/showcase/export_modal_clipboard.png)
-*Clipboard Builder: Drag and drop fields to create the perfect snippet for sharing.*
-````
+*Clipboard Builder: Use a visual drag-and-drop system to choose and reorder fields for the perfect social media snippet.*
+
+![Supported Formats](docs/assets/showcase/export_modal_formats.png)
+*Universal Export: Native support for SQL, JSON, CSV, and XML formats to ensure your data stays yours.*
+
+![Visual Styling](docs/assets/showcase/export_modal_styles.png)
+*Visual Export Options: Customize the layout and style of your exported card grids or lists.*
+
+### ⚙️ System & Support
+
+Accessibility and configuration are key components of the UpNext experience.
+
+![Help & Guides](docs/assets/showcase/help_modal_guides.png)
+*Integrated Documentation: Quick access to shortcuts, usage guides, and project details.*
+
+![Adaptive Scaling](docs/assets/showcase/controls_modal.png)
+*Adaptive Scaling: The interface automatically adjusts to your screen size and resolution.*
+
+![System Tray](docs/assets/showcase/system_tray_menu.png)
+*Tray Integration: Quick actions (Open, Add, Switch Library) available directly from your taskbar.*
 
 ---
 
