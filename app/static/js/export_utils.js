@@ -328,8 +328,8 @@ function renderFieldCheckboxes(format, config) {
 		.map(field => createFieldCheckbox(field, config))
 		.join('');
 
-	// Hidden tags options are irrelevant for clipboard text export since we can just ignore it in text preview
-	const hiddenOptionsHtml = (state.isHidden && exportState.category !== 'clipboard') ? createHiddenOptionsSection() : '';
+	// Hidden tags options are relevant for clipboard too if we are in hidden mode
+	const hiddenOptionsHtml = state.isHidden ? createHiddenOptionsSection() : '';
 	container.innerHTML = fieldsHtml + hiddenOptionsHtml;
 }
 
@@ -441,6 +441,10 @@ export function toggleVisualField(id) {
  * @param {string} id - Toggled field ID
  */
 function syncClipboardOrder(id) {
+	// Only sync actual fields that have building blocks
+	const field = ALL_EXPORT_FIELDS.find(f => f.id === id);
+	if (!field) return;
+
 	const config = EXPORT_CONFIG['clipboard'];
 	const isDefaultOn = config.defaultOn?.includes(id) ?? true;
 	const isSelected = exportState.fieldStates[id] !== undefined ? exportState.fieldStates[id] : isDefaultOn;
@@ -1010,6 +1014,11 @@ export async function generateClipboardText() {
 
 					if (bField === 'externalLinks' && Array.isArray(val)) {
 						val = val.map(l => l.url || l).join(', ');
+					}
+
+					if (bField === 'isHidden') {
+						if (val === true || val === 1 || val === '1') val = '[HIDDEN]';
+						else continue; // Skip if not hidden
 					}
 
 					// Final skip for empty/null values after potential formatting

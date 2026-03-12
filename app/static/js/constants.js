@@ -206,7 +206,7 @@ export const EXPORT_CONFIG = {
 			'coverUrl', 'notes', 'progress', 'description', 'alternateTitles',
 			'children', 'releaseDate', 'tags', 'abbreviations',
 			'episodeCount', 'chapterCount', 'volumeCount', 'pageCount', 'wordCount',
-			'avgDurationMinutes', 'completedAt', 'rereadCount', 'isHidden'
+			'avgDurationMinutes', 'completedAt', 'rereadCount'
 		],
 		icon: 'clipboard-copy'
 	},
