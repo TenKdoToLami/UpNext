@@ -3,7 +3,7 @@
 	class="fixed inset-0 z-[75] flex items-center justify-center bg-zinc-500/30 dark:bg-black/90 backdrop-blur-md hidden opacity-0 transition-opacity duration-200"
 	onclick="if(event.target === this) closeExportModal()">
 
-	<div class="bg-white dark:bg-[#0c0c0e] border border-zinc-200 dark:border-zinc-800 rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl transform scale-95 transition-all duration-200"
+	<div class="bg-white dark:bg-[#0c0c0e] border border-zinc-200 dark:border-zinc-800 rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl transform scale-95 transition-all duration-200 relative"
 		id="exportContent">
 
 		<div
@@ -18,8 +18,8 @@
 			</button>
 		</div>
 
-		<div class="p-8 space-y-6 bg-zinc-50 dark:bg-zinc-950/30 overflow-y-auto custom-scrollbar flex-1">
-			<div class="space-y-4 max-h-[60vh] overflow-y-auto custom-scrollbar pr-2">
+		<div class="flex flex-col flex-1 p-8 bg-zinc-50 dark:bg-zinc-950/30 overflow-y-auto custom-scrollbar min-h-0">
+			<div class="space-y-4 shrink-0 pr-2">
 				<p id="infoDescription" class="text-zinc-600 dark:text-zinc-300 text-sm leading-relaxed"></p>
 				<!-- Notes Section -->
 				<div id="infoNotesContainer" class="hidden">
@@ -154,18 +154,30 @@
 							<label class="text-xs font-bold text-zinc-500 uppercase tracking-wider">
 								Preview <span id="clipboardTimestamp" class="ml-2 font-normal text-zinc-400 capitalize-none"></span>
 							</label>
-							<div class="flex items-center gap-3">
-								<button type="button" onclick="generateClipboardText()" class="text-xs font-medium text-zinc-500 hover:text-blue-500 flex items-center gap-1.5 transition-colors">
-									<i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Refresh Data
+							<div class="flex items-center gap-2 sm:gap-3">
+								<button type="button" onclick="toggleClipboardMaximize()" class="text-[10px] sm:text-xs font-medium text-zinc-500 hover:text-indigo-500 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-2 py-1.5 rounded-lg shadow-sm flex items-center gap-1.5 transition-colors">
+									<i data-lucide="maximize" id="clipboardMaximizeIcon" class="w-3.5 h-3.5"></i> <span class="hidden sm:inline" id="clipboardMaximizeText">Maximize</span>
 								</button>
-								<button type="button" onclick="copyClipboardText()" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg shadow min-w-[140px] flex items-center justify-center gap-2 text-xs font-bold transition-all active:scale-95">
+								<button type="button" onclick="generateClipboardText()" class="text-[10px] sm:text-xs font-medium text-zinc-500 hover:text-blue-500 flex items-center gap-1.5 transition-colors">
+									<i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> <span class="hidden sm:inline">Refresh Data</span>
+								</button>
+								<button type="button" onclick="copyClipboardText()" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg shadow min-w-[100px] sm:min-w-[140px] flex items-center justify-center gap-2 text-[10px] sm:text-xs font-bold transition-all active:scale-95">
 									<i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy to Clipboard
 								</button>
 							</div>
 						</div>
 						
-						<div class="flex-1 relative">
-							<textarea id="clipboardTextarea" class="w-full h-full absolute inset-0 p-3 text-sm font-mono text-zinc-800 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none resize-none custom-scrollbar" spellcheck="false" placeholder="Generating preview..."></textarea>
+						<div id="clipboardPreviewWrapper" class="flex-1 relative transition-all duration-300 min-h-[800px]">
+							<textarea id="clipboardTextarea" class="w-full h-full absolute inset-0 p-3 text-sm font-mono text-zinc-800 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none resize-none custom-scrollbar transition-all duration-300" spellcheck="false" placeholder="Generating preview..."></textarea>
+							<div class="absolute top-4 right-4 flex items-center gap-2 z-[70]">
+								<button id="clipboardCopyFloatingBtn" type="button" onclick="copyClipboardText()" class="hidden bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-full shadow-lg transition-all active:scale-95 flex items-center gap-2 px-4 py-2 rounded-xl">
+									<i data-lucide="copy" class="w-4 h-4"></i>
+									<span class="text-xs font-bold">Copy to Clipboard</span>
+								</button>
+								<button id="clipboardMinimizeFloatingBtn" type="button" onclick="toggleClipboardMaximize()" class="hidden bg-zinc-900/50 hover:bg-zinc-900 text-white p-2 rounded-full shadow-lg transition-all active:scale-95">
+									<i data-lucide="minimize-2" class="w-4 h-4"></i>
+								</button>
+							</div>
 						</div>
 					</div>
 				</div>

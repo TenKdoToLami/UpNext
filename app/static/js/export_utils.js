@@ -973,5 +973,45 @@ export async function copyClipboardText() {
 	}
 }
 
+/**
+ * Toggles the clipboard text area to cover the screen.
+ * @export
+ */
+export function toggleClipboardMaximize() {
+	const wrapper = document.getElementById('clipboardPreviewWrapper');
+	const icon = document.getElementById('clipboardMaximizeIcon');
+	const text = document.getElementById('clipboardMaximizeText');
+	
+	if (!wrapper) return;
+	
+	const isMaximized = wrapper.classList.contains('absolute') && wrapper.classList.contains('inset-0');
+	
+	const floatingBtn = document.getElementById('clipboardMinimizeFloatingBtn');
+	const floatingCopyBtn = document.getElementById('clipboardCopyFloatingBtn');
+	
+	if (isMaximized) {
+		// Restore to inline flex item
+		wrapper.classList.remove('absolute', 'inset-0', 'z-[60]', 'bg-white', 'dark:bg-[#0c0c0e]', 'p-6', 'rounded-3xl');
+		wrapper.classList.add('relative', 'flex-1');
+		if (icon) icon.setAttribute('data-lucide', 'maximize');
+		if (text) text.innerText = 'Maximize';
+		if (floatingBtn) floatingBtn.classList.add('hidden');
+		if (floatingCopyBtn) floatingCopyBtn.classList.add('hidden');
+	} else {
+		// Fill the entire modal content area
+		wrapper.classList.remove('relative', 'flex-1');
+		wrapper.classList.add('absolute', 'inset-0', 'z-[60]', 'bg-white', 'dark:bg-[#0c0c0e]', 'p-6', 'rounded-3xl');
+		if (icon) icon.setAttribute('data-lucide', 'minimize');
+		if (text) text.innerText = 'Minimize';
+		if (floatingBtn) floatingBtn.classList.remove('hidden');
+		if (floatingCopyBtn) floatingCopyBtn.classList.remove('hidden');
+	}
+	
+	if (window.lucide && window.lucide.createIcons) {
+		window.lucide.createIcons();
+	}
+}
+
 window.generateClipboardText = generateClipboardText;
 window.copyClipboardText = copyClipboardText;
+window.toggleClipboardMaximize = toggleClipboardMaximize;
