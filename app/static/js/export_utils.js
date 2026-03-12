@@ -127,6 +127,7 @@ export function selectExportCategory(category) {
 		visual: document.getElementById('visualExportOptions'),
 		raw: document.getElementById('rawExportOptions'),
 		full: document.getElementById('fullExportOptions'),
+		clipboard: document.getElementById('clipboardExportOptions'),
 		filters: document.getElementById('exportFilters')
 	};
 
@@ -135,7 +136,7 @@ export function selectExportCategory(category) {
 	if (elements.footer) elements.footer.classList.remove('hidden');
 
 	// Hide all option panels
-	['visual', 'raw', 'full'].forEach(key => {
+	['visual', 'raw', 'full', 'clipboard'].forEach(key => {
 		if (elements[key]) elements[key].classList.add('hidden');
 	});
 
@@ -147,10 +148,20 @@ export function selectExportCategory(category) {
 		elements.filters.classList.toggle('hidden', category === 'full');
 	}
 
-	// Initialize filters and fields for visual/raw exports
+	// For clipboard, ensure we hide the main download footer
+	if (category === 'clipboard' && elements.footer) {
+		elements.footer.classList.add('hidden');
+	}
+
+	// Initialize filters and fields for visual/raw/clipboard exports
 	if (category !== 'full') {
 		renderExportFilters();
 		updateExportOptions();
+		
+		// Auto-generate clipboard text if that's the category selected
+		if (category === 'clipboard' && typeof generateClipboardText === 'function') {
+			generateClipboardText();
+		}
 	}
 
 	refreshIcons();
@@ -171,11 +182,14 @@ export function backToExportCategories() {
  * @private
  */
 function getCurrentFormat() {
+	if (exportState.category === 'clipboard') return 'clipboard';
+	
 	const selector = exportState.category === 'visual'
 		? 'input[name="visualFormat"]:checked'
 		: 'input[name="rawFormat"]:checked';
 	const input = document.querySelector(selector);
-	return input?.value || (exportState.category === 'visual' ? 'html_accordion' : 'json_raw');
+	// Changed to use json_raw as default for non-visual if no selection exists
+	return input?.value || (exportState.category === 'visual' ? 'html_accordion' : (exportState.category === 'raw' ? 'json_raw' : null));
 }
 
 /**
@@ -202,7 +216,11 @@ export function updateExportOptions() {
  * @private
  */
 function renderFieldCheckboxes(format, config) {
-	const containerId = exportState.category === 'visual' ? 'visualFieldsContainer' : 'rawFieldsContainer';
+	let containerId = '';
+	if (exportState.category === 'visual') containerId = 'visualFieldsContainer';
+	if (exportState.category === 'raw') containerId = 'rawFieldsContainer';
+	if (exportState.category === 'clipboard') containerId = 'clipboardFieldsContainer';
+	
 	const container = document.getElementById(containerId);
 	if (!container) return;
 
@@ -304,7 +322,8 @@ function renderFieldCheckboxes(format, config) {
 		.map(field => createFieldCheckbox(field, config))
 		.join('');
 
-	const hiddenOptionsHtml = state.isHidden ? createHiddenOptionsSection() : '';
+	// Hidden tags options are irrelevant for clipboard text export since we can just ignore it in text preview
+	const hiddenOptionsHtml = (state.isHidden && exportState.category !== 'clipboard') ? createHiddenOptionsSection() : '';
 	container.innerHTML = fieldsHtml + hiddenOptionsHtml;
 }
 
@@ -317,7 +336,8 @@ function renderFieldCheckboxes(format, config) {
  */
 function createFieldCheckbox(field, config) {
 	const isMandatory = config.mandatory?.includes(field.id);
-	const isChecked = isMandatory || (exportState.fieldStates[field.id] ?? true);
+	const isDefaultOn = config.defaultOn?.includes(field.id) ?? true;
+	const isChecked = isMandatory || (exportState.fieldStates[field.id] ?? isDefaultOn);
 	const colorClass = field.color || 'text-zinc-300';
 	const cursorClass = isMandatory ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:bg-zinc-800';
 	const onclick = isMandatory ? '' : `toggleVisualField('${field.id}')`;
@@ -392,9 +412,15 @@ export function toggleVisualField(id) {
 	const field = ALL_EXPORT_FIELDS.find(f => f.id === id);
 	if (!field && id !== 'includeHidden') return;
 
-	const currentState = exportState.fieldStates[id] ?? true;
+	const isDefaultOn = config.defaultOn?.includes(id) ?? true;
+	const currentState = exportState.fieldStates[id] !== undefined ? exportState.fieldStates[id] : isDefaultOn;
+	
 	exportState.fieldStates[id] = !currentState;
 	updateExportOptions();
+	
+	if (exportState.category === 'clipboard' && typeof generateClipboardText === 'function') {
+		generateClipboardText();
+	}
 }
 
 // ============================================================================
@@ -595,6 +621,9 @@ export function toggleExportTypeFilter(type) {
 		}
 	}
 	renderExportFilters();
+	if (exportState.category === 'clipboard' && typeof generateClipboardText === 'function') {
+		generateClipboardText();
+	}
 }
 
 /**
@@ -617,6 +646,9 @@ export function toggleExportStatusFilter(status) {
 		}
 	}
 	renderExportFilters();
+	if (exportState.category === 'clipboard' && typeof generateClipboardText === 'function') {
+		generateClipboardText();
+	}
 }
 
 /**
@@ -640,6 +672,9 @@ export function toggleExportRatingFilter(rating) {
 		}
 	}
 	renderExportFilters();
+	if (exportState.category === 'clipboard' && typeof generateClipboardText === 'function') {
+		generateClipboardText();
+	}
 }
 
 // ============================================================================
@@ -790,3 +825,153 @@ function refreshIcons() {
 	}
 }
 
+// ============================================================================
+// CLIPBOARD EXPORT LOGIC
+// ============================================================================
+
+/**
+ * Generates the text for the clipboard export preview based on selected filters and fields.
+ * Fetches JSON from the backend, then formats it textually.
+ * @export
+ */
+export async function generateClipboardText() {
+	const textarea = document.getElementById('clipboardTextarea');
+	if (!textarea) return;
+	
+	textarea.value = '';
+	textarea.placeholder = 'Generating preview...';
+	
+	try {
+		const format = 'clipboard';
+		const config = EXPORT_CONFIG[format];
+		if (!config) throw new Error("Invalid configuration for clipboard");
+
+		// Determine selected fields
+		// Build selected fields dynamically based on exact UI state (mandatory + explicitly selected + defaultOn if un-toggled)
+		let currentSelectedFieldIds = [...(config.mandatory || [])];
+		ALL_EXPORT_FIELDS.forEach(f => {
+			if (!f.id || config.excluded?.includes(f.id) || currentSelectedFieldIds.includes(f.id)) return;
+			const isDefaultOn = config.defaultOn?.includes(f.id) ?? true;
+			const isSelected = exportState.fieldStates[f.id] !== undefined ? exportState.fieldStates[f.id] : isDefaultOn;
+			if (isSelected) currentSelectedFieldIds.push(f.id);
+		});
+		const selectedFields = ALL_EXPORT_FIELDS
+			.filter(f => currentSelectedFieldIds.includes(f.id))
+			.map(f => f.backendField);
+			
+		// Fetch clean JSON from backend
+		const params = new URLSearchParams({
+			format: 'json_pure',
+			fields: selectedFields.join(','),
+			filterTypes: exportState.filterTypes.join(','),
+			filterStatuses: exportState.filterStatuses.join(','),
+			filterRatings: exportState.filterRatings.join(','),
+			excludeHidden: (!state.isHidden || !(exportState.fieldStates['includeHidden'] ?? true)).toString(),
+			includeCovers: 'false'
+		});
+		
+		const response = await fetch(`api/export?${params.toString()}`);
+		if (!response.ok) throw new Error('Failed to fetch data');
+		
+		let data = await response.json();
+		
+		// Sort alphabetically by title
+		data.sort((a, b) => {
+			const tA = (a.title || '').toLowerCase();
+			const tB = (b.title || '').toLowerCase();
+			return tA.localeCompare(tB);
+		});
+		
+		// Format each entry into text
+		// Desired order: Title - Authors - Universe - Series / Collection - Series Number - Media type - Status - Rating - Review - External links
+		const order = ['title', 'authors', 'universe', 'series', 'seriesNumber', 'type', 'status', 'rating', 'review', 'externalLinks'];
+		
+		let textLines = [];
+		for (const item of data) {
+			let lineParts = [];
+			for (const field of order) {
+				// Only include if field was selected in the UI and exists on this item
+				if (selectedFields.includes(field) && item[field] !== undefined && item[field] !== null && item[field] !== '') {
+					let val = item[field];
+					
+					if (field === 'seriesNumber') {
+						val = '#' + val;
+					}
+					
+					if (field === 'rating') {
+						const ratingInt = parseInt(val);
+						if (!isNaN(ratingInt) && RATING_LABELS && RATING_LABELS[ratingInt]) {
+							val = RATING_LABELS[ratingInt];
+						}
+					}
+					
+					if (Array.isArray(val)) {
+						if (field === 'externalLinks') {
+							// For links, maybe just join the URLs or labels
+							val = val.map(l => l.url || l).join(', ');
+						} else {
+							val = val.join(', ');
+						}
+					}
+					if (val && String(val).trim() !== '') {
+						lineParts.push(String(val).trim());
+					}
+				}
+			}
+			if (lineParts.length > 0) {
+				textLines.push(lineParts.join(' - '));
+			}
+		}
+		
+		if (textLines.length === 0) {
+			textarea.value = '';
+			textarea.placeholder = 'No items match the current filters.';
+		} else {
+			textarea.value = textLines.join('\n');
+		}
+		
+		const timestampSpan = document.getElementById('clipboardTimestamp');
+		if (timestampSpan) {
+			const now = new Date();
+			timestampSpan.innerText = '(' + now.toLocaleDateString() + ' ' + now.toLocaleTimeString() + ')';
+		}
+		
+	} catch (err) {
+		textarea.value = '';
+		textarea.placeholder = `Error generating preview: ${err.message}`;
+		console.error("Clipboard Generation Error:", err);
+	}
+}
+
+/**
+ * Copies the text area content to the clipboard.
+ * @export
+ */
+export async function copyClipboardText() {
+	const textarea = document.getElementById('clipboardTextarea');
+	if (!textarea) return;
+	
+	try {
+		// Use pywebview bridge if available, otherwise browser clipboard API
+		if (window.pywebview && window.pywebview.api && window.pywebview.api.copy_to_clipboard) {
+			await window.pywebview.api.copy_to_clipboard(textarea.value);
+		} else {
+			await navigator.clipboard.writeText(textarea.value);
+		}
+		if (window.showToast) window.showToast("Copied to clipboard!", "success");
+	} catch (err) {
+		console.error("Copy failed:", err);
+		// Fallback to execCommand if clipboard API fails
+		try {
+			textarea.select();
+			document.execCommand('copy');
+			textarea.setSelectionRange(0, 0); // Deselect
+			if (window.showToast) window.showToast("Copied to clipboard!", "success");
+		} catch (fallbackErr) {
+			if (window.showToast) window.showToast("Failed to copy text", "error");
+		}
+	}
+}
+
+window.generateClipboardText = generateClipboardText;
+window.copyClipboardText = copyClipboardText;

@@ -475,6 +475,33 @@ def run_application_stack(create_app_func: Callable, host: str, port: int, headl
                 logger.error(f"Clipboard bridge failed: {e}")
                 return None
 
+        def copy_to_clipboard(self, text):
+            """Bridge: Write text to system clipboard securely."""
+            try:
+                import subprocess
+                if sys.platform == 'win32':
+                    process = subprocess.Popen(['clip.exe'], stdin=subprocess.PIPE, text=True, encoding='utf-8')
+                    process.communicate(input=text)
+                    return True
+                elif sys.platform == 'darwin':
+                    process = subprocess.Popen(['pbcopy'], stdin=subprocess.PIPE, text=True, encoding='utf-8')
+                    process.communicate(input=text)
+                    return True
+                elif sys.platform == 'linux':
+                    # Try xclip or wl-copy
+                    import shutil
+                    if shutil.which('xclip'):
+                        process = subprocess.Popen(['xclip', '-selection', 'clipboard'], stdin=subprocess.PIPE, text=True, encoding='utf-8')
+                        process.communicate(input=text)
+                        return True
+                    elif shutil.which('wl-copy'):
+                        process = subprocess.Popen(['wl-copy'], stdin=subprocess.PIPE, text=True, encoding='utf-8')
+                        process.communicate(input=text)
+                        return True
+            except Exception as e:
+                logger.error(f"Failed to copy to clipboard via bridge: {e}")
+            return False
+
         def notify_update(self):
             """Bridge: Reload main window data."""
             if window_ref[0]:

@@ -441,6 +441,10 @@ def export_data():
         
         if format_param == 'json_raw':
             return export_json(items, fields, images)
+        elif format_param == 'json_pure':
+            processed_items = _process_items_for_export(items, images, base64_encode=False)
+            export_items = [filter_item_fields(item, fields) for item in processed_items] if fields else processed_items
+            return jsonify(export_items)
         elif format_param == 'csv':
             return export_csv(items, fields, images)
         elif format_param == 'xml':

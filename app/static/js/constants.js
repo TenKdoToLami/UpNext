@@ -196,6 +196,20 @@ export const ALL_EXPORT_FIELDS = [
 
 /** Export format configurations */
 export const EXPORT_CONFIG = {
+	// Clipboard Export
+	'clipboard': {
+		label: 'Clipboard Text',
+		category: 'clipboard',
+		mandatory: ['title'],
+		defaultOn: ['title', 'authors'],
+		excluded: [
+			'coverUrl', 'notes', 'progress', 'description', 'alternateTitles',
+			'children', 'releaseDate', 'tags', 'abbreviations',
+			'episodeCount', 'chapterCount', 'volumeCount', 'pageCount', 'wordCount',
+			'avgDurationMinutes', 'completedAt', 'rereadCount', 'isHidden'
+		],
+		icon: 'clipboard-copy'
+	},
 	// Visual Export Formats
 	'html_accordion': {
 		label: 'Simple List',
