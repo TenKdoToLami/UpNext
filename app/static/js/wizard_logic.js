@@ -404,10 +404,6 @@ export function animateStepChange(from, to, direction) {
 		const wrapper = document.getElementById('formScrollWrapper');
 		if (wrapper) wrapper.scrollTop = 0;
 
-		// Focus first input on new step
-		const input = toEl.querySelector('input, textarea');
-		// Skip autofocus for cards/image steps (1, 2, 3)
-		if (input && to > 3) input.focus();
 	}, 380);
 }
 
