@@ -499,26 +499,26 @@ function renderClipboardBlocks() {
 
 	container.innerHTML = blocksHtml;
 
-	// Initializing SortableJS
+	// Initializing SortableJS for drag-and-drop reordering
 	if (window.Sortable) {
-		// Destroy existing instance if it exists
+		// Destroy existing instance to prevent duplicates on re-render
 		const existing = Sortable.get(container);
 		if (existing) existing.destroy();
 
 		new Sortable(container, {
 			animation: 150,
 			ghostClass: 'opacity-50',
-			onEnd: (evt) => {
+			onEnd: () => {
+				// Re-sync order from DOM state
 				const blocks = container.querySelectorAll('.clipboard-block');
 				exportState.fieldOrder = Array.from(blocks).map(b => b.getAttribute('data-id'));
+				// Immediately refresh preview since sorting follows order
 				generateClipboardText();
 			}
 		});
 	}
 
-	if (window.lucide && window.lucide.createIcons) {
-		window.lucide.createIcons();
-	}
+	refreshIcons();
 }
 
 /** Color configurations for filter tiles */
@@ -968,10 +968,6 @@ export async function generateClipboardText() {
 		if (!response.ok) throw new Error('Failed to fetch data');
 
 		let data = await response.json();
-		// Handle dynamic field order
-		const orderedFields = exportState.fieldOrder.length > 0
-			? exportState.fieldOrder.map(id => ALL_EXPORT_FIELDS.find(f => f.id === id)).filter(Boolean)
-			: ALL_EXPORT_FIELDS.filter(f => currentSelectedFieldIds.includes(f.id));
 
 		// Multi-level sorting based on the defined field order
 		data.sort((a, b) => {

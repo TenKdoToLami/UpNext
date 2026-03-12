@@ -640,6 +640,57 @@
 						</div>
 					</div>
 
+					<!-- CLIPBOARD EXPORT -->
+					<div class="space-y-2 border-b border-zinc-200 dark:border-zinc-800 pb-4">
+						<button onclick="document.getElementById('clipboardGuide').classList.toggle('hidden')"
+							class="w-full flex items-center justify-between text-left group">
+							<h3 class="text-sm font-bold uppercase tracking-widest text-indigo-500">
+								Clipboard Export</h3>
+							<i data-lucide="chevron-down"
+								class="w-4 h-4 text-zinc-400 group-hover:text-indigo-500 transition-colors"></i>
+						</button>
+
+						<div id="clipboardGuide" class="hidden space-y-4 animate-enter pt-2 border-l-2 border-indigo-500/30 pl-4">
+							<p class="text-[11px] leading-relaxed opacity-90">
+								The Clipboard Export system is designed for quick sharing and textual library management.
+							</p>
+							<ul class="space-y-3">
+								<li class="flex items-start gap-3">
+									<div class="bg-indigo-500/20 p-1.5 rounded-lg text-indigo-600 dark:text-indigo-400">
+										<i data-lucide="grip-vertical" class="w-3.5 h-3.5"></i>
+									</div>
+									<div class="text-[11px] leading-tight">
+										<strong>Building Blocks:</strong> Drag and drop the field blocks in the export modal to reorder your output. The left-most block will be the first item in the exported line.
+									</div>
+								</li>
+								<li class="flex items-start gap-3">
+									<div class="bg-indigo-500/20 p-1.5 rounded-lg text-indigo-600 dark:text-indigo-400">
+										<i data-lucide="arrow-down-narrow-wide" class="w-3.5 h-3.5"></i>
+									</div>
+									<div class="text-[11px] leading-tight">
+										<strong>Priority Sorting:</strong> Your data is automatically sorted based on your block order. If 'Series' is first, the list sorts by series; if 'Rating' is moved to the front, it sorts by score.
+									</li>
+								</li>
+								<li class="flex items-start gap-3">
+									<div class="bg-indigo-500/20 p-1.5 rounded-lg text-indigo-600 dark:text-indigo-400">
+										<i data-lucide="filter-x" class="w-3.5 h-3.5"></i>
+									</div>
+									<div class="text-[11px] leading-tight">
+										<strong>Smart Cleanup:</strong> Empty fields (null notes, empty authors) and ratings of 0 are automatically skipped to keep your shared list clean.
+									</div>
+								</li>
+								<li class="flex items-start gap-3 border-t border-zinc-200 dark:border-zinc-800 pt-3">
+									<div class="bg-indigo-500/20 p-1.5 rounded-lg text-indigo-600 dark:text-indigo-400">
+										<i data-lucide="maximize" class="w-3.5 h-3.5"></i>
+									</div>
+									<div class="text-[11px] leading-tight">
+										<strong>Maximized Preview:</strong> Use the maximize button to view your entire export list at once. You can also toggle <code>Wrap Text</code> to scroll horizontally for long lines.
+									</div>
+								</li>
+							</ul>
+						</div>
+					</div>
+
 					<!-- CORE DOCUMENTATION -->
 					<div class="space-y-2 pt-2">
 						<button onclick="document.getElementById('docsGuide').classList.toggle('hidden')"

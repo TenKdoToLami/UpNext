@@ -87,6 +87,12 @@ UpNext uses a highly normalized SQLite schema to ensure data integrity:
 - **`MediaRelease`**: Calendar events linked to items.
 - **`TagMeta`**: Global tag metadata (Unique Colors, Descriptions).
 
+### 5. Export Subsystem & Utilities
+- **Clipboard Building Blocks**: Located in `export_utils.js`, this system provides a visual way to construct line formats.
+- **Drag-and-Drop Reordering**: Uses `SortableJS` to manage the `fieldOrder` array in frontend state.
+- **Multi-Level Sorting**: The export logic performs priority-based sorting; the first field in the "Building Blocks" order serves as the primary sort key, the second as the secondary, and so on.
+- **Clean Output Filtering**: Automatically purges empty strings, null values, and zero ratings from the final textual output to ensure high-quality sharing blocks.
+
 ---
 
 ## 📦 Build & Packaging
