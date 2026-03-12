@@ -535,6 +535,11 @@ export function loadMoreItems() {
 			container.appendChild(newSentinel);
 			if (gridObserver) gridObserver.observe(newSentinel);
 		}
+	} else {
+		// Reached the end
+		if (state.appSettings?.paginationMode === 'combined') {
+			renderPaginationFooter();
+		}
 	}
 
 	safeCreateIcons();
@@ -560,7 +565,8 @@ function renderPaginationFooter() {
 	// If we show 0-120 (batch 60), we are at end of page 2.
 	const currentPage = Math.ceil(state.visibleLimit / batchSize);
 
-	if (totalItems <= state.visibleLimit && state.visibleStart === 0) return; // All shown
+	// Early return if everything is shown and it's just one page
+	if (totalItems <= state.visibleLimit && state.visibleStart === 0 && totalPages <= 1) return; 
 
 	const footer = document.createElement('div');
 	footer.id = 'pagination-footer';
