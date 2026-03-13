@@ -5,7 +5,8 @@
  */
 
 import { state, setState } from './state.js';
-import { TYPE_COLOR_MAP, STATUS_COLOR_MAP, MEDIA_TYPES, ICON_MAP, STATUS_ICON_MAP, STAR_FILLS } from './constants.js';
+import { TYPE_COLOR_MAP, STATUS_COLOR_MAP, MEDIA_TYPES, ICON_MAP, STATUS_ICON_MAP, STAR_FILLS, RATING_LABELS } from './constants.js';
+import { safeCreateIcons } from './dom_utils.js';
 
 let typeChartInstance = null;
 let statusChartInstance = null;
@@ -36,13 +37,8 @@ const COMMON_CHART_OPTIONS = {
 			}
 		},
 		tooltip: {
-			backgroundColor: 'rgba(24, 24, 27, 0.9)',
-			titleFont: { family: "'Outfit', sans-serif", size: 13 },
-			bodyFont: { family: "'Inter', sans-serif", size: 12 },
-			padding: 12,
-			cornerRadius: 8,
-			displayColors: true,
-			boxPadding: 4
+			enabled: false, // Disable built-in tooltip
+			external: externalTooltipHandler
 		},
 		datalabels: {
 			color: '#ffffff',
@@ -81,6 +77,239 @@ const COMMON_CHART_OPTIONS = {
 	borderWidth: 0,
 	hoverOffset: 4
 };
+
+/**
+ * Helper to get icon and color info for tooltip labels.
+ */
+function getTooltipInfo(label) {
+	// 1. Check Media Types
+	if (ICON_MAP[label]) {
+		const typeColorClass = TYPE_COLOR_MAP[label] || '';
+		const colorMatch = typeColorClass.match(/text-([a-z]+)-[0-9]+/);
+		const baseColor = colorMatch ? colorMatch[1] : 'zinc';
+		
+		const hexMap = {
+			violet: '#a78bfa',
+			pink: '#f472b6',
+			blue: '#60a5fa',
+			red: '#f87171',
+			amber: '#fbbf24',
+			sky: '#38bdf8',
+			fuchsia: '#e879f9',
+			emerald: '#34d399',
+			zinc: '#a1a1aa'
+		};
+
+		return {
+			icon: ICON_MAP[label],
+			color: hexMap[baseColor] || '#a1a1aa'
+		};
+	}
+
+	// 2. Check Statuses
+	if (STATUS_ICON_MAP[label]) {
+		const statusColorClass = STATUS_COLOR_MAP[label] || '';
+		const colorMatch = statusColorClass.match(/text-([a-z]+)-[0-9]+/);
+		const baseColor = colorMatch ? colorMatch[1] : 'zinc';
+		
+		const hexMap = {
+			zinc: '#a1a1aa',
+			sky: '#38bdf8',
+			red: '#f87171',
+			orange: '#fb923c',
+			fuchsia: '#e879f9',
+			emerald: '#34d399'
+		};
+
+		return {
+			icon: STATUS_ICON_MAP[label],
+			color: hexMap[baseColor] || '#a1a1aa'
+		};
+	}
+
+	// 3. Check Ratings
+	const ratingValue = Object.keys(RATING_LABELS).find(key => RATING_LABELS[key] === label);
+	if (ratingValue) {
+		const hexMap = {
+			1: '#f87171', // Red
+			2: '#fbbf24', // Amber
+			3: '#60a5fa', // Blue
+			4: '#34d399'  // Emerald
+		};
+		return {
+			icon: 'star',
+			color: hexMap[ratingValue],
+			rating: Number(ratingValue)
+		};
+	}
+
+	return { icon: 'info', color: '#a1a1aa' };
+}
+
+/**
+ * Creates or retrieves the external tooltip element.
+ */
+const getOrCreateTooltip = (chart) => {
+	let tooltipEl = chart.canvas.parentNode.querySelector('div.custom-chart-tooltip');
+
+	if (!tooltipEl) {
+		tooltipEl = document.createElement('div');
+		tooltipEl.classList.add('custom-chart-tooltip');
+		tooltipEl.style.background = 'rgba(24, 24, 27, 0.95)';
+		tooltipEl.style.borderRadius = '12px';
+		tooltipEl.style.color = 'white';
+		tooltipEl.style.opacity = 1;
+		tooltipEl.style.pointerEvents = 'none';
+		tooltipEl.style.position = 'absolute';
+		tooltipEl.style.transform = 'translate(-50%, 0)';
+		tooltipEl.style.transition = 'all .1s ease';
+		tooltipEl.style.padding = '10px 14px';
+		tooltipEl.style.zIndex = '100';
+		tooltipEl.style.backdropFilter = 'blur(8px)';
+		tooltipEl.style.border = '1px solid rgba(255, 255, 255, 0.1)';
+		tooltipEl.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.3)';
+		tooltipEl.style.minWidth = '140px';
+
+		const table = document.createElement('table');
+		table.style.margin = '0px';
+		table.style.width = '100%';
+
+		tooltipEl.appendChild(table);
+		chart.canvas.parentNode.appendChild(tooltipEl);
+	}
+
+	return tooltipEl;
+};
+
+/**
+ * External Tooltip Handler for Chart.js
+ */
+function externalTooltipHandler(context) {
+	const { chart, tooltip } = context;
+	const tooltipEl = getOrCreateTooltip(chart);
+
+	if (tooltip.opacity === 0) {
+		tooltipEl.style.opacity = 0;
+		return;
+	}
+
+	if (tooltip.body) {
+		const titleLines = tooltip.title || [];
+
+		const tableHead = document.createElement('thead');
+		titleLines.forEach(title => {
+			// Deduplication logic: 
+			// 1. If the chart is a Doughnut/Pie, usually the header is a repeat of the label.
+			// 2. If title matches the first data point label, skip it.
+			const firstLabel = tooltip.dataPoints[0]?.label;
+			if (title === firstLabel && tooltip.dataPoints.length === 1) return;
+
+			const tr = document.createElement('tr');
+			tr.style.borderWidth = 0;
+			const th = document.createElement('th');
+			th.style.borderWidth = 0;
+			th.style.textAlign = 'left';
+			th.style.paddingBottom = '6px';
+			th.style.fontSize = '12px';
+			th.style.fontWeight = '700';
+			th.style.color = 'rgba(255,255,255,0.6)';
+			th.style.textTransform = 'uppercase';
+			th.innerText = title;
+			tr.appendChild(th);
+			tableHead.appendChild(tr);
+		});
+
+		const tableBody = document.createElement('tbody');
+		tooltip.dataPoints.forEach((dataPoint) => {
+			const tr = document.createElement('tr');
+			tr.style.backgroundColor = 'transparent';
+			tr.style.borderWidth = 0;
+
+			const td = document.createElement('td');
+			td.style.borderWidth = 0;
+			td.style.display = 'flex';
+			td.style.alignItems = 'center';
+			td.style.gap = '8px';
+			td.style.padding = '4px 0';
+
+			// Robust label selection: 
+			// 1. For Doughnut/Pie, dataPoint.label is the category (e.g. "Anime")
+			// 2. For Line/Bar with multiple datasets, dataPoint.dataset.label is the category
+			// 3. For single-dataset lines, dataPoint.dataset.label might be "Total Items"
+			let label = dataPoint.dataset.label;
+			const categoryLabel = dataPoint.label;
+
+			// If dataset label is generic or missing, use the category/item label
+			if (!label || label === 'Items' || label === 'Total Items' || label === 'Counts') {
+				label = categoryLabel;
+			}
+
+			const value = dataPoint.formattedValue;
+			const info = getTooltipInfo(label);
+
+			const iconSpan = document.createElement('span');
+			iconSpan.style.display = 'flex';
+			iconSpan.style.alignItems = 'center';
+			iconSpan.style.justifyContent = 'center';
+
+			if (info.rating) {
+				// Masterpiece = 4 stars, Good = 3, etc.
+				iconSpan.innerHTML = `<div style="display: flex; gap: 1px;">${Array(info.rating).fill(`<i data-lucide="star" style="width: 10px; height: 10px; color: ${info.color}; fill: ${info.color};"></i>`).join('')}</div>`;
+			} else {
+				iconSpan.innerHTML = `<i data-lucide="${info.icon}" style="width: 14px; height: 14px; color: ${info.color};"></i>`;
+			}
+
+			const labelSpan = document.createElement('span');
+			labelSpan.style.fontSize = '13px';
+			labelSpan.style.fontWeight = '500';
+			labelSpan.innerText = label;
+
+			const valueSpan = document.createElement('span');
+			valueSpan.style.marginLeft = 'auto';
+			valueSpan.style.fontSize = '13px';
+			valueSpan.style.fontWeight = '700';
+			valueSpan.innerText = value;
+			valueSpan.style.color = info.color;
+
+			td.appendChild(iconSpan);
+			td.appendChild(labelSpan);
+			td.appendChild(valueSpan);
+			tr.appendChild(td);
+			tableBody.appendChild(tr);
+		});
+
+		const tableFoot = document.createElement('tfoot');
+		const footerLines = tooltip.footer || [];
+		footerLines.forEach(footer => {
+			const tr = document.createElement('tr');
+			tr.style.borderWidth = 0;
+			const td = document.createElement('td');
+			td.style.borderWidth = 0;
+			td.style.paddingTop = '8px';
+			td.style.marginTop = '4px';
+			td.style.borderTop = '1px solid rgba(255,255,255,0.1)';
+			td.style.fontSize = '12px';
+			td.style.fontWeight = '700';
+			td.style.color = 'rgba(255,255,255,0.8)';
+			td.innerText = footer;
+			tr.appendChild(td);
+			tableFoot.appendChild(tr);
+		});
+
+		const tableRoot = tooltipEl.querySelector('table');
+		while (tableRoot.firstChild) tableRoot.firstChild.remove();
+		tableRoot.appendChild(tableHead);
+		tableRoot.appendChild(tableBody);
+		tableRoot.appendChild(tableFoot);
+
+		safeCreateIcons(tooltipEl);
+	}
+
+	const { offsetLeft: positionX, offsetTop: positionY } = chart.canvas;
+	tooltipEl.style.opacity = 1;
+	tooltipEl.style.left = positionX + tooltip.caretX + 'px';
+	tooltipEl.style.top = positionY + tooltip.caretY + 'px';
+}
 
 
 /**
@@ -636,8 +865,8 @@ function renderGrowthChart(stats) {
 			},
 			interaction: { intersect: false, mode: 'index' },
 			plugins: {
+				...lineOptions.plugins,
 				legend: { display: false },
-				tooltip: COMMON_CHART_OPTIONS.plugins.tooltip,
 				datalabels: { display: false }
 			}
 		}
@@ -766,7 +995,8 @@ function renderMediaGrowthChart(stats) {
 				...lineOptions.plugins,
 				legend: { display: false },
 				tooltip: {
-					...COMMON_CHART_OPTIONS.plugins.tooltip,
+					enabled: false,
+					external: externalTooltipHandler,
 					callbacks: {
 						footer: (tooltipItems) => {
 							let sum = 0;
@@ -774,11 +1004,6 @@ function renderMediaGrowthChart(stats) {
 								sum += tooltipItem.parsed.y || 0;
 							});
 							return 'Total: ' + sum;
-						},
-						label: (item) => {
-							let label = item.dataset.label || '';
-							let val = item.parsed.y || 0;
-							return label + ': ' + val;
 						}
 					}
 				},
@@ -831,7 +1056,6 @@ function renderRatingChart(stats) {
 			plugins: {
 				...COMMON_CHART_OPTIONS.plugins,
 				legend: { display: false }, // Using HTML legend
-				tooltip: COMMON_CHART_OPTIONS.plugins.tooltip,
 				datalabels: {
 					...COMMON_CHART_OPTIONS.plugins.datalabels,
 					display: (ctx) => ctx.dataset.data[ctx.dataIndex] > 0
