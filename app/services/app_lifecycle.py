@@ -533,6 +533,10 @@ def run_application_stack(create_app_func: Callable, host: str, port: int, headl
     initial_x = window_state.get('x', None)
     initial_y = window_state.get('y', None)
     
+    # Ensure window is on screen (boundary check)
+    from app.utils.config_manager import ensure_window_on_screen
+    initial_x, initial_y = ensure_window_on_screen(initial_x, initial_y, initial_width, initial_height)
+    
     # Determine if window should start hidden
     # Priority: CLI --minimized flag > openWindowOnStart setting
     # If --minimized was passed, always start hidden

@@ -115,9 +115,9 @@ def ensure_window_on_screen(x: Optional[int], y: Optional[int],
         return None, None
         
     except ImportError:
-        logger.warning("screeninfo not available, skipping monitor bounds check")
-        return x, y
+        logger.warning("screeninfo not available, defaulting to OS position for safety")
+        return None, None
     except Exception as e:
-        logger.error(f"Error checking monitor bounds: {e}")
-        return x, y
+        logger.error(f"Error checking monitor bounds: {e}, defaulting to OS position")
+        return None, None
 
