@@ -956,13 +956,16 @@ export function decrementChildField(idx, field, step = 1) {
  */
 export function updateChildrenTotals() {
 	const type = document.getElementById('type')?.value || '';
+	const hasChildItems = ['Book', 'Series', 'Anime'].includes(type);
+	if (!hasChildItems) return; // Skip for Movie, Manga, etc.
+
 	const overrideCheckbox = document.getElementById('overrideTotals');
 	const isManual = overrideCheckbox?.checked;
 
 	const children = state.currentChildren.filter(c => c.hasDetails);
 	let totalEpisodes = 0, totalDuration = 0, totalChapters = 0, totalWords = 0;
 
-	if (type === 'Book') {
+	if (['Book', 'Manga'].includes(type)) {
 		totalChapters = children.reduce((sum, c) => sum + (c.chapters || 0), 0);
 		totalWords = children.reduce((sum, c) => sum + ((c.chapters || 0) * (c.avgWords || 0)), 0);
 	} else if (['Anime', 'Series'].includes(type)) {
@@ -1008,10 +1011,13 @@ export function updateChildrenTotals() {
  * @param {number} value - New value
  */
 export function syncTotalsToChild(field, value) {
+	const type = document.getElementById('type')?.value || '';
+	const hasChildItems = ['Book', 'Series', 'Anime'].includes(type);
+	if (!hasChildItems) return;
+
 	const overrideCheckbox = document.getElementById('overrideTotals');
 	if (overrideCheckbox?.checked || state.currentChildren.length > 1) return;
 
-	const type = document.getElementById('type').value;
 	const isBook = ['Book', 'Manga'].includes(type);
 	const prefix = isBook ? 'Volume' : 'Season';
 
@@ -1124,7 +1130,7 @@ export function updateTotalsUIForType() {
 		// Make inputs editable (remove readonly)
 		const inputs = totalsContainer?.querySelectorAll('input[type="number"]');
 		inputs?.forEach(input => {
-			input.removeAttribute('readonly');
+			input.readOnly = false;
 			input.classList.remove('bg-zinc-100', 'dark:bg-zinc-800', 'text-zinc-500', 'dark:text-zinc-400');
 			input.classList.add('bg-white', 'dark:bg-zinc-900', 'text-zinc-700', 'dark:text-zinc-200');
 			input.placeholder = '';
