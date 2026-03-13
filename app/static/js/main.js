@@ -259,6 +259,11 @@ window.toggleTheme = () => {
     setState('theme', isDark ? 'dark' : 'light');
     updateThemeIcon();
 
+    // Refresh Sidebar if active to update indicators
+    if (state.advancedFiltersEnabled) {
+        renderFilters();
+    }
+
     // Refresh Stats if modal is open to update chart colors
     const statsModal = document.getElementById('statsModal');
     if (statsModal && !statsModal.classList.contains('hidden')) {
@@ -969,9 +974,9 @@ window.toggleMultiSelect = () => {
         if (state.filterTypes.length > 1) state.filterTypes = ['All'];
         if (state.filterStatuses.length > 1) state.filterStatuses = ['All'];
         state.filterRatings = [];
-        renderFilters();
-        renderGrid();
     }
+    renderFilters();
+    renderGrid();
 };
 
 /** Toggles primary hidden items visibility. */
@@ -990,6 +995,7 @@ window.toggleHidden = () => {
 window.toggleDetails = () => {
     setState('showDetails', !state.showDetails);
     syncDetailsUI();
+    renderFilters();
     renderGrid();
 };
 
@@ -1941,5 +1947,22 @@ window.syncSidebarFilter = (key, value) => {
     }
     
     searchInput.value = currentVal;
+    renderGrid();
+};
+
+window.syncSidebarTitleSearch = (value) => {
+    const searchInput = document.getElementById('searchInput');
+    if (!searchInput) return;
+    
+    let currentVal = searchInput.value || '';
+    
+    // Preserve key=value filters
+    const filterRegex = /(universe|author|series|type|tags?)=("([^"]*)"|([^"\s]+))/gi;
+    const filters = currentVal.match(filterRegex) || [];
+    
+    // Construct new search string: Text + Filters
+    const newVal = (value.trim() + ' ' + filters.join(' ')).trim();
+    
+    searchInput.value = newVal;
     renderGrid();
 };

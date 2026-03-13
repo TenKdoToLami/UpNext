@@ -100,7 +100,7 @@ export function renderFilters() {
 	if (state.advancedFiltersEnabled) {
 		// Robust Redundancy Hiding
 		topFiltersContainer?.classList.add('!hidden');
-		desktopViewControls?.classList.add('!hidden');
+		// Keep desktopViewControls visible per user request
 		orderingSection?.classList.add('hidden');
 		orderingControls?.classList.add('hidden');
 		
@@ -342,30 +342,44 @@ function renderAdvancedSidebar() {
 
 	container.innerHTML = `
         <div class="px-2 pb-8 flex flex-col gap-6">
+            <!-- Section: Primary Search -->
+            <section>
+                <div class="relative group">
+                    <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-indigo-500 transition-colors">
+                        <i data-lucide="search" class="w-4 h-4"></i>
+                    </span>
+                    <input type="text" 
+                        id="sidebarTitleSearch"
+                        class="w-full bg-white/10 dark:bg-black/40 border border-zinc-200 dark:border-zinc-800/80 rounded-2xl pl-10 pr-4 py-3 text-xs font-medium focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all placeholder:text-zinc-500 dark:placeholder:text-zinc-400" 
+                        placeholder="Search Library..."
+                        value="${searchVal.replace(/(universe|author|series|type|tags?)=("([^"]*)"|([^"\s]+))/gi, '').trim()}"
+                        oninput="syncSidebarTitleSearch(this.value)">
+                </div>
+            </section>
+
             <!-- Section: Interface -->
             <section>
-                <div class="filter-label mb-3">
-                    <span class="bg-indigo-500/10 text-indigo-500 p-1 rounded-md mr-2">
-                        <i data-lucide="layout" class="w-3 h-3"></i>
-                    </span>
-                    Interface Control
+                <div class="filter-label mb-3 text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400 flex items-center gap-2">
+                    <div class="h-px flex-1 bg-zinc-200 dark:bg-zinc-800"></div>
+                    <span>Interface Control</span>
+                    <div class="h-px flex-1 bg-zinc-200 dark:bg-zinc-800"></div>
                 </div>
                 <div class="grid grid-cols-2 gap-2">
                     ${[
                         { id: 'details', icon: 'eye', label: 'Details', active: state.showDetails, fn: 'toggleDetails()' },
-                        { id: 'select', icon: 'list-checks', label: 'Selection', active: state.multiSelectMode, fn: 'toggleMultiSelect()' },
+                        { id: 'select', icon: 'list-checks', label: 'Selection', active: state.isMultiSelect, fn: 'toggleMultiSelect()' },
                         { id: 'hidden', icon: 'shield-off', label: 'Hidden', active: state.isHidden, fn: 'toggleHidden()', color: 'red' },
-                        { id: 'only', icon: 'shield-alert', label: 'Only', active: state.filterHiddenOnly, fn: 'toggleHiddenOnly()', color: 'red' },
-                        { id: 'theme', icon: document.documentElement.classList.contains('dark') ? 'sun' : 'moon', label: 'Theme', active: false, fn: 'window.toggleTheme()' }
-                    ].map(btn => {
+                        { id: 'only', icon: 'shield-alert', label: 'Only', active: state.filterHiddenOnly, fn: 'toggleHiddenOnly()', color: 'red', hide: !state.isHidden },
+                        { id: 'theme', icon: document.documentElement.classList.contains('dark') ? 'sun' : 'moon', label: 'Theme', active: document.documentElement.classList.contains('dark'), fn: 'window.toggleTheme()' }
+                    ].filter(b => !b.hide).map(btn => {
                         const activeClass = btn.active 
-                            ? (btn.color === 'red' ? 'bg-red-500 text-white shadow-lg shadow-red-500/20 border-transparent' : 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 border-transparent')
+                            ? (btn.color === 'red' ? 'bg-red-500 text-white shadow-lg shadow-red-500/20 border-transparent ring-2 ring-red-300 dark:ring-red-900 glow-red' : 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 border-transparent ring-2 ring-indigo-300 dark:ring-indigo-900 glow-indigo')
                             : 'bg-white/40 dark:bg-zinc-900/40 border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:bg-white dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white';
                         
                         return `
-                            <button onclick="${btn.fn}" class="flex flex-col items-center justify-center p-3 rounded-2xl border transition-all duration-300 active:scale-95 ${activeClass}">
-                                <i data-lucide="${btn.icon}" class="w-4 h-4 mb-1.5 opacity-90"></i>
-                                <span class="text-[9px] font-black uppercase tracking-tighter">${btn.label}</span>
+                            <button onclick="${btn.fn}" class="flex flex-col items-center justify-center py-2.5 px-2 rounded-xl border transition-all duration-300 active:scale-95 ${activeClass}">
+                                <i data-lucide="${btn.icon}" class="w-3.5 h-3.5 mb-1 opacity-90"></i>
+                                <span class="text-[8px] font-black uppercase tracking-tighter">${btn.label}</span>
                             </button>
                         `;
                     }).join('')}
@@ -374,13 +388,12 @@ function renderAdvancedSidebar() {
 
             <!-- Section: Media Type -->
             <section>
-                <div class="filter-label mb-3">
-                    <span class="bg-violet-500/10 text-violet-500 p-1 rounded-md mr-2">
-                        <i data-lucide="layers" class="w-3 h-3"></i>
-                    </span>
-                    Media Type
+                <div class="filter-label mb-3 text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400 flex items-center gap-2">
+                    <div class="h-px flex-1 bg-zinc-200 dark:bg-zinc-800"></div>
+                    <span>Media Type</span>
+                    <div class="h-px flex-1 bg-zinc-200 dark:bg-zinc-800"></div>
                 </div>
-                <div class="flex flex-col gap-1.5">
+                <div class="grid grid-cols-2 gap-2">
                     ${['All', ...MEDIA_TYPES].map(t => {
                         const isActive = state.filterTypes.includes(t);
                         const count = counts.typeCounts[t] || 0;
@@ -390,16 +403,16 @@ function renderAdvancedSidebar() {
                             : 'bg-white/30 dark:bg-zinc-900/30 border-zinc-200 dark:border-zinc-800/50 text-zinc-400 dark:text-zinc-500 hover:bg-white/60 dark:hover:bg-zinc-800/60 hover:text-zinc-900 dark:hover:text-zinc-200';
                         
                         if (isActive && t !== 'All') {
-                             btnClass = `${TYPE_COLOR_MAP[t]} shadow-md ring-2 ring-offset-2 ring-offset-zinc-50 dark:ring-offset-zinc-950`;
+                             btnClass = `${TYPE_COLOR_MAP[t]} shadow-md ring-2 ring-offset-1 ring-offset-zinc-50 dark:ring-offset-zinc-950`;
                         }
 
                         return `
-                            <button onclick="setFilterType('${t}')" class="flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all duration-300 border border-transparent ${btnClass}">
-                                <div class="flex items-center gap-3">
-                                    <i data-lucide="${t === 'All' ? 'layout-grid' : (ICON_MAP[t] || 'layer')}" class="w-3.5 h-3.5 ${isActive ? 'opacity-100' : 'opacity-60'}"></i>
-                                    <span>${t}</span>
+                            <button onclick="setFilterType('${t}')" class="flex flex-col items-center justify-center p-2 rounded-xl text-[10px] font-bold transition-all duration-300 border border-transparent ${btnClass}">
+                                <i data-lucide="${t === 'All' ? 'layout-grid' : (ICON_MAP[t] || 'layer')}" class="w-3.5 h-3.5 mb-1 ${isActive ? 'opacity-100' : 'opacity-60'}"></i>
+                                <div class="flex items-center gap-1">
+                                    <span class="truncate max-w-[50px]">${t}</span>
+                                    <span class="text-[8px] opacity-60 tabular-nums">${count}</span>
                                 </div>
-                                <span class="text-[10px] opacity-60 tabular-nums font-medium">${count}</span>
                             </button>
                         `;
                     }).join('')}
@@ -408,13 +421,12 @@ function renderAdvancedSidebar() {
 
             <!-- Section: Status -->
             <section>
-                <div class="filter-label mb-3">
-                    <span class="bg-emerald-500/10 text-emerald-500 p-1 rounded-md mr-2">
-                        <i data-lucide="activity" class="w-3 h-3"></i>
-                    </span>
-                    Progress Status
+                <div class="filter-label mb-3 text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400 flex items-center gap-2">
+                    <div class="h-px flex-1 bg-zinc-200 dark:bg-zinc-800"></div>
+                    <span>Progress Status</span>
+                    <div class="h-px flex-1 bg-zinc-200 dark:bg-zinc-800"></div>
                 </div>
-                <div class="flex flex-col gap-1.5">
+                <div class="grid grid-cols-2 gap-2">
                     ${['All', ...STATUS_TYPES].map(s => {
                         const isActive = state.filterStatuses.includes(s);
                         const count = counts.statusCounts[s] || 0;
@@ -424,16 +436,16 @@ function renderAdvancedSidebar() {
                             : 'bg-white/30 dark:bg-zinc-900/30 border-zinc-200 dark:border-zinc-800/50 text-zinc-400 dark:text-zinc-500 hover:bg-white/60 dark:hover:bg-zinc-800/60 hover:text-zinc-900 dark:hover:text-zinc-200';
                             
                         if (isActive && s !== 'All') {
-                            btnClass = `${STATUS_COLOR_MAP[s]} shadow-md ring-2 ring-offset-2 ring-offset-zinc-50 dark:ring-offset-zinc-950`;
+                            btnClass = `${STATUS_COLOR_MAP[s]} shadow-md ring-2 ring-offset-1 ring-offset-zinc-50 dark:ring-offset-zinc-950`;
                         }
 
                         return `
-                            <button onclick="setFilterStatus('${s}')" class="flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all duration-300 border border-transparent ${btnClass}">
-                                <div class="flex items-center gap-3">
-                                    <i data-lucide="${s === 'All' ? 'list' : (STATUS_ICON_MAP[s] || 'circle')}" class="w-3.5 h-3.5 ${isActive ? 'opacity-100' : 'opacity-60'}"></i>
-                                    <span>${s}</span>
+                            <button onclick="setFilterStatus('${s}')" class="flex flex-col items-center justify-center p-2 rounded-xl text-[10px] font-bold transition-all duration-300 border border-transparent ${btnClass}">
+                                <i data-lucide="${s === 'All' ? 'list' : (STATUS_ICON_MAP[s] || 'circle')}" class="w-3.5 h-3.5 mb-1 ${isActive ? 'opacity-100' : 'opacity-60'}"></i>
+                                <div class="flex items-center gap-1">
+                                    <span class="truncate max-w-[50px]">${s}</span>
+                                    <span class="text-[8px] opacity-60 tabular-nums">${count}</span>
                                 </div>
-                                <span class="text-[10px] opacity-60 tabular-nums font-medium">${count}</span>
                             </button>
                         `;
                     }).join('')}
@@ -442,19 +454,18 @@ function renderAdvancedSidebar() {
 
             <!-- Section: Metadata -->
             <section class="flex flex-col gap-3">
-                <div class="filter-label">
-                    <span class="bg-amber-500/10 text-amber-500 p-1 rounded-md mr-2">
-                        <i data-lucide="search" class="w-3 h-3"></i>
-                    </span>
-                    Deep Metadata
+                <div class="filter-label text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400 flex items-center gap-2">
+                    <div class="h-px flex-1 bg-zinc-200 dark:bg-zinc-800"></div>
+                    <span>Deep Metadata</span>
+                    <div class="h-px flex-1 bg-zinc-200 dark:bg-zinc-800"></div>
                 </div>
                 
                 <div class="space-y-3">
                     ${[
-                        { key: 'author', label: 'Author', icon: 'user', placeholder: 'Kodansha, Oda...' },
-                        { key: 'series', label: 'Series', icon: 'bookmark', placeholder: 'One Piece...' },
-                        { key: 'universe', label: 'Universe', icon: 'globe', placeholder: 'Marvel, Cosmere...' },
-                        { key: 'tag', label: 'Tag', icon: 'tag', placeholder: 'Action, Mystery...' }
+                        { key: 'author', label: 'Author', icon: 'user', placeholder: 'Search Author...' },
+                        { key: 'series', label: 'Series', icon: 'bookmark', placeholder: 'Search Series...' },
+                        { key: 'universe', label: 'Universe', icon: 'globe', placeholder: 'Search Universe...' },
+                        { key: 'tag', label: 'Tag', icon: 'tag', placeholder: 'Search Tag...' }
                     ].map(field => `
                         <div class="relative group">
                             <span class="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-indigo-500 transition-colors">
@@ -480,11 +491,10 @@ function renderAdvancedSidebar() {
 
             <!-- Section: Ordering -->
             <section>
-                <div class="filter-label mb-3">
-                    <span class="bg-sky-500/10 text-sky-500 p-1 rounded-md mr-2">
-                        <i data-lucide="list-ordered" class="w-3 h-3"></i>
-                    </span>
-                    Library Sorting
+                <div class="filter-label mb-3 text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400 flex items-center gap-2">
+                    <div class="h-px flex-1 bg-zinc-200 dark:bg-zinc-800"></div>
+                    <span>Library Sorting</span>
+                    <div class="h-px flex-1 bg-zinc-200 dark:bg-zinc-800"></div>
                 </div>
                 <div class="flex flex-col gap-2">
                     <select onchange="setSortFieldSidebar(this.value)" class="w-full bg-white/40 dark:bg-black/20 border border-zinc-200 dark:border-zinc-800/50 rounded-2xl px-3.5 py-2.5 text-xs font-bold focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all">

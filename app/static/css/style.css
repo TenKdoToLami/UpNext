@@ -574,3 +574,22 @@ body.quick-add-mode #formScrollWrapper {
 #gridContainer {
 	transition: all 0.3s ease-in-out;
 }
+
+/* --- Sidebar Polish & Glow --- */
+.glow-indigo {
+	box-shadow: 0 0 15px 2px rgba(79, 70, 229, 0.4);
+	border-color: rgba(99, 102, 241, 0.6);
+}
+
+.glow-red {
+	box-shadow: 0 0 15px 2px rgba(239, 68, 68, 0.4);
+	border-color: rgba(239, 68, 68, 0.6);
+}
+
+input::placeholder {
+	transition: opacity 0.3s ease;
+}
+
+input:focus::placeholder {
+	opacity: 0.5;
+}
