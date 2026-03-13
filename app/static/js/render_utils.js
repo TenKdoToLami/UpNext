@@ -90,112 +90,73 @@ export function sortItems(arr) {
 
 
 
-/**
- * Renders all filter controls (Type, Status, Rating, Sort).
- * Handles both desktop and mobile versions.
- */
 export function renderFilters() {
+	const sidebar = document.getElementById('advancedSidebar');
+	const topFiltersContainer = document.getElementById('topFiltersContainer');
+	const desktopViewControls = document.getElementById('desktopViewControls');
+	const orderingSection = document.querySelector('#sortMenuContainer > div:nth-child(2)');
+	const orderingControls = document.querySelector('#sortMenuContainer > div:nth-child(3)');
+
+	if (state.advancedFiltersEnabled) {
+		// Robust Redundancy Hiding
+		topFiltersContainer?.classList.add('!hidden');
+		desktopViewControls?.classList.add('!hidden');
+		orderingSection?.classList.add('hidden');
+		orderingControls?.classList.add('hidden');
+		
+		renderAdvancedSidebar();
+		return;
+	}
+
+	// Restore normal view redundancy
+	topFiltersContainer?.classList.remove('!hidden');
+	desktopViewControls?.classList.remove('!hidden');
+	orderingSection?.classList.remove('hidden');
+	orderingControls?.classList.remove('hidden');
+	sidebar?.classList.add('hidden');
+
 	const counts = getCounts();
 
-
-	/**
-	 * Generates HTML for a type filter button.
-	 * @param {string} t - The type (e.g., 'Anime', 'All').
-	 * @param {boolean} isMobile - True if rendering for mobile, false for desktop.
-	 * @returns {string} HTML string for the type filter button.
-	 */
-	const renderTypeBtn = (t, isMobile) => {
-		const isActive = state.filterTypes.includes(t);
-		const count = counts.typeCounts[t] || 0;
-		const icon = t === 'All' ? 'layout-grid' : (ICON_MAP[t] || 'circle');
-
-		const themeColors = {
-			'Anime': 'bg-violet-600 border-violet-500 text-white',
-			'Manga': 'bg-pink-600 border-pink-500 text-white',
-			'Book': 'bg-blue-600 border-blue-500 text-white',
-			'Movie': 'bg-red-600 border-red-500 text-white',
-			'Series': 'bg-amber-600 border-amber-500 text-white'
-		};
-
-		let colorClass, scaleClass, extra;
-		const baseStyle = themeColors[t];
-
-		if (isMobile) {
-			colorClass = `bg-zinc-100 dark:bg-zinc-800 border-transparent text-zinc-500 dark:text-zinc-400`;
-			if (t === 'All') {
-				if (isActive) colorClass = `bg-zinc-800 dark:bg-zinc-200 text-white dark:text-black font-bold`;
-			} else {
-				if (isActive) colorClass = `${baseStyle} font-bold shadow-md`;
-				else colorClass = `bg-zinc-100 dark:bg-zinc-800 border-transparent text-${baseStyle.split('-')[1]}-600 dark:text-${baseStyle.split('-')[1]}-400`;
-			}
-			scaleClass = 'w-full';
-			extra = `<span class="truncate">${t}</span>`;
-		} else {
-			scaleClass = isActive ? 'scale-110 shadow-lg' : 'hover:scale-105';
-			if (t === 'All') {
-				colorClass = isActive ? `bg-zinc-800 dark:bg-zinc-200 text-white dark:text-black border-transparent shadow-lg` : `bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200`;
-			} else {
-				if (isActive) colorClass = `${baseStyle} shadow-lg`;
-				else colorClass = `bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-${baseStyle.split('-')[1]}-600 dark:text-${baseStyle.split('-')[1]}-400 hover:text-${baseStyle.split('-')[1]}-700 dark:hover:text-${baseStyle.split('-')[1]}-300 hover:border-${baseStyle.split('-')[1]}-400 dark:hover:border-${baseStyle.split('-')[1]}-500`;
-			}
-			const countClass = isActive ? `bg-black/20 text-white` : `bg-zinc-100 dark:bg-zinc-800 text-zinc-500`;
-			extra = `${t} <span class="px-1.5 py-0.5 rounded-full text-[10px] ${countClass}">${count}</span>`;
-		}
-
-		return `<button onclick="setFilterType('${t}'); ${isMobile ? 'event.stopPropagation();' : ''}" 
-					class="flex items-center ${isMobile ? 'gap-1.5 px-2 py-2 rounded-lg text-[9px]' : 'gap-2 px-4 py-2 rounded-full text-xs font-heading'} font-bold uppercase tracking-wide border transition-all ${colorClass} ${scaleClass}">
-                    <i data-lucide="${icon}" class="w-3 h-3 shrink-0"></i>
-                    ${extra}
-                </button>`;
-	};
-
-	// TYPE FILTERS
-	// Logic: If only 'All' + 1 other type are available, hide the filter bar entirely (filtering is redundant).
-	// Must handle Desktop (xl:flex) and Mobile separately to prevent ghost elements.
-	const availableTypes = ['All', ...MEDIA_TYPES.filter(t => !state.appSettings?.disabledTypes?.includes(t))];
+	// Type Filters
 	const typeContainer = document.getElementById('typeFilters');
 	if (typeContainer) {
-		if (availableTypes.length <= 2) { // Just All + 1 Type
-			typeContainer.classList.add('hidden');
-			typeContainer.classList.remove('flex', 'xl:flex');
-			typeContainer.innerHTML = ''; // Clear to prevent potential click listeners
-		} else {
-			typeContainer.classList.remove('hidden');
-			typeContainer.classList.add('flex', 'xl:flex');
-			typeContainer.innerHTML = availableTypes.map(t => renderTypeBtn(t, false)).join('');
-		}
+		const types = ['All', ...MEDIA_TYPES];
+		typeContainer.innerHTML = types.map(t => {
+			const isActive = state.filterTypes.includes(t);
+			const count = counts.typeCounts[t] || 0;
+			const icon = t === 'All' ? 'layout-grid' : (ICON_MAP[t] || 'layer');
+
+			let btnClass = isActive 
+				? 'bg-zinc-800 dark:bg-zinc-200 text-white dark:text-black font-bold border-transparent' 
+				: 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300';
+			
+			if (isActive && t !== 'All') {
+				const baseColor = TYPE_COLOR_MAP[t]?.split(' ')[0].replace('text-', 'bg-') || 'bg-indigo-500';
+				btnClass = `${baseColor} text-white border-transparent font-bold shadow-lg`;
+			} else if (!isActive && t !== 'All') {
+				btnClass = `${TYPE_COLOR_MAP[t]} font-medium border bg-opacity-10`;
+			}
+
+			return `<button onclick="setFilterType('${t}')" 
+						class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wide border transition-all ${btnClass} ${isActive ? 'scale-110 shadow-lg' : 'hover:scale-105'}">
+						<i data-lucide="${icon}" class="w-3.5 h-3.5"></i>
+						${t} <span class="px-1.5 py-0.5 rounded-full text-[9px] bg-black/20">${count}</span>
+					</button>`;
+		}).join('');
 	}
 
-	const typeContainerMobile = document.getElementById('typeFiltersMobile');
-	if (typeContainerMobile) {
-		const mobileWrapper = document.getElementById('typeFiltersMobileContainer');
-		if (availableTypes.length <= 2) {
-			if (mobileWrapper) mobileWrapper.classList.add('hidden');
-		} else {
-			if (mobileWrapper) mobileWrapper.classList.remove('hidden');
-			typeContainerMobile.innerHTML = availableTypes.map(t => renderTypeBtn(t, true)).join('');
-		}
-	}
-
-	// ... (Status Logic below follows same pattern)
-
-
-	/**
-	 * Generates HTML for a status filter button.
-	 * @param {string} s - The status (e.g., 'Completed', 'All').
-	 * @param {boolean} isMobile - True if rendering for mobile, false for desktop.
-	 * @returns {string} HTML string for the status filter button.
-	 */
+	// Status Filters
 	const renderStatusBtn = (s, isMobile) => {
 		const isActive = state.filterStatuses.includes(s);
 		const count = counts.statusCounts[s] || 0;
-		const icon = s === 'All' ? 'layers' : STATUS_ICON_MAP[s];
-		const baseColor = s === 'All' ? 'zinc' : STATUS_COLOR_MAP[s].split(' ')[0].replace('text-', '');
+		const icon = s === 'All' ? 'list' : (STATUS_ICON_MAP[s] || 'circle');
+		const baseColor = STATUS_COLOR_MAP[s]?.split(' ')[0].replace('text-', 'bg-') || 'bg-indigo-500';
 
-		let btnClass, scaleClass, extra;
+		let btnClass = '';
+		let extra = '';
+		let scaleClass = '';
 
 		if (isMobile) {
-			btnClass = `bg-zinc-100 dark:bg-zinc-800 border-transparent text-zinc-500 dark:text-zinc-400`;
 			if (isActive) {
 				if (s === 'All') btnClass = `bg-zinc-800 dark:bg-zinc-200 text-white dark:text-black font-bold`;
 				else btnClass = `bg-${baseColor} text-white border-transparent font-bold shadow-md`;
@@ -333,6 +294,222 @@ export function renderFilters() {
 
 	// Refresh Lucide Icons
 	safeCreateIcons();
+
+	// Render Advanced Sidebar if enabled
+	renderAdvancedSidebar();
+}
+
+/**
+ * Handles sort field change from the sidebar.
+ */
+window.setSortFieldSidebar = (field) => {
+    setState('sortBy', field);
+    renderFilters();
+    renderGrid();
+};
+
+/**
+ * Handles sort order change from the sidebar.
+ */
+window.setSortOrderSidebar = (order) => {
+    setState('sortOrder', order);
+    renderFilters();
+    renderGrid();
+};
+
+/**
+ * Renders the vertical advanced filter sidebar with premium styling.
+ */
+function renderAdvancedSidebar() {
+	const container = document.getElementById('advancedSidebar');
+	if (!container) return;
+
+	if (!state.advancedFiltersEnabled) {
+		container.classList.add('hidden');
+		return;
+	}
+
+	container.classList.remove('hidden');
+	const counts = getCounts();
+    const searchInput = document.getElementById('searchInput');
+    const searchVal = searchInput?.value || '';
+
+    const getVal = (key) => {
+        const regex = new RegExp(`${key}=("([^"]*)"|([^"\\s]+))`, 'i');
+        const match = searchVal.match(regex);
+        return match ? (match[2] || match[3]) : '';
+    };
+
+	container.innerHTML = `
+        <div class="px-2 pb-8 flex flex-col gap-6">
+            <!-- Section: Interface -->
+            <section>
+                <div class="filter-label mb-3">
+                    <span class="bg-indigo-500/10 text-indigo-500 p-1 rounded-md mr-2">
+                        <i data-lucide="layout" class="w-3 h-3"></i>
+                    </span>
+                    Interface Control
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    ${[
+                        { id: 'details', icon: 'eye', label: 'Details', active: state.showDetails, fn: 'toggleDetails()' },
+                        { id: 'select', icon: 'list-checks', label: 'Selection', active: state.multiSelectMode, fn: 'toggleMultiSelect()' },
+                        { id: 'hidden', icon: 'shield-off', label: 'Hidden', active: state.isHidden, fn: 'toggleHidden()', color: 'red' },
+                        { id: 'only', icon: 'shield-alert', label: 'Only', active: state.filterHiddenOnly, fn: 'toggleHiddenOnly()', color: 'red' },
+                        { id: 'theme', icon: document.documentElement.classList.contains('dark') ? 'sun' : 'moon', label: 'Theme', active: false, fn: 'window.toggleTheme()' }
+                    ].map(btn => {
+                        const activeClass = btn.active 
+                            ? (btn.color === 'red' ? 'bg-red-500 text-white shadow-lg shadow-red-500/20 border-transparent' : 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 border-transparent')
+                            : 'bg-white/40 dark:bg-zinc-900/40 border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:bg-white dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white';
+                        
+                        return `
+                            <button onclick="${btn.fn}" class="flex flex-col items-center justify-center p-3 rounded-2xl border transition-all duration-300 active:scale-95 ${activeClass}">
+                                <i data-lucide="${btn.icon}" class="w-4 h-4 mb-1.5 opacity-90"></i>
+                                <span class="text-[9px] font-black uppercase tracking-tighter">${btn.label}</span>
+                            </button>
+                        `;
+                    }).join('')}
+                </div>
+            </section>
+
+            <!-- Section: Media Type -->
+            <section>
+                <div class="filter-label mb-3">
+                    <span class="bg-violet-500/10 text-violet-500 p-1 rounded-md mr-2">
+                        <i data-lucide="layers" class="w-3 h-3"></i>
+                    </span>
+                    Media Type
+                </div>
+                <div class="flex flex-col gap-1.5">
+                    ${['All', ...MEDIA_TYPES].map(t => {
+                        const isActive = state.filterTypes.includes(t);
+                        const count = counts.typeCounts[t] || 0;
+                        
+                        let btnClass = isActive 
+                            ? 'bg-zinc-800 dark:bg-zinc-200 text-white dark:text-black font-black shadow-lg ring-2 ring-zinc-500'
+                            : 'bg-white/30 dark:bg-zinc-900/30 border-zinc-200 dark:border-zinc-800/50 text-zinc-400 dark:text-zinc-500 hover:bg-white/60 dark:hover:bg-zinc-800/60 hover:text-zinc-900 dark:hover:text-zinc-200';
+                        
+                        if (isActive && t !== 'All') {
+                             btnClass = `${TYPE_COLOR_MAP[t]} shadow-md ring-2 ring-offset-2 ring-offset-zinc-50 dark:ring-offset-zinc-950`;
+                        }
+
+                        return `
+                            <button onclick="setFilterType('${t}')" class="flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all duration-300 border border-transparent ${btnClass}">
+                                <div class="flex items-center gap-3">
+                                    <i data-lucide="${t === 'All' ? 'layout-grid' : (ICON_MAP[t] || 'layer')}" class="w-3.5 h-3.5 ${isActive ? 'opacity-100' : 'opacity-60'}"></i>
+                                    <span>${t}</span>
+                                </div>
+                                <span class="text-[10px] opacity-60 tabular-nums font-medium">${count}</span>
+                            </button>
+                        `;
+                    }).join('')}
+                </div>
+            </section>
+
+            <!-- Section: Status -->
+            <section>
+                <div class="filter-label mb-3">
+                    <span class="bg-emerald-500/10 text-emerald-500 p-1 rounded-md mr-2">
+                        <i data-lucide="activity" class="w-3 h-3"></i>
+                    </span>
+                    Progress Status
+                </div>
+                <div class="flex flex-col gap-1.5">
+                    ${['All', ...STATUS_TYPES].map(s => {
+                        const isActive = state.filterStatuses.includes(s);
+                        const count = counts.statusCounts[s] || 0;
+                        
+                        let btnClass = isActive 
+                            ? 'bg-zinc-800 dark:bg-zinc-200 text-white dark:text-black font-black shadow-lg ring-2 ring-zinc-500'
+                            : 'bg-white/30 dark:bg-zinc-900/30 border-zinc-200 dark:border-zinc-800/50 text-zinc-400 dark:text-zinc-500 hover:bg-white/60 dark:hover:bg-zinc-800/60 hover:text-zinc-900 dark:hover:text-zinc-200';
+                            
+                        if (isActive && s !== 'All') {
+                            btnClass = `${STATUS_COLOR_MAP[s]} shadow-md ring-2 ring-offset-2 ring-offset-zinc-50 dark:ring-offset-zinc-950`;
+                        }
+
+                        return `
+                            <button onclick="setFilterStatus('${s}')" class="flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all duration-300 border border-transparent ${btnClass}">
+                                <div class="flex items-center gap-3">
+                                    <i data-lucide="${s === 'All' ? 'list' : (STATUS_ICON_MAP[s] || 'circle')}" class="w-3.5 h-3.5 ${isActive ? 'opacity-100' : 'opacity-60'}"></i>
+                                    <span>${s}</span>
+                                </div>
+                                <span class="text-[10px] opacity-60 tabular-nums font-medium">${count}</span>
+                            </button>
+                        `;
+                    }).join('')}
+                </div>
+            </section>
+
+            <!-- Section: Metadata -->
+            <section class="flex flex-col gap-3">
+                <div class="filter-label">
+                    <span class="bg-amber-500/10 text-amber-500 p-1 rounded-md mr-2">
+                        <i data-lucide="search" class="w-3 h-3"></i>
+                    </span>
+                    Deep Metadata
+                </div>
+                
+                <div class="space-y-3">
+                    ${[
+                        { key: 'author', label: 'Author', icon: 'user', placeholder: 'Kodansha, Oda...' },
+                        { key: 'series', label: 'Series', icon: 'bookmark', placeholder: 'One Piece...' },
+                        { key: 'universe', label: 'Universe', icon: 'globe', placeholder: 'Marvel, Cosmere...' },
+                        { key: 'tag', label: 'Tag', icon: 'tag', placeholder: 'Action, Mystery...' }
+                    ].map(field => `
+                        <div class="relative group">
+                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-indigo-500 transition-colors">
+                                <i data-lucide="${field.icon}" class="w-3.5 h-3.5"></i>
+                            </span>
+                            <input type="text" 
+                                class="w-full bg-white/40 dark:bg-black/20 border border-zinc-200 dark:border-zinc-800/50 rounded-2xl pl-9 pr-3 py-2.5 text-xs focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-600" 
+                                placeholder="${field.placeholder}"
+                                list="sidebar${field.label}List" 
+                                value="${getVal(field.key)}" 
+                                oninput="syncSidebarFilter('${field.key}', this.value)">
+                            <datalist id="sidebar${field.label}List">
+                                ${Array.from(new Set(state.items.flatMap(i => {
+                                    if (field.key === 'tag') return i.tags || [];
+                                    if (field.key === 'author') return i.authors || (i.author ? [i.author] : []);
+                                    return i[field.key] ? [i[field.key]] : [];
+                                }))).filter(Boolean).sort().map(v => `<option value="${v}">`).join('')}
+                            </datalist>
+                        </div>
+                    `).join('')}
+                </div>
+            </section>
+
+            <!-- Section: Ordering -->
+            <section>
+                <div class="filter-label mb-3">
+                    <span class="bg-sky-500/10 text-sky-500 p-1 rounded-md mr-2">
+                        <i data-lucide="list-ordered" class="w-3 h-3"></i>
+                    </span>
+                    Library Sorting
+                </div>
+                <div class="flex flex-col gap-2">
+                    <select onchange="setSortFieldSidebar(this.value)" class="w-full bg-white/40 dark:bg-black/20 border border-zinc-200 dark:border-zinc-800/50 rounded-2xl px-3.5 py-2.5 text-xs font-bold focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all">
+                        ${SORT_OPTIONS.map(opt => `<option value="${opt.id}" ${state.sortBy === opt.id ? 'selected' : ''}>Sort by ${opt.label}</option>`).join('')}
+                    </select>
+                    <div class="flex gap-2">
+                        ${[
+                            { val: 'asc', label: 'Asc', icon: 'arrow-up-narrow-wide' },
+                            { val: 'desc', label: 'Desc', icon: 'arrow-down-narrow-wide' }
+                        ].map(dir => {
+                            const isActive = state.sortOrder === dir.val;
+                            return `
+                                <button onclick="setSortOrderSidebar('${dir.val}')" class="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl border transition-all duration-300 ${isActive ? 'bg-zinc-800 dark:bg-white text-white dark:text-black border-transparent shadow-lg' : 'bg-white/40 dark:bg-zinc-900/40 border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:bg-white dark:hover:bg-zinc-800'}">
+                                    <i data-lucide="${dir.icon}" class="w-3.5 h-3.5"></i>
+                                    <span class="text-[10px] font-black uppercase tracking-widest">${dir.label}</span>
+                                </button>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            </section>
+        </div>
+	`;
+
+	safeCreateIcons(container);
 }
 
 /**

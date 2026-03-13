@@ -47,6 +47,7 @@ export const state = {
 	isHidden: false,
 	isMultiSelect: false,
 	filterHiddenOnly: false,
+	advancedFiltersEnabled: false,
 
 	// Wizard navigation state
 	currentStep: 1,
@@ -114,7 +115,8 @@ const PERSISTED_KEYS = [
 	'viewMode', 'sortBy', 'sortOrder', 'showDetails',
 	'isHidden', 'isMultiSelect', 'filterHiddenOnly', 'theme',
 	'statsChartTypes', 'calendarView', 'appSettings', 'activeTimeframe',
-	'statsCustomStart', 'statsCustomEnd', 'statsStrictTrackingMomentum', 'statsStrictTrackingSpread'
+	'statsCustomStart', 'statsCustomEnd', 'statsStrictTrackingMomentum', 'statsStrictTrackingSpread',
+	'advancedFiltersEnabled'
 ];
 
 /**

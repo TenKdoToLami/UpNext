@@ -51,7 +51,7 @@
 		<!-- Main Toolbelt -->
 		<div class="flex items-center gap-2 shrink-0">
 			<!-- View Controls (Desktop) -->
-			<div
+			<div id="desktopViewControls"
 				class="hidden lg:flex items-center gap-1 bg-zinc-100 dark:bg-zinc-900/80 p-1 rounded-xl border border-zinc-200 dark:border-white/5">
 				<div class="flex items-center gap-1">
 					<button onclick="toggleDetails()"
@@ -110,6 +110,20 @@
 			<!-- Sort Menu Container -->
 			<div id="sortMenuContainer"
 				class="hidden flex-col absolute top-[calc(100%+12px)] right-0 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl border border-zinc-200 dark:border-zinc-800 p-4 rounded-2xl shadow-2xl min-w-[280px] max-w-[320px] max-h-[80vh] overflow-y-auto custom-scrollbar z-50 animate-in fade-in slide-in-from-top-2 duration-200 origin-top-right">
+
+				<!-- Sidebar Toggle -->
+				<div class="hidden lg:block mb-6">
+					<div class="text-[10px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500 mb-3 px-1 flex items-center gap-2">
+						<i data-lucide="layout-sidebar" class="w-3 h-3"></i> Layout Mode
+					</div>
+					<button onclick="window.toggleAdvancedFilters()" 
+						class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl bg-zinc-100 dark:bg-black/20 border border-zinc-200 dark:border-zinc-800 hover:border-indigo-500/50 transition-all">
+						<span class="text-xs font-bold text-zinc-700 dark:text-zinc-300">Sidebar Filters</span>
+						<div id="sidebarToggleDot" class="w-8 h-4 bg-zinc-300 dark:bg-zinc-700 rounded-full relative transition-colors">
+							<div class="dot absolute left-1 top-1 w-2 h-2 bg-white rounded-full transition-all"></div>
+						</div>
+					</button>
+				</div>
 
 				<!-- Ordering Section -->
 				<div

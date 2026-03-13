@@ -189,6 +189,7 @@ window.renderAltTitles = renderAltTitles;
 window.syncTotalsToChild = syncTotalsToChild;
 window.showConfirmationModal = showConfirmationModal;
 window.closeConfirmationModal = closeConfirmationModal;
+window.toggleAdvancedFilters = toggleAdvancedFilters;
 
 // Export Utils Bindings
 window.openExportModal = openExportModal;
@@ -1894,3 +1895,51 @@ if (document.readyState === 'loading') {
 } else {
     initApp();
 }
+
+/**
+ * Toggles the advanced sidebar filter system.
+ * Updates UI layout and re-renders filters.
+ */
+export function toggleAdvancedFilters() {
+    const newState = !state.advancedFiltersEnabled;
+    setState('advancedFiltersEnabled', newState);
+    
+    // UI Update for the toggle Switch
+    const dot = document.querySelector('#sidebarToggleDot .dot');
+    const dotBg = document.getElementById('sidebarToggleDot');
+
+    if (newState) {
+        dot?.classList.add('translate-x-4');
+        dotBg?.classList.add('bg-indigo-500');
+    } else {
+        dot?.classList.remove('translate-x-4');
+        dotBg?.classList.remove('bg-indigo-500');
+    }
+
+    renderFilters();
+    renderGrid();
+}
+
+/**
+ * Synchronizes a sidebar input with the search query.
+ * @param {string} key - The search key (e.g. author)
+ * @param {string} value - The new value
+ */
+window.syncSidebarFilter = (key, value) => {
+    const searchInput = document.getElementById('searchInput');
+    if (!searchInput) return;
+    let currentVal = searchInput.value || '';
+    
+    // Remove existing key if present
+    const regex = new RegExp(`${key}=("([^"]*)"|([^"\\s]+))`, 'gi');
+    currentVal = currentVal.replace(regex, '').trim();
+    
+    // Add new value if not empty
+    if (value && value.trim()) {
+        const quote = value.includes(' ') ? '"' : '';
+        currentVal = `${currentVal} ${key}=${quote}${value.trim()}${quote}`.trim();
+    }
+    
+    searchInput.value = currentVal;
+    renderGrid();
+};

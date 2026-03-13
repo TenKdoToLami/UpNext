@@ -549,3 +549,28 @@ body.quick-add-mode #modalContent>div.border-b {
 body.quick-add-mode #formScrollWrapper {
 	background: transparent !important;
 }
+
+/* ==========================================================================
+   Advanced Sidebar Filters
+   ========================================================================== */
+
+#advancedSidebar:not(.hidden) {
+	display: block !important;
+}
+
+.filter-group {
+	@apply flex flex-col gap-3 p-4 rounded-2xl bg-white/50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800/80 mb-4 shadow-sm;
+}
+
+.filter-label {
+	@apply text-[10px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500 mb-1 flex items-center gap-2;
+}
+
+.filter-input {
+	@apply w-full bg-zinc-100 dark:bg-black/20 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-indigo-500 dark:focus:border-zinc-600 transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-600;
+}
+
+/* Ensure grid handles sidebar transition smoothly */
+#gridContainer {
+	transition: all 0.3s ease-in-out;
+}
