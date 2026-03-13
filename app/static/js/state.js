@@ -63,8 +63,11 @@ export const state = {
 		typeChart: 'doughnut',
 		statusChart: 'doughnut',
 		ratingChart: 'doughnut',
-		growthChart: 'line'
+		growthChart: 'line',
+		mediaGrowthChart: 'line'
 	},
+
+
 	calendarView: 'month',
 
 	// Global Application Settings (User Preference)

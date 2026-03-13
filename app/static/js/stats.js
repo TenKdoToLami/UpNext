@@ -10,6 +10,7 @@ import { TYPE_COLOR_MAP, STATUS_COLOR_MAP, MEDIA_TYPES, ICON_MAP, STATUS_ICON_MA
 let typeChartInstance = null;
 let statusChartInstance = null;
 let growthChartInstance = null;
+let mediaGrowthChartInstance = null;
 let ratingChartInstance = null;
 let activeMediaTypes = [...MEDIA_TYPES]; // Global filter, default all active
 
@@ -159,19 +160,26 @@ export function openStatsModal() {
 window.openStatsModal = openStatsModal;
 
 window.setChartType = (chartName, type) => {
-	if (state.statsChartTypes[chartName]) {
-		const newTypes = { ...state.statsChartTypes };
-		newTypes[chartName] = type;
-		setState('statsChartTypes', newTypes);
-		updateCharts();
-	}
+	const newTypes = { ...state.statsChartTypes };
+	newTypes[chartName] = type;
+	setState('statsChartTypes', newTypes);
+	updateCharts();
 };
+
+window.setMediaGrowthMode = (mode) => {
+	const newTypes = { ...state.statsChartTypes };
+	newTypes.mediaGrowthMode = mode;
+	setState('statsChartTypes', newTypes);
+	updateCharts();
+};
+
 
 function updateCharts() {
 	const stats = calculateStats();
 	renderMetrics(stats);
 	renderCharts(stats);
 	renderGrowthChart(stats);
+	renderMediaGrowthChart(stats);
 	renderRatingChart(stats);
 }
 
@@ -247,6 +255,7 @@ window.toggleChart = (containerId) => {
 			if (containerId === 'typeChartContainer') instance = typeChartInstance;
 			else if (containerId === 'statusChartContainer') instance = statusChartInstance;
 			else if (containerId === 'growthChartContainer') instance = growthChartInstance;
+			else if (containerId === 'mediaGrowthChartContainer') instance = mediaGrowthChartInstance;
 			else if (containerId === 'ratingChartContainer') instance = ratingChartInstance;
 
 			if (instance) {
@@ -430,13 +439,15 @@ function renderCharts(stats) {
 
 	if (!typeCtx || !statusCtx) return;
 
-	// Use persisted chart types
-	const chartTypes = state.statsChartTypes || {
-		typeChart: 'doughnut',
-		statusChart: 'doughnut',
-		ratingChart: 'doughnut',
-		growthChart: 'line'
-	};
+	// Use persisted chart types with safe fallbacks
+	const chartTypes = state.statsChartTypes || {};
+	const getType = (name, fallback) => chartTypes[name] || fallback;
+
+	const typeChartType = getType('typeChart', 'doughnut');
+	const statusChartType = getType('statusChart', 'doughnut');
+	const ratingChartType = getType('ratingChart', 'doughnut');
+	const growthChartType = getType('growthChart', 'line');
+	const mediaGrowthChartType = getType('mediaGrowthChart', 'line');
 
 	// Register plugin safely
 	if (typeof ChartDataLabels !== 'undefined') {
@@ -451,7 +462,7 @@ function renderCharts(stats) {
 	if (typeChartInstance) typeChartInstance.destroy();
 
 	typeChartInstance = new Chart(typeCtx, {
-		type: chartTypes.typeChart,
+		type: typeChartType,
 		data: {
 			labels: typeLabels,
 			datasets: [{
@@ -464,8 +475,8 @@ function renderCharts(stats) {
 		},
 		options: {
 			...COMMON_CHART_OPTIONS,
-			cutout: chartTypes.typeChart === 'doughnut' ? '60%' : 0,
-			scales: getScales(chartTypes.typeChart),
+			cutout: typeChartType === 'doughnut' ? '60%' : 0,
+			scales: getScales(typeChartType),
 			plugins: {
 				...COMMON_CHART_OPTIONS.plugins,
 				legend: { display: false }
@@ -489,7 +500,7 @@ function renderCharts(stats) {
 	if (statusChartInstance) statusChartInstance.destroy();
 
 	statusChartInstance = new Chart(statusCtx, {
-		type: chartTypes.statusChart,
+		type: statusChartType,
 		data: {
 			labels: rawStatusLabels,
 			datasets: [{
@@ -502,8 +513,8 @@ function renderCharts(stats) {
 		},
 		options: {
 			...COMMON_CHART_OPTIONS,
-			cutout: chartTypes.statusChart === 'doughnut' ? '60%' : 0,
-			scales: getScales(chartTypes.statusChart),
+			cutout: statusChartType === 'doughnut' ? '60%' : 0,
+			scales: getScales(statusChartType),
 			plugins: {
 				...COMMON_CHART_OPTIONS.plugins,
 				title: { display: false },
@@ -539,7 +550,7 @@ function renderGrowthChart(stats) {
 	const ctx = document.getElementById('growthChart');
 	if (!ctx) return;
 
-	const chartTypes = state.statsChartTypes || { growthChart: 'line' };
+	const growthChartType = (state.statsChartTypes && state.statsChartTypes.growthChart) || 'line';
 
 	// Use filtered items for growth chart too!
 	const sortedItems = [...stats.filteredItems] // Using the filtered list from calculateStats
@@ -581,7 +592,7 @@ function renderGrowthChart(stats) {
 	if (lineOptions.plugins.datalabels) lineOptions.plugins.datalabels.display = false;
 
 	growthChartInstance = new Chart(ctx, {
-		type: chartTypes.growthChart,
+		type: growthChartType,
 		data: {
 			labels: labels,
 			datasets: [{
@@ -633,11 +644,160 @@ function renderGrowthChart(stats) {
 	});
 }
 
+function renderMediaGrowthChart(stats) {
+	const ctx = document.getElementById('mediaGrowthChart');
+	if (!ctx) return;
+
+	const mediaGrowthChartType = (state.statsChartTypes && state.statsChartTypes.mediaGrowthChart) || 'line';
+	const mediaGrowthMode = (state.statsChartTypes && state.statsChartTypes.mediaGrowthMode) || 'stacked';
+
+	const sortedItems = [...stats.filteredItems]
+		.filter(i => i.createdAt)
+		.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+
+	if (sortedItems.length === 0) {
+		if (mediaGrowthChartInstance) mediaGrowthChartInstance.destroy();
+		return;
+	}
+
+	const dates = new Set();
+	sortedItems.forEach(item => {
+		try {
+			dates.add(new Date(item.createdAt).toISOString().split('T')[0]);
+		} catch (e) { }
+	});
+	const sortedDates = Array.from(dates).sort();
+
+	// Initialize tracking for each media type
+	const typeData = {};
+	MEDIA_TYPES.forEach(type => {
+		typeData[type] = {
+			counts: {},
+			cumulative: []
+		};
+	});
+
+	sortedItems.forEach(item => {
+		try {
+			const date = new Date(item.createdAt).toISOString().split('T')[0];
+			if (typeData[item.type]) {
+				typeData[item.type].counts[date] = (typeData[item.type].counts[date] || 0) + 1;
+			}
+		} catch (e) { }
+	});
+
+	sortedDates.forEach(date => {
+		MEDIA_TYPES.forEach(type => {
+			const prevTotal = typeData[type].cumulative.length > 0
+				? typeData[type].cumulative[typeData[type].cumulative.length - 1]
+				: 0;
+			const dayCount = typeData[type].counts[date] || 0;
+			typeData[type].cumulative.push(prevTotal + dayCount);
+		});
+	});
+
+	if (mediaGrowthChartInstance) mediaGrowthChartInstance.destroy();
+
+	if (mediaGrowthChartInstance) mediaGrowthChartInstance.destroy();
+
+	const isLine = mediaGrowthChartType === 'line';
+
+	const datasets = MEDIA_TYPES.map(type => {
+		const color = getTypeColorHex(type);
+		const fillColor = color + '22';
+
+		return {
+			label: type,
+			data: typeData[type].cumulative,
+			borderColor: color,
+			backgroundColor: isLine ? fillColor : color,
+			borderWidth: isLine ? 2 : 0,
+			fill: true,
+			tension: 0.4,
+			pointRadius: 0,
+			pointHoverRadius: 4,
+			stack: 'mediaStack',
+			spanGaps: false
+		};
+	});
+
+
+	const isDark = document.documentElement.classList.contains('dark');
+	const lineOptions = JSON.parse(JSON.stringify(COMMON_CHART_OPTIONS));
+	if (lineOptions.plugins.datalabels) lineOptions.plugins.datalabels.display = false;
+
+	mediaGrowthChartInstance = new Chart(ctx, {
+		type: mediaGrowthChartType,
+		data: {
+			labels: sortedDates,
+			datasets: datasets
+		},
+		options: {
+			...lineOptions,
+			scales: {
+				x: {
+					grid: { display: false },
+					ticks: {
+						display: true,
+						color: isDark ? '#a1a1aa' : '#71717a',
+						font: { size: 10 },
+						maxRotation: 45,
+						autoSkip: true,
+						maxTicksLimit: 10
+					}
+				},
+				y: {
+					stacked: true,
+					grid: {
+						color: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.1)',
+						borderDash: [5, 5]
+					},
+					ticks: {
+						display: true,
+						color: isDark ? '#a1a1aa' : '#71717a',
+						font: { family: "'Inter', sans-serif", size: 10 },
+						callback: value => Math.abs(value)
+					},
+					beginAtZero: true
+				}
+			},
+			interaction: { intersect: false, mode: 'index' },
+			plugins: {
+				...lineOptions.plugins,
+				legend: { display: false },
+				tooltip: {
+					...COMMON_CHART_OPTIONS.plugins.tooltip,
+					callbacks: {
+						footer: (tooltipItems) => {
+							let sum = 0;
+							tooltipItems.forEach(function (tooltipItem) {
+								sum += tooltipItem.parsed.y || 0;
+							});
+							return 'Total: ' + sum;
+						},
+						label: (item) => {
+							let label = item.dataset.label || '';
+							let val = item.parsed.y || 0;
+							return label + ': ' + val;
+						}
+					}
+				},
+				datalabels: { display: false }
+			}
+		}
+	});
+}
+
+
+
+
+
+
 function renderRatingChart(stats) {
 	const ctx = document.getElementById('ratingChart');
 	if (!ctx) return;
 
-	const chartTypes = state.statsChartTypes || { ratingChart: 'doughnut' };
+	const ratingChartType = (state.statsChartTypes && state.statsChartTypes.ratingChart) || 'doughnut';
 
 	const rawLabels = ['Bad', 'Ok', 'Good', 'Masterpiece'];
 	const data = rawLabels.map(l => stats.ratingCounts[l]);
@@ -653,7 +813,7 @@ function renderRatingChart(stats) {
 	];
 
 	ratingChartInstance = new Chart(ctx, {
-		type: chartTypes.ratingChart,
+		type: ratingChartType,
 		data: {
 			labels: rawLabels,
 			datasets: [{
@@ -666,8 +826,8 @@ function renderRatingChart(stats) {
 		},
 		options: {
 			...COMMON_CHART_OPTIONS,
-			cutout: chartTypes.ratingChart === 'doughnut' ? '60%' : 0,
-			scales: getScales(chartTypes.ratingChart),
+			cutout: ratingChartType === 'doughnut' ? '60%' : 0,
+			scales: getScales(ratingChartType),
 			plugins: {
 				...COMMON_CHART_OPTIONS.plugins,
 				legend: { display: false }, // Using HTML legend
