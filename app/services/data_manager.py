@@ -100,12 +100,24 @@ class DataManager:
                 cover_url=data.get("coverUrl", "") 
             )
 
+            status = data.get("status", "Planning")
+            completed_at = None
+            if data.get("completedAt"):
+                try:
+                    completed_at = datetime.fromisoformat(data["completedAt"]).date()
+                except (ValueError, TypeError):
+                    pass
+            
+            # Auto-fill completed_at if status is Anticipating or Completed and no date provided
+            if not completed_at and status in ["Anticipating", "Completed"]:
+                completed_at = datetime.utcnow().date()
+
             new_item.user_data = MediaUserData(
                 item_id=new_item.id,
-                status=data.get("status", "Planning"),
+                status=status,
                 rating=data.get("rating") if data.get("rating") is not None else 0,
                 progress=data.get("progress", ""),
-                completed_at=datetime.fromisoformat(data["completedAt"]).date() if data.get("completedAt") else None,
+                completed_at=completed_at,
                 reread_count=data.get("rereadCount", 0),
                 review=data.get("review", ""),
                 notes=data.get("notes", ""),
@@ -168,13 +180,19 @@ class DataManager:
             if not item.user_data:
                 item.user_data = MediaUserData(item_id=item.id)
             
-            item.user_data.status = data.get("status", item.user_data.status)
+            new_status = data.get("status", item.user_data.status)
+            old_status = item.user_data.status
+            item.user_data.status = new_status
+            
             if "rating" in data:
                 item.user_data.rating = data["rating"] if data["rating"] is not None else 0
             item.user_data.progress = data.get("progress", item.user_data.progress)
             
+            # Status change auto-fill for completed_at
             if "completedAt" in data:
                  item.user_data.completed_at = datetime.fromisoformat(data["completedAt"]).date() if data["completedAt"] else None
+            elif new_status != old_status and new_status in ["Anticipating", "Completed"]:
+                 item.user_data.completed_at = datetime.utcnow().date()
             if "rereadCount" in data:
                 item.user_data.reread_count = data["rereadCount"]
 

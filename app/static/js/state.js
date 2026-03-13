@@ -64,11 +64,17 @@ export const state = {
 		statusChart: 'doughnut',
 		ratingChart: 'doughnut',
 		growthChart: 'line',
-		mediaGrowthChart: 'line'
+		mediaGrowthChart: 'line',
+		consumptionGrowthChart: 'line',
+		consumptionSpreadChart: 'doughnut'
 	},
 	activeTimeframe: 'all',
 	statsCustomStart: null,
 	statsCustomEnd: null,
+	statsCustomStart: null,
+	statsCustomEnd: null,
+	statsStrictTrackingMomentum: false,
+	statsStrictTrackingSpread: false,
 
 
 	calendarView: 'month',
@@ -108,7 +114,7 @@ const PERSISTED_KEYS = [
 	'viewMode', 'sortBy', 'sortOrder', 'showDetails',
 	'isHidden', 'isMultiSelect', 'filterHiddenOnly', 'theme',
 	'statsChartTypes', 'calendarView', 'appSettings', 'activeTimeframe',
-	'statsCustomStart', 'statsCustomEnd'
+	'statsCustomStart', 'statsCustomEnd', 'statsStrictTrackingMomentum', 'statsStrictTrackingSpread'
 ];
 
 /**

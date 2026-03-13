@@ -13,12 +13,18 @@ let statusChartInstance = null;
 let growthChartInstance = null;
 let mediaGrowthChartInstance = null;
 let ratingChartInstance = null;
+let consumptionGrowthChartInstance = null;
+let consumptionSpreadChartInstance = null;
 let activeMediaTypes = [...MEDIA_TYPES]; // Global filter, default all active
 
 // Reusable chart options for consistency
 const COMMON_CHART_OPTIONS = {
 	responsive: true,
 	maintainAspectRatio: false,
+	interaction: {
+		mode: 'index',
+		intersect: false
+	},
 	plugins: {
 		legend: {
 			position: 'bottom',
@@ -220,7 +226,10 @@ function externalTooltipHandler(context) {
 		});
 
 		const tableBody = document.createElement('tbody');
-		tooltip.dataPoints.forEach((dataPoint) => {
+		// Reverse the datapoints so the tooltip order matches the visual stack order (Top dataset = Top tooltip item)
+		const dataPoints = [...tooltip.dataPoints].reverse();
+
+		dataPoints.forEach((dataPoint) => {
 			const tr = document.createElement('tr');
 			tr.style.backgroundColor = 'transparent';
 			tr.style.borderWidth = 0;
@@ -240,11 +249,18 @@ function externalTooltipHandler(context) {
 			const categoryLabel = dataPoint.label;
 
 			// If dataset label is generic or missing, use the category/item label
-			if (!label || label === 'Items' || label === 'Total Items' || label === 'Counts') {
+			if (!label || label === 'Items' || label === 'Total Items' || label === 'Counts' || label === 'Time Spent') {
 				label = categoryLabel;
 			}
 
-			const value = dataPoint.formattedValue;
+			const rawValue = dataPoint.parsed.y !== undefined ? dataPoint.parsed.y : dataPoint.parsed;
+			let value = dataPoint.formattedValue;
+
+			// For consumption charts, ensure we use formatMinutes for the tooltip values
+			if (chart.canvas.id === 'consumptionGrowthChart' || chart.canvas.id === 'consumptionSpreadChart') {
+				value = formatMinutes(rawValue);
+			}
+
 			const info = getTooltipInfo(label);
 
 			const iconSpan = document.createElement('span');
@@ -319,6 +335,11 @@ function calculateStats() {
 	const typeCounts = {};
 	const statusCounts = {};
 	const ratingCounts = { 'Bad': 0, 'Ok': 0, 'Good': 0, 'Masterpiece': 0 };
+	const consumedByType = {}; // time by type (normal)
+	const consumedByTypeStrict = {}; // time by type (strict)
+	const consumedByStatus = {}; // time by status
+	let totalMinutes = 0;
+	let totalMinutesStrict = 0;
 
 	// Apply Global Filters (Types + Timeframe) to the calculation
 	let filteredItems = state.items.filter(item => activeMediaTypes.includes(item.type));
@@ -362,13 +383,30 @@ function calculateStats() {
 			totalRatings += r;
 			ratedCount++;
 		}
+
+		// Consumption Stats (Normal)
+		const minsNormal = getItemConsumedMinutes(item, false);
+		if (minsNormal > 0) {
+			totalMinutes += minsNormal;
+			consumedByType[item.type] = (consumedByType[item.type] || 0) + minsNormal;
+			consumedByStatus[item.status] = (consumedByStatus[item.status] || 0) + minsNormal;
+		}
+
+		// Consumption Stats (Strict)
+		const minsStrict = getItemConsumedMinutes(item, true);
+		if (minsStrict > 0) {
+			totalMinutesStrict += minsStrict;
+			consumedByTypeStrict[item.type] = (consumedByTypeStrict[item.type] || 0) + minsStrict;
+		}
 	});
 
 	const avgRating = ratedCount > 0 ? (totalRatings / ratedCount).toFixed(1) : '0.0';
 
-	// For metrics, we need to pass a fallback for planned items if it doesn't exist in filtered set
-	// But it will exist in statusCounts if any items have that status
-	return { typeCounts, statusCounts, ratingCounts, totalItems, completedItems, avgRating, filteredItems };
+	return { 
+		typeCounts, statusCounts, ratingCounts, totalItems, completedItems, avgRating, filteredItems, 
+		totalMinutes, consumedByType, consumedByStatus,
+		totalMinutesStrict, consumedByTypeStrict
+	};
 }
 
 /**
@@ -416,6 +454,9 @@ function updateCharts() {
 	renderGrowthChart(stats);
 	renderMediaGrowthChart(stats);
 	renderRatingChart(stats);
+	renderConsumptionGrowthChart(stats);
+	renderConsumptionSpreadChart(stats);
+	updateStrictTrackingUI();
 }
 
 /**
@@ -455,13 +496,25 @@ function renderGlobalFilters() {
 }
 
 /**
- * Calculates if an item falls within the selected timeframe based on updatedAt.
+ * Helper to get the prioritized date for timeline charts.
+ * Prioritizes completedAt for Completed/Anticipating items.
+ */
+function getItemTimelineDate(item) {
+	if (item.completedAt && ['Completed', 'Anticipating'].includes(item.status)) {
+		return item.completedAt;
+	}
+	return item.updatedAt || item.createdAt;
+}
+
+/**
+ * Calculates if an item falls within the selected timeframe based on prioritized date.
  */
 function isItemInTimeframe(item, timeframe) {
 	if (timeframe === 'all' || !timeframe) return true;
-	if (!item.updatedAt) return false;
+	const prioritizedDate = getItemTimelineDate(item);
+	if (!prioritizedDate) return false;
 
-	const updatedDate = new Date(item.updatedAt);
+	const updatedDate = new Date(prioritizedDate);
 	const now = new Date();
 
 	switch (timeframe) {
@@ -652,6 +705,8 @@ window.toggleChart = (containerId) => {
 			else if (containerId === 'growthChartContainer') instance = growthChartInstance;
 			else if (containerId === 'mediaGrowthChartContainer') instance = mediaGrowthChartInstance;
 			else if (containerId === 'ratingChartContainer') instance = ratingChartInstance;
+			else if (containerId === 'consumptionGrowthContainer') instance = consumptionGrowthChartInstance;
+			else if (containerId === 'consumptionSpreadContainer') instance = consumptionSpreadChartInstance;
 
 			if (instance) {
 				instance.resize();
@@ -674,21 +729,24 @@ function renderMetrics(stats) {
 
 	const completedPlusAnticipating = stats.completedItems + (stats.statusCounts['Anticipating'] || 0);
 
+	// Total Time calculation
+	const totalTimeFormatted = formatMinutes(stats.totalMinutes);
+
 	const metrics = [
 		{ label: 'Total Items', value: stats.totalItems, icon: 'layers', color: 'text-indigo-500' },
+		{ label: 'Time Spent', value: totalTimeFormatted, icon: 'clock', color: 'text-amber-500' },
 		{ label: 'Completed + Anticipating', value: completedPlusAnticipating, icon: 'check-circle', color: 'text-emerald-500' },
-		{ label: 'Avg Rating', value: stats.avgRating, icon: 'star', color: 'text-amber-500' },
-		{ label: 'Planned', value: stats.statusCounts['Planning'] || 0, icon: 'calendar', color: 'text-blue-500' }
+		{ label: 'Avg Rating', value: stats.avgRating, icon: 'star', color: 'text-amber-500' }
 	];
 
 	container.innerHTML = metrics.map(m => `
         <div class="bg-white dark:bg-[#18181b] p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 flex items-center justify-between shadow-sm">
             <div>
-                <p class="text-xs text-zinc-500 dark:text-zinc-400 uppercase font-bold tracking-wider">${m.label}</p>
-                <p class="text-2xl font-black text-zinc-800 dark:text-white mt-1">${m.value}</p>
+                <p class="text-[10px] text-zinc-500 dark:text-zinc-400 uppercase font-bold tracking-wider">${m.label}</p>
+                <p class="text-xl font-black text-zinc-800 dark:text-white mt-1 leading-none">${m.value}</p>
             </div>
-            <div class="w-10 h-10 rounded-full bg-zinc-50 dark:bg-zinc-800 flex items-center justify-center ${m.color}">
-                <i data-lucide="${m.icon}" class="w-5 h-5"></i>
+            <div class="w-9 h-9 rounded-xl bg-zinc-50 dark:bg-zinc-800 flex items-center justify-center ${m.color}">
+                <i data-lucide="${m.icon}" class="w-4.5 h-4.5"></i>
             </div>
         </div>
     `).join('');
@@ -696,31 +754,8 @@ function renderMetrics(stats) {
 	if (window.lucide) window.lucide.createIcons();
 }
 
-// Helper to determine scale config
-const getScales = (chartType) => {
-	if (chartType === 'bar' || chartType === 'line') {
-		const isDark = document.documentElement.classList.contains('dark');
-		return {
-			y: {
-				beginAtZero: true,
-				grid: { display: false },
-				ticks: { display: true, color: isDark ? '#a1a1aa' : '#71717a', font: { size: 10 } }
-			},
-			x: {
-				grid: { display: false },
-				ticks: { color: isDark ? '#a1a1aa' : '#71717a', font: { size: 10 } }
-			}
-		};
-	} else if (chartType === 'polarArea') {
-		return {
-			r: {
-				grid: { display: false },
-				ticks: { display: false, backdropPadding: 0, backdropColor: 'transparent' }
-			}
-		};
-	}
-	return { x: { display: false }, y: { display: false } };
-};
+
+// Renders the key metrics cards
 
 /**
  * Renders a high-fidelity HTML legend for charts.
@@ -826,6 +861,39 @@ function applyHiddenState(chartInstance, chartName) {
 }
 
 /**
+ * Helper to get scales based on chart type for distribution charts.
+ */
+function getScales(chartType) {
+	const isDark = document.documentElement.classList.contains('dark');
+	const gridColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)';
+	const textColor = isDark ? '#a1a1aa' : '#71717a';
+
+	if (chartType === 'bar') {
+		return {
+			x: {
+				grid: { display: false },
+				ticks: { color: textColor, font: { size: 10, weight: 'bold' } }
+			},
+			y: {
+				beginAtZero: true,
+				grid: { color: gridColor },
+				ticks: { color: textColor, font: { size: 10 } }
+			}
+		};
+	}
+	if (chartType === 'polarArea') {
+		return {
+			r: {
+				grid: { color: gridColor },
+				angleLines: { color: gridColor },
+				ticks: { display: false }
+			}
+		};
+	}
+	return {}; // No scales for pie/doughnut
+}
+
+/**
  * Renders or updates the Chart.js instances.
  */
 function renderCharts(stats) {
@@ -874,7 +942,11 @@ function renderCharts(stats) {
 			scales: getScales(typeChartType),
 			plugins: {
 				...COMMON_CHART_OPTIONS.plugins,
-				legend: { display: false }
+				legend: { display: false },
+				datalabels: {
+					...COMMON_CHART_OPTIONS.plugins.datalabels,
+					display: (ctx) => ['doughnut', 'pie', 'polarArea'].includes(typeChartType)
+				}
 			}
 		}
 	});
@@ -913,7 +985,11 @@ function renderCharts(stats) {
 			plugins: {
 				...COMMON_CHART_OPTIONS.plugins,
 				title: { display: false },
-				legend: { display: false } // Using HTML legend
+				legend: { display: false },
+				datalabels: {
+					...COMMON_CHART_OPTIONS.plugins.datalabels,
+					display: (ctx) => ['doughnut', 'pie', 'polarArea'].includes(statusChartType)
+				}
 			}
 		}
 	});
@@ -947,10 +1023,10 @@ function renderGrowthChart(stats) {
 
 	const growthChartType = (state.statsChartTypes && state.statsChartTypes.growthChart) || 'line';
 
-	// Use filtered items for growth chart too!
+	// Use filtered items and prioritized date for growth chart!
 	const sortedItems = [...stats.filteredItems]
-		.filter(i => i.updatedAt)
-		.sort((a, b) => new Date(a.updatedAt) - new Date(b.updatedAt));
+		.filter(i => getItemTimelineDate(i))
+		.sort((a, b) => new Date(getItemTimelineDate(a)) - new Date(getItemTimelineDate(b)));
 
 	if (sortedItems.length === 0) {
 		// Render empty chart or clear it
@@ -961,7 +1037,7 @@ function renderGrowthChart(stats) {
 	const dateMap = new Map();
 	sortedItems.forEach(item => {
 		try {
-			const date = new Date(item.updatedAt).toISOString().split('T')[0];
+			const date = new Date(getItemTimelineDate(item)).toISOString().split('T')[0];
 			dateMap.set(date, (dateMap.get(date) || 0) + 1);
 		} catch (e) { }
 	});
@@ -977,14 +1053,14 @@ function renderGrowthChart(stats) {
 	if (startDate) {
 		const startIso = startDate.toISOString().split('T')[0];
 		// Calculate items edited BEFORE the timeframe
-		const baselineItems = sortedItems.filter(i => new Date(i.updatedAt) < startDate);
+		const baselineItems = sortedItems.filter(i => new Date(getItemTimelineDate(i)) < startDate);
 		cumulative = baselineItems.length;
 
 		// Filter items to strictly during the timeframe
-		filteredSortedItems = sortedItems.filter(i => new Date(i.updatedAt) >= startDate);
+		filteredSortedItems = sortedItems.filter(i => new Date(getItemTimelineDate(i)) >= startDate);
 
 		// If the first date isn't exactly the start date, prepend the start date with the baseline
-		const firstItemDate = filteredSortedItems.length > 0 ? new Date(filteredSortedItems[0].updatedAt).toISOString().split('T')[0] : null;
+		const firstItemDate = filteredSortedItems.length > 0 ? new Date(getItemTimelineDate(filteredSortedItems[0])).toISOString().split('T')[0] : null;
 		if (firstItemDate !== startIso) {
 			labels.push(startIso);
 			data.push(cumulative);
@@ -994,7 +1070,7 @@ function renderGrowthChart(stats) {
 	const subDateMap = new Map();
 	filteredSortedItems.forEach(item => {
 		try {
-			const date = new Date(item.updatedAt).toISOString().split('T')[0];
+			const date = new Date(getItemTimelineDate(item)).toISOString().split('T')[0];
 			subDateMap.set(date, (subDateMap.get(date) || 0) + 1);
 		} catch (e) { }
 	});
@@ -1080,8 +1156,8 @@ function renderMediaGrowthChart(stats) {
 	const mediaGrowthMode = (state.statsChartTypes && state.statsChartTypes.mediaGrowthMode) || 'stacked';
 
 	const sortedItems = [...stats.filteredItems]
-		.filter(i => i.updatedAt)
-		.sort((a, b) => new Date(a.updatedAt) - new Date(b.updatedAt));
+		.filter(i => getItemTimelineDate(i))
+		.sort((a, b) => new Date(getItemTimelineDate(a)) - new Date(getItemTimelineDate(b)));
 
 	if (sortedItems.length === 0) {
 		if (mediaGrowthChartInstance) mediaGrowthChartInstance.destroy();
@@ -1091,7 +1167,7 @@ function renderMediaGrowthChart(stats) {
 	let dates = new Set();
 	sortedItems.forEach(item => {
 		try {
-			dates.add(new Date(item.updatedAt).toISOString().split('T')[0]);
+			dates.add(new Date(getItemTimelineDate(item)).toISOString().split('T')[0]);
 		} catch (e) { }
 	});
 	
@@ -1115,7 +1191,7 @@ function renderMediaGrowthChart(stats) {
 
 	sortedItems.forEach(item => {
 		try {
-			const date = new Date(item.updatedAt).toISOString().split('T')[0];
+			const date = new Date(getItemTimelineDate(item)).toISOString().split('T')[0];
 			if (typeData[item.type]) {
 				typeData[item.type].counts[date] = (typeData[item.type].counts[date] || 0) + 1;
 			}
@@ -1131,7 +1207,7 @@ function renderMediaGrowthChart(stats) {
 			
 			// If this is the startIso and we have a startDate, initialize with baseline
 			if (date === startIso && typeData[type].cumulative.length === 0) {
-				const baselineCount = sortedItems.filter(i => i.type === type && new Date(i.updatedAt) < startDate).length;
+				const baselineCount = sortedItems.filter(i => i.type === type && new Date(getItemTimelineDate(i)) < startDate).length;
 				typeData[type].cumulative.push(baselineCount);
 			} else {
 				const dayCount = typeData[type].counts[date] || 0;
@@ -1161,9 +1237,8 @@ function renderMediaGrowthChart(stats) {
 			pointRadius: 0,
 			pointHoverRadius: 4,
 			stack: 'mediaStack',
-			spanGaps: false
 		};
-	});
+	}).filter(ds => activeMediaTypes.includes(ds.label));
 
 
 	const isDark = document.documentElement.classList.contains('dark');
@@ -1211,16 +1286,7 @@ function renderMediaGrowthChart(stats) {
 				legend: { display: false },
 				tooltip: {
 					enabled: false,
-					external: externalTooltipHandler,
-					callbacks: {
-						footer: (tooltipItems) => {
-							let sum = 0;
-							tooltipItems.forEach(function (tooltipItem) {
-								sum += tooltipItem.parsed.y || 0;
-							});
-							return 'Total: ' + sum;
-						}
-					}
+					external: externalTooltipHandler
 				},
 				datalabels: { display: false }
 			}
@@ -1282,6 +1348,383 @@ function renderRatingChart(stats) {
 	// Apply persistent hidden state
 	applyHiddenState(ratingChartInstance, 'rating');
 
-	// Pass 'rating' as the chartName argument
 	renderCustomHTMLLegend('ratingLegend', rawLabels, ratingColors, [], data, true, 'rating');
+}
+
+
+// ============================================================================
+// CONSUMPTION TIME CALCULATIONS
+// ============================================================================
+
+/**
+ * Parses progress strings like "Ep 12", "Ch. 5", "15/24" to extract the current count.
+ */
+function parseProgressValue(str) {
+	if (!str || typeof str !== 'string') return 0;
+	
+	// Pattern 1: Look for "current / total" (e.g., "15 / 24")
+	const slashMatch = str.match(/(\d+)\s*\/\s*\d+/);
+	if (slashMatch) return parseInt(slashMatch[1]);
+	
+	// Pattern 2: Look for numbers following common prefixes
+	const prefixMatch = str.match(/(?:ep|episode|ch|chapter|v|vol|volume|p|page|part|#)\s*(\d+)/gi);
+	if (prefixMatch) {
+		const lastMatch = prefixMatch[prefixMatch.length - 1];
+		const num = lastMatch.match(/\d+/);
+		if (num) return parseInt(num[0]);
+	}
+	
+	// Pattern 3: Discrete numbers, skipping those that look like standalone years
+	const allNums = str.match(/\d+/g);
+	if (allNums) {
+		// Heuristic: If multiple numbers, pick the one that isn't a year (1900-2100)
+		if (allNums.length > 1) {
+			const nonYear = allNums.find(n => {
+				const v = parseInt(n);
+				return v < 1900 || v > 2100;
+			});
+			if (nonYear) return parseInt(nonYear);
+		}
+		// If only one number and it looks like a year, be skeptical unless it's small
+		const firstVal = parseInt(allNums[0]);
+		if (firstVal >= 1900 && firstVal <= 2100 && str.toLowerCase().includes('started')) return 0;
+		return firstVal;
+	}
+	
+	return 0;
+}
+
+/**
+ * Calculates estimated minutes spent on a single item.
+ */
+function getItemConsumedMinutes(item, strict = false) {
+	if (!['Completed', 'Anticipating'].includes(item.status)) return 0;
+
+	const type = item.type;
+	const isCompleted = item.status === 'Completed';
+	const rereads = parseInt(item.rereadCount || 0);
+	const multiplier = 1 + rereads;
+	let progress = parseProgressValue(item.progress);
+
+	// Defaults (mins)
+	const DEFAULT_ANIME_DUR = 24;
+	const DEFAULT_MANGA_MINS_PER_CH = 5;
+	const DEFAULT_MOVIE_DUR = 100;
+	const DEFAULT_WORDS_PER_MIN = 250;
+
+	if (['Anime', 'Series'].includes(type)) {
+		let totalEp = item.episodeCount || 12; // Default to 12 if missing
+		let count = isCompleted ? totalEp : progress;
+		if (item.episodeCount && count > item.episodeCount) count = item.episodeCount;
+		
+		const explicitDur = item.avgDurationMinutes;
+		const hasExplicitData = explicitDur && explicitDur > 0;
+		if (strict && !hasExplicitData && !item.episodeCount) return 0;
+		
+		let dur = hasExplicitData ? explicitDur : DEFAULT_ANIME_DUR;
+		if (dur > 240 && count > 1) return dur * multiplier;
+		return count * dur * multiplier;
+	}
+
+	if (type === 'Manga') {
+		let totalCh = item.chapterCount || 1; 
+		let count = isCompleted ? totalCh : progress;
+		if (item.chapterCount && count > item.chapterCount) count = item.chapterCount;
+		
+		if (strict && !item.chapterCount && !item.progress && !isCompleted) return 0;
+		
+		return count * DEFAULT_MANGA_MINS_PER_CH * multiplier;
+	}
+
+	if (type === 'Book') {
+		const MAX_BOOK_MINS = 20000;
+		
+		let mins = 0;
+		const hasWordData = item.wordCount && item.wordCount > 100;
+		
+		if (strict && !hasWordData) return 0;
+
+		if (hasWordData) {
+			mins = item.wordCount / DEFAULT_WORDS_PER_MIN;
+		} else if (isCompleted) {
+			mins = 100000 / DEFAULT_WORDS_PER_MIN; // 100k words default = 400 mins
+		}
+		
+		return Math.min(mins, MAX_BOOK_MINS) * multiplier;
+	}
+
+	if (type === 'Movie') {
+		const explicitDur = item.avgDurationMinutes;
+		if (strict && !explicitDur) return 0;
+		
+		const dur = explicitDur || (isCompleted ? DEFAULT_MOVIE_DUR : 0);
+		return dur * multiplier;
+	}
+
+	return 0;
+}
+
+/**
+ * Formats minutes into human-readable string (e.g., "1d 12h 30m").
+ */
+function formatMinutes(totalMins) {
+	if (!totalMins || totalMins <= 0) return '0m';
+	
+	const minsInDay = 1440;
+	const minsInHour = 60;
+
+	const days = Math.floor(totalMins / minsInDay);
+	const hours = Math.floor((totalMins % minsInDay) / minsInHour);
+	const mins = Math.round(totalMins % minsInHour);
+
+	let parts = [];
+	if (days > 0) parts.push(`${days}d`);
+	if (hours > 0) parts.push(`${hours}h`);
+	if (mins > 0 || parts.length === 0) parts.push(`${mins}m`);
+
+	return parts.slice(0, 2).join(' '); // Keep it concise for UI
+}
+
+// ============================================================================
+// CONSUMPTION CHARTS
+// ============================================================================
+
+function renderConsumptionGrowthChart(stats) {
+	const ctx = document.getElementById('consumptionGrowthChart');
+	if (!ctx) return;
+
+	const chartType = (state.statsChartTypes && state.statsChartTypes.consumptionGrowthChart) || 'line';
+	if (consumptionGrowthChartInstance) consumptionGrowthChartInstance.destroy();
+
+	const sortedItems = [...stats.filteredItems]
+		.filter(i => getItemTimelineDate(i))
+		.sort((a, b) => new Date(getItemTimelineDate(a)) - new Date(getItemTimelineDate(b)));
+
+	if (sortedItems.length === 0) return;
+
+	let dates = new Set();
+	sortedItems.forEach(item => {
+		try { dates.add(new Date(getItemTimelineDate(item)).toISOString().split('T')[0]); } catch (e) { }
+	});
+
+	const startDate = getTimeframeStartDate(state.activeTimeframe);
+	let startIsoStr = null;
+	if (startDate) {
+		startIsoStr = startDate.toISOString().split('T')[0];
+		dates.add(startIsoStr);
+	}
+
+	const sortedDates = Array.from(dates).sort();
+
+	// Initialize tracking for each media type
+	const typeData = {};
+	MEDIA_TYPES.forEach(type => {
+		typeData[type] = {
+			counts: {},
+			cumulative: []
+		};
+	});
+
+	sortedItems.forEach(item => {
+		try {
+			const date = new Date(getItemTimelineDate(item)).toISOString().split('T')[0];
+			const mins = getItemConsumedMinutes(item, state.statsStrictTrackingMomentum);
+			if (typeData[item.type] && mins > 0) {
+				typeData[item.type].counts[date] = (typeData[item.type].counts[date] || 0) + mins;
+			}
+		} catch (e) { }
+	});
+
+	// Calculate Cumulative Stats
+	sortedDates.forEach(date => {
+		MEDIA_TYPES.forEach(type => {
+			const prevTotal = typeData[type].cumulative.length > 0
+				? typeData[type].cumulative[typeData[type].cumulative.length - 1]
+				: 0;
+
+			if (date === startIsoStr && typeData[type].cumulative.length === 0) {
+				// Base: sum items edited BEFORE the timeframe
+				const baselineMins = sortedItems
+					.filter(i => i.type === type && new Date(getItemTimelineDate(i)) < startDate)
+					.reduce((sum, i) => sum + getItemConsumedMinutes(i, state.statsStrictTrackingMomentum), 0);
+				typeData[type].cumulative.push(baselineMins);
+			} else {
+				const dayMins = typeData[type].counts[date] || 0;
+				typeData[type].cumulative.push(prevTotal + dayMins);
+			}
+		});
+	});
+
+	const isDark = document.documentElement.classList.contains('dark');
+	const isLine = chartType === 'line';
+	const datasets = MEDIA_TYPES.map(type => {
+		const color = getTypeColorHex(type);
+		return {
+			label: type,
+			data: typeData[type].cumulative,
+			borderColor: color,
+			backgroundColor: isLine ? color + '22' : color,
+			fill: true,
+			tension: 0.4,
+			pointRadius: 0,
+			borderWidth: isLine ? 2 : 0,
+			stack: 'consumptionStack'
+		};
+	}).filter(ds => activeMediaTypes.includes(ds.label));
+
+	consumptionGrowthChartInstance = new Chart(ctx, {
+		type: chartType,
+		data: {
+			labels: sortedDates,
+			datasets: datasets
+		},
+		options: {
+			...COMMON_CHART_OPTIONS,
+			scales: {
+				x: {
+					grid: { display: false },
+					ticks: {
+						color: isDark ? '#71717a' : '#a1a1aa',
+						font: { size: 10 },
+						maxRotation: 45,
+						autoSkip: true,
+						maxTicksLimit: 10
+					}
+				},
+				y: {
+					beginAtZero: true,
+					stacked: true,
+					grid: { color: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' },
+					ticks: {
+						color: isDark ? '#71717a' : '#a1a1aa',
+						font: { size: 10 },
+						callback: v => formatMinutes(v)
+					}
+				}
+			},
+			plugins: {
+				...COMMON_CHART_OPTIONS.plugins,
+				legend: { display: false },
+				datalabels: { display: false },
+				tooltip: {
+					enabled: false,
+					external: externalTooltipHandler,
+					callbacks: {
+						label: (ctx) => `${ctx.dataset.label}: ${formatMinutes(ctx.parsed.y)}`
+					}
+				}
+			}
+		}
+	});
+}
+
+function renderConsumptionSpreadChart(stats) {
+	const ctx = document.getElementById('consumptionSpreadChart');
+	if (!ctx) return;
+
+	const chartType = (state.statsChartTypes && state.statsChartTypes.consumptionSpreadChart) || 'doughnut';
+	const existingChart = Chart.getChart(ctx);
+	if (existingChart) existingChart.destroy();
+
+	const useStrict = state.statsStrictTrackingSpread;
+	const consumedData = useStrict ? stats.consumedByTypeStrict : stats.consumedByType;
+
+	const labels = Object.keys(consumedData).sort();
+	const data = labels.map(l => consumedData[l]);
+	const isDark = document.documentElement.classList.contains('dark');
+	const colors = labels.map(l => {
+		const base = TYPE_COLOR_MAP[l] || 'text-zinc-400';
+		// Heuristic to get color from classes
+		if (base.includes('violet')) return isDark ? '#8b5cf6' : '#7c3aed';
+		if (base.includes('pink')) return isDark ? '#ec4899' : '#db2777';
+		if (base.includes('blue')) return isDark ? '#3b82f6' : '#2563eb';
+		if (base.includes('red')) return isDark ? '#ef4444' : '#dc2626';
+		if (base.includes('amber')) return isDark ? '#f59e0b' : '#d97706';
+		return '#71717a';
+	});
+
+	consumptionSpreadChartInstance = new Chart(ctx, {
+		type: chartType,
+		data: {
+			labels: labels,
+			datasets: [{
+				data: data,
+				backgroundColor: colors,
+				borderWidth: 0
+			}]
+		},
+		options: {
+			...COMMON_CHART_OPTIONS,
+			cutout: chartType === 'doughnut' ? '70%' : 0,
+			scales: getScales(chartType),
+			plugins: {
+				...COMMON_CHART_OPTIONS.plugins,
+				legend: { display: false },
+				datalabels: {
+					...COMMON_CHART_OPTIONS.plugins.datalabels,
+					display: (ctx) => ['doughnut', 'pie', 'polarArea'].includes(chartType),
+					formatter: (value, ctx) => {
+						let sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+						if (sum === 0) return '0%';
+						return (value * 100 / sum).toFixed(0) + "%";
+					}
+				},
+				tooltip: {
+					enabled: false,
+					external: externalTooltipHandler,
+					callbacks: {
+						label: (ctx) => `${ctx.label}: ${formatMinutes(ctx.parsed)}`
+					}
+				}
+			}
+		}
+	});
+
+	if (window.lucide) window.lucide.createIcons();
+	renderCustomHTMLLegend('consumptionSpreadLegend', labels, colors, labels.map(l => ICON_MAP[l]), labels.map(l => formatMinutes(consumedData[l])), false);
+}
+
+// ============================================================================
+// UI INTERACTIONS
+// ============================================================================
+
+window.toggleStrictTracking = (type) => {
+	if (type === 'Momentum') {
+		setState('statsStrictTrackingMomentum', !state.statsStrictTrackingMomentum);
+	} else if (type === 'Spread') {
+		setState('statsStrictTrackingSpread', !state.statsStrictTrackingSpread);
+	}
+	updateCharts();
+};
+
+function updateStrictTrackingUI() {
+	// Momentum Toggle
+	const mSw = document.getElementById('momentumStrictSwitch');
+	const mKnob = document.getElementById('momentumStrictKnob');
+	if (mSw && mKnob) {
+		if (state.statsStrictTrackingMomentum) {
+			mSw.classList.remove('bg-zinc-200', 'dark:bg-zinc-800');
+			mSw.classList.add('bg-indigo-500');
+			mKnob.classList.add('translate-x-4');
+		} else {
+			mSw.classList.add('bg-zinc-200', 'dark:bg-zinc-800');
+			mSw.classList.remove('bg-indigo-500');
+			mKnob.classList.remove('translate-x-4');
+		}
+	}
+
+	// Spread Toggle
+	const sSw = document.getElementById('spreadStrictSwitch');
+	const sKnob = document.getElementById('spreadStrictKnob');
+	if (sSw && sKnob) {
+		if (state.statsStrictTrackingSpread) {
+			sSw.classList.remove('bg-zinc-200', 'dark:bg-zinc-800');
+			sSw.classList.add('bg-indigo-500');
+			sKnob.classList.add('translate-x-4');
+		} else {
+			sSw.classList.add('bg-zinc-200', 'dark:bg-zinc-800');
+			sSw.classList.remove('bg-indigo-500');
+			sKnob.classList.remove('translate-x-4');
+		}
+	}
 }
