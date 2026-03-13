@@ -175,6 +175,8 @@ const getOrCreateTooltip = (chart) => {
 		tooltipEl.style.border = '1px solid rgba(255, 255, 255, 0.1)';
 		tooltipEl.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.3)';
 		tooltipEl.style.minWidth = '140px';
+		tooltipEl.style.whiteSpace = 'nowrap';
+		tooltipEl.style.overflow = 'hidden';
 
 		const table = document.createElement('table');
 		table.style.margin = '0px';
@@ -294,6 +296,49 @@ function externalTooltipHandler(context) {
 			tableBody.appendChild(tr);
 		});
 
+		// Add Total Row for multi-dataset charts (Like Momentum/Spread)
+		if (dataPoints.length > 1) {
+			const totalMins = dataPoints.reduce((sum, dp) => sum + (dp.parsed.y !== undefined ? dp.parsed.y : dp.parsed), 0);
+			
+			const tr = document.createElement('tr');
+			tr.style.borderTop = '1px solid rgba(255, 255, 255, 0.15)';
+			tr.style.marginTop = '4px';
+
+			const td = document.createElement('td');
+			td.style.display = 'flex';
+			td.style.alignItems = 'center';
+			td.style.gap = '8px';
+			td.style.padding = '6px 0 2px 0';
+
+			const iconSpan = document.createElement('span');
+			iconSpan.innerHTML = '<i data-lucide="sigma" style="width: 14px; height: 14px; color: #a1a1aa;"></i>';
+
+			const labelSpan = document.createElement('span');
+			labelSpan.style.fontSize = '13px';
+			labelSpan.style.fontWeight = '700';
+			labelSpan.style.color = '#e4e4e7';
+			labelSpan.innerText = 'TOTAL';
+
+			const valueSpan = document.createElement('span');
+			valueSpan.style.marginLeft = 'auto';
+			valueSpan.style.fontSize = '13px';
+			valueSpan.style.fontWeight = '800';
+			
+			// Format correctly if it's a consumption chart
+			if (chart.canvas.id === 'consumptionGrowthChart' || chart.canvas.id === 'consumptionSpreadChart') {
+				valueSpan.innerText = formatMinutes(totalMins);
+			} else {
+				valueSpan.innerText = totalMins;
+			}
+			valueSpan.style.color = '#ffffff';
+
+			td.appendChild(iconSpan);
+			td.appendChild(labelSpan);
+			td.appendChild(valueSpan);
+			tr.appendChild(td);
+			tableBody.appendChild(tr);
+		}
+
 		const tableFoot = document.createElement('tfoot');
 		const footerLines = tooltip.footer || [];
 		footerLines.forEach(footer => {
@@ -323,7 +368,26 @@ function externalTooltipHandler(context) {
 
 	const { offsetLeft: positionX, offsetTop: positionY } = chart.canvas;
 	tooltipEl.style.opacity = 1;
-	tooltipEl.style.left = positionX + tooltip.caretX + 'px';
+
+	// Boundary Detection: If caret is on the right side, shift tooltip left
+	const chartWidth = chart.width;
+	const tooltipWidth = tooltipEl.offsetWidth || 160;
+	const x = tooltip.caretX;
+
+	if (x + (tooltipWidth / 2) > chartWidth) {
+		// Overflow Right -> Align right edge of tooltip with caret or near it
+		tooltipEl.style.left = positionX + x + 'px';
+		tooltipEl.style.transform = 'translate(-100%, 0)';
+	} else if (x - (tooltipWidth / 2) < 0) {
+		// Overflow Left -> Align left edge
+		tooltipEl.style.left = positionX + x + 'px';
+		tooltipEl.style.transform = 'translate(0, 0)';
+	} else {
+		// Centered
+		tooltipEl.style.left = positionX + x + 'px';
+		tooltipEl.style.transform = 'translate(-50%, 0)';
+	}
+
 	tooltipEl.style.top = positionY + tooltip.caretY + 'px';
 }
 
@@ -1605,14 +1669,7 @@ function renderConsumptionGrowthChart(stats) {
 			plugins: {
 				...COMMON_CHART_OPTIONS.plugins,
 				legend: { display: false },
-				datalabels: { display: false },
-				tooltip: {
-					enabled: false,
-					external: externalTooltipHandler,
-					callbacks: {
-						label: (ctx) => `${ctx.dataset.label}: ${formatMinutes(ctx.parsed.y)}`
-					}
-				}
+				datalabels: { display: false }
 			}
 		}
 	});
