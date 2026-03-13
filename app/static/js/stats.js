@@ -320,8 +320,11 @@ function calculateStats() {
 	const statusCounts = {};
 	const ratingCounts = { 'Bad': 0, 'Ok': 0, 'Good': 0, 'Masterpiece': 0 };
 
-	// Apply Global Filter to the calculation
-	const filteredItems = state.items.filter(item => activeMediaTypes.includes(item.type));
+	// Apply Global Filters (Types + Timeframe) to the calculation
+	let filteredItems = state.items.filter(item => activeMediaTypes.includes(item.type));
+
+	// Apply Timeframe Filter
+	filteredItems = filteredItems.filter(item => isItemInTimeframe(item, state.activeTimeframe));
 
 	let totalItems = filteredItems.length;
 	let completedItems = 0;
@@ -384,6 +387,7 @@ export function openStatsModal() {
 	}, 10);
 
 	renderGlobalFilters();
+	renderTimeframeFilters();
 	updateCharts();
 }
 window.openStatsModal = openStatsModal;
@@ -448,12 +452,151 @@ function renderGlobalFilters() {
 	if (window.lucide) window.lucide.createIcons();
 }
 
+/**
+ * Calculates if an item falls within the selected timeframe based on updatedAt.
+ */
+function isItemInTimeframe(item, timeframe) {
+	if (timeframe === 'all' || !timeframe) return true;
+	if (!item.updatedAt) return false;
+
+	const updatedDate = new Date(item.updatedAt);
+	const now = new Date();
+
+	switch (timeframe) {
+		case 'ytd':
+			return updatedDate.getFullYear() === now.getFullYear();
+		case '1y':
+			const oneYearAgo = new Date(now);
+			oneYearAgo.setFullYear(now.getFullYear() - 1);
+			return updatedDate >= oneYearAgo;
+		case '2y':
+			const twoYearsAgo = new Date(now);
+			twoYearsAgo.setFullYear(now.getFullYear() - 2);
+			return updatedDate >= twoYearsAgo;
+		case '2ytd':
+			return updatedDate.getFullYear() >= now.getFullYear() - 1;
+		case '5y':
+			const fiveYearsAgo = new Date(now);
+			fiveYearsAgo.setFullYear(now.getFullYear() - 5);
+			return updatedDate >= fiveYearsAgo;
+		case '10y':
+			const tenYearsAgo = new Date(now);
+			tenYearsAgo.setFullYear(now.getFullYear() - 10);
+			return updatedDate >= tenYearsAgo;
+		case 'custom':
+			const start = state.statsCustomStart ? new Date(state.statsCustomStart) : null;
+			const end = state.statsCustomEnd ? new Date(state.statsCustomEnd) : null;
+			if (start && updatedDate < start) return false;
+			if (end && updatedDate > end) return false;
+			return true;
+		default:
+			return true;
+	}
+}
+
+/**
+ * Renders the timeframe filter buttons.
+ */
+function renderTimeframeFilters() {
+	const container = document.getElementById('timeframeFilters');
+	if (!container) return;
+
+	container.className = "sticky top-[68px] z-30 bg-white dark:bg-[#121214] pb-4 mb-4 px-8 flex flex-wrap gap-2 justify-center transition-all border-b border-zinc-200 dark:border-zinc-800";
+
+	const timeframes = [
+		{ id: 'all', label: 'All Time', icon: 'infinity' },
+		{ id: 'ytd', label: 'YTD', icon: 'calendar-days' },
+		{ id: '1y', label: '1 Year', icon: 'calendar' },
+		{ id: '2y', label: '2 Years', icon: 'calendar' },
+		{ id: '2ytd', label: '2YTD', icon: 'calendar' },
+		{ id: '5y', label: '5 Years', icon: 'history' },
+		{ id: '10y', label: '10 Years', icon: 'history' },
+		{ id: 'custom', label: 'Custom', icon: 'settings-2' }
+	];
+
+	let html = timeframes.map(tf => {
+		const isActive = state.activeTimeframe === tf.id;
+		const activeClass = isActive 
+			? 'bg-zinc-800 dark:bg-zinc-200 text-white dark:text-zinc-900 shadow-md ring-2 ring-zinc-800 dark:ring-zinc-200 ring-offset-2 dark:ring-offset-zinc-900' 
+			: 'bg-zinc-100 dark:bg-zinc-800/50 text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-700';
+
+		return `
+			<button onclick="window.setStatsTimeframe('${tf.id}')"
+				class="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-200 flex items-center gap-2 ${activeClass}">
+				<i data-lucide="${tf.icon}" class="w-3.5 h-3.5"></i>
+				${tf.label}
+			</button>
+		`;
+	}).join('');
+
+	if (state.activeTimeframe === 'custom') {
+		const startVal = state.statsCustomStart || '';
+		const endVal = state.statsCustomEnd || '';
+		html += `
+			<div class="flex items-center gap-2 ml-4 px-4 py-1.5 bg-zinc-100 dark:bg-zinc-800/80 rounded-xl border border-zinc-200 dark:border-zinc-700 animate-in fade-in slide-in-from-left-2 transition-all">
+				<span class="text-[10px] font-bold text-zinc-400 uppercase">Range:</span>
+				<input type="date" value="${startVal}" onchange="window.updateStatsCustomDate('start', this.value)" 
+					class="bg-transparent text-[10px] font-bold text-zinc-600 dark:text-zinc-300 outline-none focus:text-indigo-500 transition-colors">
+				<span class="text-zinc-400">to</span>
+				<input type="date" value="${endVal}" onchange="window.updateStatsCustomDate('end', this.value)" 
+					class="bg-transparent text-[10px] font-bold text-zinc-600 dark:text-zinc-300 outline-none focus:text-indigo-500 transition-colors">
+			</div>
+		`;
+	}
+
+	container.innerHTML = html;
+	if (window.lucide) window.lucide.createIcons();
+}
+
+/**
+ * Gets the start date for a given timeframe.
+ */
+function getTimeframeStartDate(timeframe) {
+	if (timeframe === 'all' || !timeframe) return null;
+	const now = new Date();
+	const d = new Date(now);
+
+	switch (timeframe) {
+		case 'ytd':
+			return new Date(now.getFullYear(), 0, 1);
+		case '1y':
+			d.setFullYear(now.getFullYear() - 1);
+			return d;
+		case '2y':
+			d.setFullYear(now.getFullYear() - 2);
+			return d;
+		case '2ytd':
+			return new Date(now.getFullYear() - 1, 0, 1);
+		case '5y':
+			d.setFullYear(now.getFullYear() - 5);
+			return d;
+		case '10y':
+			d.setFullYear(now.getFullYear() - 10);
+			return d;
+		case 'custom':
+			return state.statsCustomStart ? new Date(state.statsCustomStart) : null;
+		default:
+			return null;
+	}
+}
+
+window.setStatsTimeframe = (timeframe) => {
+	setState('activeTimeframe', timeframe);
+	renderTimeframeFilters();
+	updateCharts();
+};
+
+window.updateStatsCustomDate = (type, value) => {
+	if (type === 'start') setState('statsCustomStart', value);
+	else setState('statsCustomEnd', value);
+	updateCharts();
+};
+
 window.toggleGlobalFilter = (type) => {
 	const idx = activeMediaTypes.indexOf(type);
 	if (idx === -1) {
 		activeMediaTypes.push(type);
 	} else {
-		// Prevent deselecting all? Optional. Let's allow it for now.
 		activeMediaTypes.splice(idx, 1);
 	}
 	renderGlobalFilters();
@@ -782,9 +925,9 @@ function renderGrowthChart(stats) {
 	const growthChartType = (state.statsChartTypes && state.statsChartTypes.growthChart) || 'line';
 
 	// Use filtered items for growth chart too!
-	const sortedItems = [...stats.filteredItems] // Using the filtered list from calculateStats
-		.filter(i => i.createdAt)
-		.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+	const sortedItems = [...stats.filteredItems]
+		.filter(i => i.updatedAt)
+		.sort((a, b) => new Date(a.updatedAt) - new Date(b.updatedAt));
 
 	if (sortedItems.length === 0) {
 		// Render empty chart or clear it
@@ -795,7 +938,7 @@ function renderGrowthChart(stats) {
 	const dateMap = new Map();
 	sortedItems.forEach(item => {
 		try {
-			const date = new Date(item.createdAt).toISOString().split('T')[0];
+			const date = new Date(item.updatedAt).toISOString().split('T')[0];
 			dateMap.set(date, (dateMap.get(date) || 0) + 1);
 		} catch (e) { }
 	});
@@ -805,8 +948,37 @@ function renderGrowthChart(stats) {
 	const labels = [];
 	const data = [];
 
-	uniqueDates.forEach(date => {
-		cumulative += dateMap.get(date);
+	const startDate = getTimeframeStartDate(state.activeTimeframe);
+	let filteredSortedItems = sortedItems;
+
+	if (startDate) {
+		const startIso = startDate.toISOString().split('T')[0];
+		// Calculate items edited BEFORE the timeframe
+		const baselineItems = sortedItems.filter(i => new Date(i.updatedAt) < startDate);
+		cumulative = baselineItems.length;
+
+		// Filter items to strictly during the timeframe
+		filteredSortedItems = sortedItems.filter(i => new Date(i.updatedAt) >= startDate);
+
+		// If the first date isn't exactly the start date, prepend the start date with the baseline
+		const firstItemDate = filteredSortedItems.length > 0 ? new Date(filteredSortedItems[0].updatedAt).toISOString().split('T')[0] : null;
+		if (firstItemDate !== startIso) {
+			labels.push(startIso);
+			data.push(cumulative);
+		}
+	}
+
+	const subDateMap = new Map();
+	filteredSortedItems.forEach(item => {
+		try {
+			const date = new Date(item.updatedAt).toISOString().split('T')[0];
+			subDateMap.set(date, (subDateMap.get(date) || 0) + 1);
+		} catch (e) { }
+	});
+
+	const subDates = Array.from(subDateMap.keys()).sort();
+	subDates.forEach(date => {
+		cumulative += subDateMap.get(date);
 		labels.push(date);
 		data.push(cumulative);
 	});
@@ -867,7 +1039,11 @@ function renderGrowthChart(stats) {
 			plugins: {
 				...lineOptions.plugins,
 				legend: { display: false },
-				datalabels: { display: false }
+				datalabels: { display: false },
+				tooltip: {
+					enabled: false,
+					external: externalTooltipHandler
+				}
 			}
 		}
 	});
@@ -881,20 +1057,28 @@ function renderMediaGrowthChart(stats) {
 	const mediaGrowthMode = (state.statsChartTypes && state.statsChartTypes.mediaGrowthMode) || 'stacked';
 
 	const sortedItems = [...stats.filteredItems]
-		.filter(i => i.createdAt)
-		.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+		.filter(i => i.updatedAt)
+		.sort((a, b) => new Date(a.updatedAt) - new Date(b.updatedAt));
 
 	if (sortedItems.length === 0) {
 		if (mediaGrowthChartInstance) mediaGrowthChartInstance.destroy();
 		return;
 	}
 
-	const dates = new Set();
+	let dates = new Set();
 	sortedItems.forEach(item => {
 		try {
-			dates.add(new Date(item.createdAt).toISOString().split('T')[0]);
+			dates.add(new Date(item.updatedAt).toISOString().split('T')[0]);
 		} catch (e) { }
 	});
+	
+	const startDate = getTimeframeStartDate(state.activeTimeframe);
+	let startIso = null;
+	if (startDate) {
+		startIso = startDate.toISOString().split('T')[0];
+		dates.add(startIso);
+	}
+	
 	const sortedDates = Array.from(dates).sort();
 
 	// Initialize tracking for each media type
@@ -908,20 +1092,28 @@ function renderMediaGrowthChart(stats) {
 
 	sortedItems.forEach(item => {
 		try {
-			const date = new Date(item.createdAt).toISOString().split('T')[0];
+			const date = new Date(item.updatedAt).toISOString().split('T')[0];
 			if (typeData[item.type]) {
 				typeData[item.type].counts[date] = (typeData[item.type].counts[date] || 0) + 1;
 			}
 		} catch (e) { }
 	});
 
+	// Calculate Baselines if timeframe is active
 	sortedDates.forEach(date => {
 		MEDIA_TYPES.forEach(type => {
 			const prevTotal = typeData[type].cumulative.length > 0
 				? typeData[type].cumulative[typeData[type].cumulative.length - 1]
 				: 0;
-			const dayCount = typeData[type].counts[date] || 0;
-			typeData[type].cumulative.push(prevTotal + dayCount);
+			
+			// If this is the startIso and we have a startDate, initialize with baseline
+			if (date === startIso && typeData[type].cumulative.length === 0) {
+				const baselineCount = sortedItems.filter(i => i.type === type && new Date(i.updatedAt) < startDate).length;
+				typeData[type].cumulative.push(baselineCount);
+			} else {
+				const dayCount = typeData[type].counts[date] || 0;
+				typeData[type].cumulative.push(prevTotal + dayCount);
+			}
 		});
 	});
 

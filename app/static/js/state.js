@@ -66,6 +66,9 @@ export const state = {
 		growthChart: 'line',
 		mediaGrowthChart: 'line'
 	},
+	activeTimeframe: 'all',
+	statsCustomStart: null,
+	statsCustomEnd: null,
 
 
 	calendarView: 'month',
@@ -104,7 +107,8 @@ export const state = {
 const PERSISTED_KEYS = [
 	'viewMode', 'sortBy', 'sortOrder', 'showDetails',
 	'isHidden', 'isMultiSelect', 'filterHiddenOnly', 'theme',
-	'statsChartTypes', 'calendarView', 'appSettings'
+	'statsChartTypes', 'calendarView', 'appSettings', 'activeTimeframe',
+	'statsCustomStart', 'statsCustomEnd'
 ];
 
 /**
