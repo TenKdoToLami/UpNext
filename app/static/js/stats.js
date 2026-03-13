@@ -388,6 +388,7 @@ export function openStatsModal() {
 
 	renderGlobalFilters();
 	renderTimeframeFilters();
+	updateActiveOptions();
 	updateCharts();
 }
 window.openStatsModal = openStatsModal;
@@ -397,6 +398,7 @@ window.setChartType = (chartName, type) => {
 	newTypes[chartName] = type;
 	setState('statsChartTypes', newTypes);
 	updateCharts();
+	updateActiveOptions();
 };
 
 window.setMediaGrowthMode = (mode) => {
@@ -497,6 +499,26 @@ function isItemInTimeframe(item, timeframe) {
 /**
  * Renders the timeframe filter buttons.
  */
+/**
+ * Updates the visual state of chart type buttons to highlight the active options.
+ */
+function updateActiveOptions() {
+	const buttons = document.querySelectorAll('[data-chart-option]');
+	buttons.forEach(btn => {
+		const option = btn.getAttribute('data-chart-option');
+		const value = btn.getAttribute('data-chart-value');
+		const isActive = state.statsChartTypes && state.statsChartTypes[option] === value;
+
+		if (isActive) {
+			btn.classList.add('bg-white', 'dark:bg-zinc-700', 'text-zinc-900', 'dark:text-white', 'shadow-sm', 'border', 'border-zinc-200', 'dark:border-zinc-600');
+			btn.classList.remove('text-zinc-500', 'dark:text-zinc-400');
+		} else {
+			btn.classList.remove('bg-white', 'dark:bg-zinc-700', 'text-zinc-900', 'dark:text-white', 'shadow-sm', 'border', 'border-zinc-200', 'dark:border-zinc-600');
+			btn.classList.add('text-zinc-500', 'dark:text-zinc-400');
+		}
+	});
+}
+
 function renderTimeframeFilters() {
 	const container = document.getElementById('timeframeFilters');
 	if (!container) return;
@@ -584,6 +606,7 @@ window.setStatsTimeframe = (timeframe) => {
 	setState('activeTimeframe', timeframe);
 	renderTimeframeFilters();
 	updateCharts();
+	updateActiveOptions();
 };
 
 window.updateStatsCustomDate = (type, value) => {
