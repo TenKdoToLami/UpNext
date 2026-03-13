@@ -1427,7 +1427,7 @@ function getItemConsumedMinutes(item, strict = false) {
 	}
 
 	if (type === 'Manga') {
-		let totalCh = item.chapterCount || 1; 
+		let totalCh = item.chapterCount || 60; // Default to 60 chapters (5 hours) if missing 
 		let count = isCompleted ? totalCh : progress;
 		if (item.chapterCount && count > item.chapterCount) count = item.chapterCount;
 		
