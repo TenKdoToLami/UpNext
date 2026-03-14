@@ -1006,9 +1006,19 @@ def optimize_images():
                         (new_blob, actual_mime, item_id)
                     )
                     
+                    # Update timestamp to bust browser cache
+                    cursor.execute(
+                        "UPDATE media_items SET updated_at = ? WHERE id = ?",
+                        (datetime.utcnow().isoformat(), item_id)
+                    )
+                    
                     new_size_total += len(new_blob)
                     processed += 1
                     
+                    # Commit in batches of 10 to prevent large transaction overhead
+                    if processed % 10 == 0:
+                        conn.commit()
+                        
                     if processed % 5 == 0:
                         yield f"data: {json.dumps({'progress': processed, 'total': total, 'message': f'Processing {processed}/{total}'})}\n\n"
                         

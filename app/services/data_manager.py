@@ -221,7 +221,10 @@ class DataManager:
             if "avgDurationMinutes" in data: item.metadata_info.avg_duration_minutes = data["avgDurationMinutes"]
 
             # Finalize Audit
-            item.updated_at = datetime.fromisoformat(data["updatedAt"]) if data.get("updatedAt") else datetime.utcnow()
+            if "cover_image" in data:
+                item.updated_at = datetime.utcnow()
+            else:
+                item.updated_at = datetime.fromisoformat(data["updatedAt"]) if data.get("updatedAt") else datetime.utcnow()
 
             db.session.commit()
             return True
