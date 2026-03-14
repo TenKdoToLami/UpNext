@@ -592,7 +592,14 @@ export function renderSettings() {
 
 	const closeBehaviorSelect = document.getElementById('setting-closeBehavior');
 	if (closeBehaviorSelect) {
-		closeBehaviorSelect.value = currentSettings.closeBehavior || 'ask';
+		closeBehaviorSelect.value = currentSettings.closeBehavior || 'minimize';
+	}
+
+	const dormantModeToggle = document.getElementById('setting-dormantMode');
+	if (dormantModeToggle) {
+		// Default to true for better performance
+		const currentVal = currentSettings.dormantMode !== undefined ? currentSettings.dormantMode : true;
+		dormantModeToggle.checked = currentVal;
 	}
 
 	// 5. Tags Settings
@@ -725,6 +732,15 @@ export function setTrayClickAction(value) {
 export function setCloseBehavior(value) {
 	if (!pendingAppSettings) pendingAppSettings = JSON.parse(JSON.stringify(state.appSettings));
 	pendingAppSettings.closeBehavior = value;
+}
+
+/**
+ * Toggles the dormant mode (memory saving) setting.
+ * @param {boolean} checked 
+ */
+export function toggleDormantMode(checked) {
+	if (!pendingAppSettings) pendingAppSettings = JSON.parse(JSON.stringify(state.appSettings));
+	pendingAppSettings.dormantMode = checked;
 }
 
 /**
@@ -1279,6 +1295,7 @@ window.toggleAutoLaunchSetting = toggleAutoLaunchSetting;
 window.toggleOpenWindowOnStart = toggleOpenWindowOnStart;
 window.setTrayClickAction = setTrayClickAction;
 window.setCloseBehavior = setCloseBehavior;
+window.toggleDormantMode = toggleDormantMode;
 window.setImageSetting = setImageSetting;
 window.setPaginationMode = setPaginationMode;
 window.setItemsPerPage = setItemsPerPage;

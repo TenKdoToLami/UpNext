@@ -257,6 +257,7 @@ def run_application_stack(create_app_func: Callable, host: str, port: int, headl
     tray_icon = [None]
     tray_available = [False]
     quick_add_ref = [None]
+    is_dormant = [False] # Flag to track if window is in low-memory dormant state
 
     # Try to import pystray safely
     # Linux often requires AppIndicator3/AyatanaAppIndicator3 which might be missing
@@ -286,18 +287,11 @@ def run_application_stack(create_app_func: Callable, host: str, port: int, headl
 
     def on_restore_native(icon, item):
         if window_ref[0]:
-            # Lazy load URL if started minimized
-            # Using private attribute _url or get_current_url logic depending on API
-            # For simplicity, we just load it if we suspect it's blank/initial.
-            # But safer is to just call load_url(target_url) which is idempotent-ish or cheap.
-            # We check a flag or just do it.
-            if minimized: # Using the outer scope variable 'minimized' which was True
-                 # But we need to know if it's FIRST time.
-                 # Let's inspect the current URL if possible, or just force load it if it's 'data:...' or 'about:blank'
-                 # window.get_current_url() might not be reliable before show.
-                 # Optimization: access private webview object or just always load_url.
-                 # Calling load_url repeatedly is fine.
-                 window_ref[0].load_url(target_url)
+            # Restore from dormant state if needed
+            if is_dormant[0]:
+                logger.info("Restoring from dormant state...")
+                window_ref[0].load_url(target_url)
+                is_dormant[0] = False
             
             window_ref[0].restore()
             window_ref[0].show()
@@ -386,6 +380,25 @@ def run_application_stack(create_app_func: Callable, host: str, port: int, headl
             logger.info("Minimizing to tray...")
             if window_ref[0]:
                 window_ref[0].hide()
+                
+                # OPTIMIZATION: Enter dormant mode to save memory
+                # Check user preference (defaults to True for better system performance)
+                dormant_enabled = config.get('appSettings', {}).get('dormantMode', True)
+                if dormant_enabled:
+                    logger.info("Entering dormant mode: Unloading page resources...")
+                    window_ref[0].load_url('about:blank')
+                    is_dormant[0] = True
+                    
+                    # Force Python garbage collection
+                    import gc
+                    gc.collect()
+                    
+                    # Optional: clear SQLAlchemy session to release DB handles/cache
+                    try:
+                        from app.database import db
+                        db.session.remove()
+                    except Exception:
+                        pass
             return False
 
     # Create Window
@@ -547,6 +560,9 @@ def run_application_stack(create_app_func: Callable, host: str, port: int, headl
     # If user preference is to NOT open window on start AND tray is available, start hidden
     if not minimized and not open_on_start and tray_available[0]:
         minimized = True
+
+    if minimized:
+        is_dormant[0] = True
         
     from app.build_config import ENABLE_TRAY
 
