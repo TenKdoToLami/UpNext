@@ -98,22 +98,48 @@ export function renderFilters() {
 	const orderingControls = document.querySelector('#sortMenuContainer > div:nth-child(3)');
 
 	if (state.advancedFiltersEnabled) {
-		// Robust Redundancy Hiding
+		// Hide entire header to remove top margin/spacing
+		const header = document.querySelector('header');
+		if (header) header.style.display = 'none';
+		if (sidebar) {
+			sidebar.style.top = '1.5rem';
+			sidebar.style.maxHeight = 'calc(100vh - 3rem)';
+		}
+
 		topFiltersContainer?.classList.add('!hidden');
-		// Keep desktopViewControls visible per user request
 		orderingSection?.classList.add('hidden');
 		orderingControls?.classList.add('hidden');
+
+		// Sync Toggle Dot UI on Startup/Load
+		const dot = document.querySelector('#sidebarToggleDot .dot');
+		const dotBg = document.getElementById('sidebarToggleDot');
+		if (dot) dot.style.transform = 'translateX(16px)';
+		dot?.classList.add('translate-x-4');
+		dotBg?.classList.add('bg-indigo-500');
 		
 		renderAdvancedSidebar();
 		return;
 	}
 
 	// Restore normal view redundancy
+	const header = document.querySelector('header');
+	if (header) header.style.display = '';
+	if (sidebar) {
+		sidebar.style.top = '';
+		sidebar.style.maxHeight = '';
+	}
+
 	topFiltersContainer?.classList.remove('!hidden');
-	desktopViewControls?.classList.remove('!hidden');
 	orderingSection?.classList.remove('hidden');
 	orderingControls?.classList.remove('hidden');
 	sidebar?.classList.add('hidden');
+
+	// Sync Toggle Dot UI
+	const dot = document.querySelector('#sidebarToggleDot .dot');
+	const dotBg = document.getElementById('sidebarToggleDot');
+	if (dot) dot.style.transform = '';
+	dot?.classList.remove('translate-x-4');
+	dotBg?.classList.remove('bg-indigo-500');
 
 	const counts = getCounts();
 
@@ -317,6 +343,31 @@ window.setSortOrderSidebar = (order) => {
     renderGrid();
 };
 
+let collapsedSections = {};
+
+window.toggleSection = (id) => {
+    collapsedSections[id] = !collapsedSections[id];
+    const container = document.getElementById('advancedSidebar');
+    if (container) renderAdvancedSidebar();
+};
+
+function generateSectionHtml(id, title, contentHtml) {
+    const isCollapsed = collapsedSections[id] || false;
+    return `
+        <section class="section-${id}">
+            <button onclick="window.toggleSection('${id}')" class="filter-label mb-3 w-full text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400 flex items-center gap-2 group p-0 bg-transparent border-none text-left">
+                <div class="h-px flex-1 bg-zinc-200 dark:bg-zinc-800"></div>
+                <span>${title}</span>
+                <div class="h-px flex-1 bg-zinc-200 dark:bg-zinc-800"></div>
+                <i data-lucide="chevron-down" class="w-3.5 h-3.5 transition-transform duration-300 ${isCollapsed ? '-rotate-90' : ''}"></i>
+            </button>
+            <div class="${isCollapsed ? 'hidden' : 'space-y-3'}">
+                ${contentHtml}
+            </div>
+        </section>
+    `;
+}
+
 /**
  * Renders the vertical advanced filter sidebar with premium styling.
  */
@@ -342,124 +393,22 @@ function renderAdvancedSidebar() {
 
 	container.innerHTML = `
         <div class="px-2 pb-8 flex flex-col gap-6">
-            <!-- Section: Primary Search -->
-            <section>
+            <!-- Section: Logo -->
+            <div class="flex items-center gap-3 px-2 py-3 border-b border-zinc-200 dark:border-zinc-800/50">
+                <img src="/static/img/logo.png" alt="UpNext" class="h-6 w-auto object-contain" onerror="this.style.display='none';">
+                <span class="font-heading font-bold text-lg text-zinc-900 dark:text-white tracking-tight">UpNext</span>
+            </div>
+
+            ${generateSectionHtml('titleSearch', 'Title Search', `
                 <div class="relative group">
                     <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-indigo-500 transition-colors">
                         <i data-lucide="search" class="w-4 h-4"></i>
                     </span>
-                    <input type="text" 
-                        id="sidebarTitleSearch"
-                        class="w-full bg-white/10 dark:bg-black/40 border border-zinc-200 dark:border-zinc-800/80 rounded-2xl pl-10 pr-4 py-3 text-xs font-medium focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all placeholder:text-zinc-500 dark:placeholder:text-zinc-400" 
-                        placeholder="Search Library..."
-                        value="${searchVal.replace(/(universe|author|series|type|tags?)=("([^"]*)"|([^"\s]+))/gi, '').trim()}"
-                        oninput="syncSidebarTitleSearch(this.value)">
+                    <input type="text" id="sidebarTitleSearch" class="w-full bg-white/10 dark:bg-black/40 border border-zinc-200 dark:border-zinc-800/80 rounded-2xl pl-10 pr-4 py-3 text-xs font-medium focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all placeholder:text-zinc-500 dark:placeholder:text-zinc-400" placeholder="Search Library..." value="${searchVal.replace(/(universe|author|series|type|tags?)=("([^"]*)"|([^"\s]+))/gi, '').trim()}" oninput="syncSidebarTitleSearch(this.value)">
                 </div>
-            </section>
+            `)}
 
-            <!-- Section: Interface -->
-            <section>
-                <div class="filter-label mb-3 text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400 flex items-center gap-2">
-                    <div class="h-px flex-1 bg-zinc-200 dark:bg-zinc-800"></div>
-                    <span>Interface Control</span>
-                    <div class="h-px flex-1 bg-zinc-200 dark:bg-zinc-800"></div>
-                </div>
-                <div class="grid grid-cols-2 gap-2">
-                    ${[
-                        { id: 'details', icon: 'eye', label: 'Details', active: state.showDetails, fn: 'toggleDetails()' },
-                        { id: 'select', icon: 'list-checks', label: 'Selection', active: state.isMultiSelect, fn: 'toggleMultiSelect()' },
-                        { id: 'hidden', icon: 'shield-off', label: 'Hidden', active: state.isHidden, fn: 'toggleHidden()', color: 'red' },
-                        { id: 'only', icon: 'shield-alert', label: 'Only', active: state.filterHiddenOnly, fn: 'toggleHiddenOnly()', color: 'red', hide: !state.isHidden },
-                        { id: 'theme', icon: document.documentElement.classList.contains('dark') ? 'sun' : 'moon', label: 'Theme', active: document.documentElement.classList.contains('dark'), fn: 'window.toggleTheme()' }
-                    ].filter(b => !b.hide).map(btn => {
-                        const activeClass = btn.active 
-                            ? (btn.color === 'red' ? 'bg-red-500 text-white shadow-lg shadow-red-500/20 border-transparent ring-2 ring-red-300 dark:ring-red-900 glow-red' : 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 border-transparent ring-2 ring-indigo-300 dark:ring-indigo-900 glow-indigo')
-                            : 'bg-white/40 dark:bg-zinc-900/40 border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:bg-white dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white';
-                        
-                        return `
-                            <button onclick="${btn.fn}" class="flex flex-col items-center justify-center py-2.5 px-2 rounded-xl border transition-all duration-300 active:scale-95 ${activeClass}">
-                                <i data-lucide="${btn.icon}" class="w-3.5 h-3.5 mb-1 opacity-90"></i>
-                                <span class="text-[8px] font-black uppercase tracking-tighter">${btn.label}</span>
-                            </button>
-                        `;
-                    }).join('')}
-                </div>
-            </section>
-
-            <!-- Section: Media Type -->
-            <section>
-                <div class="filter-label mb-3 text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400 flex items-center gap-2">
-                    <div class="h-px flex-1 bg-zinc-200 dark:bg-zinc-800"></div>
-                    <span>Media Type</span>
-                    <div class="h-px flex-1 bg-zinc-200 dark:bg-zinc-800"></div>
-                </div>
-                <div class="grid grid-cols-2 gap-2">
-                    ${['All', ...MEDIA_TYPES].map(t => {
-                        const isActive = state.filterTypes.includes(t);
-                        const count = counts.typeCounts[t] || 0;
-                        
-                        let btnClass = isActive 
-                            ? 'bg-zinc-800 dark:bg-zinc-200 text-white dark:text-black font-black shadow-lg ring-2 ring-zinc-500'
-                            : 'bg-white/30 dark:bg-zinc-900/30 border-zinc-200 dark:border-zinc-800/50 text-zinc-400 dark:text-zinc-500 hover:bg-white/60 dark:hover:bg-zinc-800/60 hover:text-zinc-900 dark:hover:text-zinc-200';
-                        
-                        if (isActive && t !== 'All') {
-                             btnClass = `${TYPE_COLOR_MAP[t]} shadow-md ring-2 ring-offset-1 ring-offset-zinc-50 dark:ring-offset-zinc-950`;
-                        }
-
-                        return `
-                            <button onclick="setFilterType('${t}')" class="flex flex-col items-center justify-center p-2 rounded-xl text-[10px] font-bold transition-all duration-300 border border-transparent ${btnClass}">
-                                <i data-lucide="${t === 'All' ? 'layout-grid' : (ICON_MAP[t] || 'layer')}" class="w-3.5 h-3.5 mb-1 ${isActive ? 'opacity-100' : 'opacity-60'}"></i>
-                                <div class="flex items-center gap-1">
-                                    <span class="truncate max-w-[50px]">${t}</span>
-                                    <span class="text-[8px] opacity-60 tabular-nums">${count}</span>
-                                </div>
-                            </button>
-                        `;
-                    }).join('')}
-                </div>
-            </section>
-
-            <!-- Section: Status -->
-            <section>
-                <div class="filter-label mb-3 text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400 flex items-center gap-2">
-                    <div class="h-px flex-1 bg-zinc-200 dark:bg-zinc-800"></div>
-                    <span>Progress Status</span>
-                    <div class="h-px flex-1 bg-zinc-200 dark:bg-zinc-800"></div>
-                </div>
-                <div class="grid grid-cols-2 gap-2">
-                    ${['All', ...STATUS_TYPES].map(s => {
-                        const isActive = state.filterStatuses.includes(s);
-                        const count = counts.statusCounts[s] || 0;
-                        
-                        let btnClass = isActive 
-                            ? 'bg-zinc-800 dark:bg-zinc-200 text-white dark:text-black font-black shadow-lg ring-2 ring-zinc-500'
-                            : 'bg-white/30 dark:bg-zinc-900/30 border-zinc-200 dark:border-zinc-800/50 text-zinc-400 dark:text-zinc-500 hover:bg-white/60 dark:hover:bg-zinc-800/60 hover:text-zinc-900 dark:hover:text-zinc-200';
-                            
-                        if (isActive && s !== 'All') {
-                            btnClass = `${STATUS_COLOR_MAP[s]} shadow-md ring-2 ring-offset-1 ring-offset-zinc-50 dark:ring-offset-zinc-950`;
-                        }
-
-                        return `
-                            <button onclick="setFilterStatus('${s}')" class="flex flex-col items-center justify-center p-2 rounded-xl text-[10px] font-bold transition-all duration-300 border border-transparent ${btnClass}">
-                                <i data-lucide="${s === 'All' ? 'list' : (STATUS_ICON_MAP[s] || 'circle')}" class="w-3.5 h-3.5 mb-1 ${isActive ? 'opacity-100' : 'opacity-60'}"></i>
-                                <div class="flex items-center gap-1">
-                                    <span class="truncate max-w-[50px]">${s}</span>
-                                    <span class="text-[8px] opacity-60 tabular-nums">${count}</span>
-                                </div>
-                            </button>
-                        `;
-                    }).join('')}
-                </div>
-            </section>
-
-            <!-- Section: Metadata -->
-            <section class="flex flex-col gap-3">
-                <div class="filter-label text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400 flex items-center gap-2">
-                    <div class="h-px flex-1 bg-zinc-200 dark:bg-zinc-800"></div>
-                    <span>Deep Metadata</span>
-                    <div class="h-px flex-1 bg-zinc-200 dark:bg-zinc-800"></div>
-                </div>
-                
+            ${generateSectionHtml('metadata', 'Deep Metadata', `
                 <div class="space-y-3">
                     ${[
                         { key: 'author', label: 'Author', icon: 'user', placeholder: 'Search Author...' },
@@ -467,55 +416,73 @@ function renderAdvancedSidebar() {
                         { key: 'universe', label: 'Universe', icon: 'globe', placeholder: 'Search Universe...' },
                         { key: 'tag', label: 'Tag', icon: 'tag', placeholder: 'Search Tag...' }
                     ].map(field => `
-                        <div class="relative group">
-                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-indigo-500 transition-colors">
-                                <i data-lucide="${field.icon}" class="w-3.5 h-3.5"></i>
-                            </span>
-                            <input type="text" 
-                                class="w-full bg-white/40 dark:bg-black/20 border border-zinc-200 dark:border-zinc-800/50 rounded-2xl pl-9 pr-3 py-2.5 text-xs focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-600" 
-                                placeholder="${field.placeholder}"
-                                list="sidebar${field.label}List" 
-                                value="${getVal(field.key)}" 
-                                oninput="syncSidebarFilter('${field.key}', this.value)">
-                            <datalist id="sidebar${field.label}List">
-                                ${Array.from(new Set(state.items.flatMap(i => {
-                                    if (field.key === 'tag') return i.tags || [];
-                                    if (field.key === 'author') return i.authors || (i.author ? [i.author] : []);
-                                    return i[field.key] ? [i[field.key]] : [];
-                                }))).filter(Boolean).sort().map(v => `<option value="${v}">`).join('')}
-                            </datalist>
-                        </div>
+                        <div class="relative group"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-indigo-500 transition-colors"><i data-lucide="${field.icon}" class="w-3.5 h-3.5"></i></span><input type="text" class="w-full bg-white/40 dark:bg-black/20 border border-zinc-200 dark:border-zinc-800/50 rounded-2xl pl-9 pr-3 py-2.5 text-xs focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-600" placeholder="${field.placeholder}" list="sidebar${field.label}List" value="${getVal(field.key)}" oninput="syncSidebarFilter('${field.key}', this.value)"><datalist id="sidebar${field.label}List">${Array.from(new Set(state.items.flatMap(i => { if (field.key === 'tag') return i.tags || []; if (field.key === 'author') return i.authors || (i.author ? [i.author] : []); return i[field.key] ? [i[field.key]] : []; }))).filter(Boolean).sort().map(v => `<option value="${v}">`).join('')}</datalist></div>
                     `).join('')}
                 </div>
-            </section>
+            `)}
 
-            <!-- Section: Ordering -->
-            <section>
-                <div class="filter-label mb-3 text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400 flex items-center gap-2">
-                    <div class="h-px flex-1 bg-zinc-200 dark:bg-zinc-800"></div>
-                    <span>Library Sorting</span>
-                    <div class="h-px flex-1 bg-zinc-200 dark:bg-zinc-800"></div>
+            ${generateSectionHtml('mediaType', 'Media Type', `
+                <div class="grid grid-cols-2 gap-2">
+                    ${['All', ...MEDIA_TYPES].map(t => {
+                        const isActive = state.filterTypes.includes(t); const count = counts.typeCounts[t] || 0; let btnClass = isActive ? 'bg-zinc-800 dark:bg-zinc-200 text-white dark:text-black font-black shadow-lg ring-2 ring-zinc-500' : 'bg-white/30 dark:bg-zinc-900/30 border-zinc-200 dark:border-zinc-800/50 text-zinc-400 dark:text-zinc-500 hover:bg-white/60 dark:hover:bg-zinc-800/60 hover:text-zinc-900 dark:hover:text-zinc-200'; if (isActive && t !== 'All') btnClass = `${TYPE_COLOR_MAP[t]} shadow-md ring-2 ring-offset-1 ring-offset-zinc-50 dark:ring-offset-zinc-950`;
+                        return `<button onclick="setFilterType('${t}')" class="flex flex-col items-center justify-center p-2 rounded-xl text-[10px] font-bold transition-all border border-transparent ${btnClass}"><i data-lucide="${t === 'All' ? 'layout-grid' : (ICON_MAP[t] || 'layer')}" class="w-3.5 h-3.5 mb-1 ${isActive ? 'opacity-100' : 'opacity-60'}"></i><div class="flex items-center gap-1"><span class="truncate max-w-[50px]">${t}</span><span class="text-[8px] opacity-60 tabular-nums">${count}</span></div></button>`;
+                    }).join('')}
                 </div>
+            `)}
+
+            ${generateSectionHtml('mediaStatus', 'Progress Status', `
+                <div class="grid grid-cols-2 gap-2">
+                    ${['All', ...STATUS_TYPES].map(s => {
+                        const isActive = state.filterStatuses.includes(s); const count = counts.statusCounts[s] || 0; let btnClass = isActive ? 'bg-zinc-800 dark:bg-zinc-200 text-white dark:text-black font-black shadow-lg ring-2 ring-zinc-500' : 'bg-white/30 dark:bg-zinc-900/30 border-zinc-200 dark:border-zinc-800/50 text-zinc-400 dark:text-zinc-500 hover:bg-white/60 dark:hover:bg-zinc-800/60 hover:text-zinc-900 dark:hover:text-zinc-200'; if (isActive && s !== 'All') btnClass = `${STATUS_COLOR_MAP[s]} shadow-md ring-2 ring-offset-1 ring-offset-zinc-50 dark:ring-offset-zinc-950`;
+                        return `<button onclick="setFilterStatus('${s}')" class="flex flex-col items-center justify-center p-2 rounded-xl text-[10px] font-bold transition-all border border-transparent ${btnClass}"><i data-lucide="${s === 'All' ? 'list' : (STATUS_ICON_MAP[s] || 'circle')}" class="w-3.5 h-3.5 mb-1 ${isActive ? 'opacity-100' : 'opacity-60'}"></i><div class="flex items-center gap-1"><span class="truncate max-w-[50px]">${s}</span><span class="text-[8px] opacity-60 tabular-nums">${count}</span></div></button>`;
+                    }).join('')}
+                </div>
+            `)}
+
+            ${generateSectionHtml('sorting', 'Library Sorting', `
                 <div class="flex flex-col gap-2">
-                    <select onchange="setSortFieldSidebar(this.value)" class="w-full bg-white/40 dark:bg-black/20 border border-zinc-200 dark:border-zinc-800/50 rounded-2xl px-3.5 py-2.5 text-xs font-bold focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all">
-                        ${SORT_OPTIONS.map(opt => `<option value="${opt.id}" ${state.sortBy === opt.id ? 'selected' : ''}>Sort by ${opt.label}</option>`).join('')}
-                    </select>
-                    <div class="flex gap-2">
+                    <select onchange="setSortFieldSidebar(this.value)" class="w-full bg-white/40 dark:bg-black/20 border border-zinc-200 dark:border-zinc-800/50 rounded-2xl px-3.5 py-2.5 text-xs font-bold focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all">${SORT_OPTIONS.map(opt => `<option value="${opt.id}" ${state.sortBy === opt.id ? 'selected' : ''}>Sort by ${opt.label}</option>`).join('')}</select><div class="flex gap-2">${[{ val: 'asc', label: 'Asc', icon: 'arrow-up-narrow-wide' }, { val: 'desc', label: 'Desc', icon: 'arrow-down-narrow-wide' }].map(dir => { const isActive = state.sortOrder === dir.val; return `<button onclick="setSortOrderSidebar('${dir.val}')" class="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl border transition-all duration-300 ${isActive ? 'bg-zinc-800 dark:bg-white text-white dark:text-black border-transparent shadow-lg' : 'bg-white/40 dark:bg-zinc-900/40 border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:bg-white dark:hover:bg-zinc-800'}"><i data-lucide="${dir.icon}" class="w-3.5 h-3.5"></i><span class="text-[10px] font-black uppercase tracking-widest">${dir.label}</span></button>`; }).join('')}</div>
+                </div>
+            `)}
+
+            ${generateSectionHtml('viewMode', 'View Options', `
+                <div class="space-y-3">
+                    <div class="flex gap-2 p-1 bg-zinc-100 dark:bg-zinc-900/80 rounded-xl border border-zinc-200 dark:border-white/5">
+                        <button onclick="setViewMode('grid')" class="view-grid-btn flex-1 flex items-center justify-center gap-2 py-2 rounded-lg transition-all active:scale-90 ${state.viewMode === 'grid' ? 'bg-zinc-800 dark:bg-zinc-100 text-white dark:text-black shadow-md' : 'text-zinc-400 hover:text-zinc-900 dark:text-zinc-500 dark:hover:text-white'}"><i data-lucide="layout-grid" class="w-4 h-4"></i><span class="text-[10px] font-black uppercase tracking-widest">Grid</span></button><button onclick="setViewMode('list')" class="view-list-btn flex-1 flex items-center justify-center gap-2 py-2 rounded-lg transition-all active:scale-90 ${state.viewMode === 'list' ? 'bg-zinc-800 dark:bg-zinc-100 text-white dark:text-black shadow-md' : 'text-zinc-400 hover:text-zinc-900 dark:text-zinc-500 dark:hover:text-white'}"><i data-lucide="list" class="w-4 h-4"></i><span class="text-[10px] font-black uppercase tracking-widest">List</span></button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
                         ${[
-                            { val: 'asc', label: 'Asc', icon: 'arrow-up-narrow-wide' },
-                            { val: 'desc', label: 'Desc', icon: 'arrow-down-narrow-wide' }
-                        ].map(dir => {
-                            const isActive = state.sortOrder === dir.val;
-                            return `
-                                <button onclick="setSortOrderSidebar('${dir.val}')" class="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl border transition-all duration-300 ${isActive ? 'bg-zinc-800 dark:bg-white text-white dark:text-black border-transparent shadow-lg' : 'bg-white/40 dark:bg-zinc-900/40 border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:bg-white dark:hover:bg-zinc-800'}">
-                                    <i data-lucide="${dir.icon}" class="w-3.5 h-3.5"></i>
-                                    <span class="text-[10px] font-black uppercase tracking-widest">${dir.label}</span>
-                                </button>
-                            `;
+                            { id: 'details', icon: 'eye', label: 'Details', active: state.showDetails, fn: 'toggleDetails()' },
+                            { id: 'select', icon: 'list-checks', label: 'Selection', active: state.isMultiSelect, fn: 'toggleMultiSelect()' },
+                            { id: 'hidden', icon: 'shield-off', label: 'Hidden', active: state.isHidden, fn: 'toggleHidden()', color: 'red' },
+                            { id: 'only', icon: 'shield-alert', label: 'Only', active: state.filterHiddenOnly, fn: 'toggleHiddenOnly()', color: 'red', hide: !state.isHidden },
+                            { id: 'theme', icon: document.documentElement.classList.contains('dark') ? 'sun' : 'moon', label: 'Theme', active: document.documentElement.classList.contains('dark'), fn: 'window.toggleTheme()' }
+                        ].filter(b => !b.hide).map(btn => {
+                            const activeClass = btn.active ? (btn.color === 'red' ? 'bg-red-500 text-white shadow-lg shadow-red-500/20 border-transparent ring-2 ring-red-300 dark:ring-red-900 glow-red' : 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 border-transparent ring-2 ring-indigo-300 dark:ring-red-900 glow-indigo') : 'bg-white/40 dark:bg-zinc-900/40 border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:bg-white dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white';
+                            return `<button onclick="${btn.fn}" class="flex flex-col items-center justify-center py-2.5 px-2 rounded-xl border transition-all duration-300 active:scale-95 ${activeClass}"><i data-lucide="${btn.icon}" class="w-3.5 h-3.5 mb-1 opacity-90"></i><span class="text-[8px] font-black uppercase tracking-tighter">${btn.label}</span></button>`;
                         }).join('')}
                     </div>
                 </div>
-            </section>
+            `)}
+
+            ${generateSectionHtml('quickActions', 'Quick Actions', `
+                <button onclick="openModal()" class="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-zinc-900 dark:bg-white text-white dark:text-black hover:bg-zinc-800 dark:hover:bg-zinc-100 font-black transition-all shadow-xl active:scale-95 mb-2"><i data-lucide="plus" class="w-4 h-4"></i><span class="uppercase tracking-widest text-xs">Add New Item</span></button>
+                <div class="grid grid-cols-2 gap-2">
+                    ${!state.appSettings?.disabledFeatures?.includes('calendar') ? `<button onclick="window.openCalendarModal?.()" class="flex flex-col items-center justify-center py-2.5 px-2 rounded-xl border bg-white/40 dark:bg-zinc-900/40 border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:bg-white dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white transition-all duration-300 active:scale-95"><i data-lucide="calendar" class="w-3.5 h-3.5 mb-1"></i><span class="text-[8px] font-black uppercase tracking-widest">Calendar</span></button>` : ''}
+                    ${!state.appSettings?.disabledFeatures?.includes('stats') ? `<button onclick="window.openStatsModal()" class="flex flex-col items-center justify-center py-2.5 px-2 rounded-xl border bg-white/40 dark:bg-zinc-900/40 border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:bg-white dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white transition-all duration-300 active:scale-95"><i data-lucide="pie-chart" class="w-3.5 h-3.5 mb-1"></i><span class="text-[8px] font-black uppercase tracking-widest">Stats</span></button>` : ''}
+                </div>
+            `)}
+
+            ${generateSectionHtml('system', 'System Controls', `
+                <button onclick="window.toggleAdvancedFilters()" class="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-zinc-900 dark:bg-white text-white dark:text-black hover:bg-zinc-800 dark:hover:bg-zinc-100 font-black transition-all shadow-xl active:scale-95 mb-3">
+                    <i data-lucide="columns" class="w-4 h-4"></i><span class="uppercase tracking-widest text-xs">Standard View</span>
+                </button>
+                <div class="grid grid-cols-2 gap-2 mb-2">
+                    <button onclick="openInfoModal()" class="flex flex-col items-center justify-center py-2.5 px-2 rounded-xl border bg-white/40 dark:bg-zinc-900/40 border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:bg-white dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white transition-all duration-300 active:scale-95"><i data-lucide="info" class="w-3.5 h-3.5 mb-1"></i><span class="text-[8px] font-black uppercase tracking-widest">Info</span></button>
+                    <button onclick="window.openSettingsModal?.()" class="flex flex-col items-center justify-center py-2.5 px-2 rounded-xl border bg-white/40 dark:bg-zinc-900/40 border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:bg-white dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white transition-all duration-300 active:scale-95"><i data-lucide="settings" class="w-3.5 h-3.5 mb-1"></i><span class="text-[8px] font-black uppercase tracking-widest">Settings</span></button>
+                </div>
+                <button onclick="openExportModal()" class="w-full flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl border bg-white/40 dark:bg-zinc-900/40 border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:bg-white dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white transition-all duration-300 active:scale-95"><i data-lucide="download" class="w-3.5 h-3.5"></i><span class="text-[8px] font-black uppercase tracking-widest">Export Library</span></button>
+            `)}
         </div>
 	`;
 
