@@ -194,8 +194,13 @@ window.processImageUrl = processImageUrl;
  * Updates the file input and UI preview.
  */
 function handleCroppedImage(blob, originalName) {
-	// Create a new File object
-	const file = new File([blob], originalName, { type: 'image/jpeg' });
+	// Ensure filename matches the actual blob type
+	const extension = blob.type.split('/')[1] || 'jpg';
+	const baseName = originalName.replace(/\.[^/.]+$/, "");
+	const fileName = `${baseName}.${extension}`;
+
+	// Create a new File object with correct mime
+	const file = new File([blob], fileName, { type: blob.type });
 
 	// Update the Input
 	const dataTransfer = new DataTransfer();

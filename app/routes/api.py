@@ -23,6 +23,7 @@ from app.models import TagMeta, MediaItem
 from app.config import get_sqlite_db_path, list_available_databases
 from app.database import db
 from app.utils.config_manager import load_config, save_config
+from app.utils.image_processor import process_image, get_default_image_settings
 
 bp = Blueprint("api", __name__, url_prefix="/api")
 data_manager = DataManager()
@@ -515,9 +516,22 @@ def save_item():
         # Handle Image Upload
         image_file = request.files.get("image")
         if image_file and image_file.filename:
-            form_data["cover_image"] = image_file.read()
-            form_data["cover_mime"] = image_file.mimetype
+            # Process uploaded image to match user defaults
+            config = load_config()
+            target_width, target_format, target_quality = get_default_image_settings(config)
+            
+            raw_data = image_file.read()
+            processed_blob, actual_mime = process_image(
+                raw_data, 
+                target_width=target_width, 
+                target_format=target_format, 
+                quality=target_quality
+            )
+            
+            form_data["cover_image"] = processed_blob
+            form_data["cover_mime"] = actual_mime
             form_data["cover_url"] = ""  # Real image overrides external URL
+            logger.info(f"Processed uploaded image as {actual_mime}")
         else:
             # Check for external cover URL (from API import)
             cover_url = request.form.get("cover_url")
@@ -527,14 +541,23 @@ def save_item():
                         "User-Agent": "UpNext/1.0 (Media Tracker App)"
                     })
                     if response.status_code == 200:
-                        form_data["cover_image"] = response.content
-                        form_data["cover_mime"] = response.headers.get(
-                            "Content-Type", "image/jpeg"
+                        # Process image to match user defaults
+                        config = load_config()
+                        target_width, target_format, target_quality = get_default_image_settings(config)
+                        
+                        processed_blob, actual_mime = process_image(
+                            response.content, 
+                            target_width=target_width, 
+                            target_format=target_format, 
+                            quality=target_quality
                         )
+                        
+                        form_data["cover_image"] = processed_blob
+                        form_data["cover_mime"] = actual_mime
                         form_data["cover_url"] = cover_url
-                        logger.info(f"Downloaded cover from: {cover_url}")
+                        logger.info(f"Downloaded and processed cover from: {cover_url} as {actual_mime}")
                 except Exception as e:
-                    logger.warning(f"Failed to download cover from {cover_url}: {e}")
+                    logger.warning(f"Failed to download/process cover from {cover_url}: {e}")
 
         if item_id:
             # Update existing record
@@ -969,31 +992,18 @@ def optimize_images():
                 original_size_total += original_size
                 
                 try:
-                    # Optimize
-                    img = Image.open(io.BytesIO(blob))
-                    
-                    # Resize
-                    if img.width > target_width:
-                        ratio = target_width / img.width
-                        new_height = int(img.height * ratio)
-                        img = img.resize((target_width, new_height), Image.Resampling.LANCZOS)
-                        
-                    # Save
-                    out = io.BytesIO()
-                    save_kwargs = {"quality": target_quality, "optimize": True}
-                    if pil_format == "PNG": 
-                         save_kwargs = {"optimize": True} # PNG is lossless
-                    
-                    if img.mode != "RGB" and pil_format == "JPEG":
-                        img = img.convert("RGB")
-                        
-                    img.save(out, format=pil_format, **save_kwargs)
-                    new_blob = out.getvalue()
+                    # Use unified processor
+                    new_blob, actual_mime = process_image(
+                        blob, 
+                        target_width=target_width, 
+                        target_format=target_format, 
+                        quality=target_quality
+                    )
                     
                     # Update DB
                     cursor.execute(
                         "UPDATE media_covers SET cover_image = ?, cover_mime = ? WHERE item_id = ?",
-                        (new_blob, target_format, item_id)
+                        (new_blob, actual_mime, item_id)
                     )
                     
                     new_size_total += len(new_blob)
