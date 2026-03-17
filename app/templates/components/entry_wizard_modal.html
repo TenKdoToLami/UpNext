@@ -122,7 +122,7 @@
 											class="text-zinc-400 dark:text-zinc-600 font-normal normal-case">(Optional)</span></label>
 									<div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 flex flex-wrap gap-2 min-h-[54px] focus-within:border-zinc-400 dark:focus-within:border-zinc-600 focus-within:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-600 transition-all"
 										id="authorTagsContainer">
-										<input id="authorInput" list="authorOptions"
+										<input id="authorInput" autocomplete="off"
 											class="bg-transparent text-sm outline-none flex-1 min-w-[80px] text-zinc-700 dark:text-zinc-200 p-1 placeholder-zinc-400"
 											placeholder="Type & Enter...">
 									</div>
@@ -134,8 +134,8 @@
 										class="text-xs font-bold text-zinc-500 uppercase tracking-wider ml-1">Universe
 										<span
 											class="text-zinc-400 dark:text-zinc-600 font-normal normal-case">(Optional)</span></label>
-									<input type="text" id="universe" list="universeOptions"
-										class="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-zinc-700 dark:text-zinc-200 outline-none focus:border-zinc-400 dark:focus:border-zinc-600 focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-600 transition-all placeholder-zinc-400"
+									<input type="text" id="universe" autocomplete="off"
+										class="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-4 text-zinc-700 dark:text-zinc-200 outline-none focus:border-zinc-400 dark:focus:border-zinc-600 focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-600 transition-all placeholder-zinc-400"
 										placeholder="e.g. MCU, Cosmere">
 									<p class="text-[10px] text-zinc-400 ml-1">Shared fictional universe</p>
 								</div>
@@ -148,7 +148,7 @@
 										class="text-zinc-400 dark:text-zinc-600 font-normal normal-case">(Optional)</span></label>
 								<div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 flex flex-wrap gap-2 min-h-[54px] focus-within:border-zinc-400 dark:focus-within:border-zinc-600 focus-within:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-600 transition-all"
 									id="tagTagsContainer">
-									<input id="tagInput" list="tagOptions"
+									<input id="tagInput" autocomplete="off"
 										class="bg-transparent text-sm outline-none flex-1 min-w-[80px] text-zinc-700 dark:text-zinc-200 p-1 placeholder-zinc-400"
 										placeholder="Add Tags...">
 								</div>
@@ -181,7 +181,7 @@
 									Collection <span
 										class="text-zinc-400 dark:text-zinc-600 font-normal normal-case">(Optional)</span></label>
 								<div class="flex gap-4">
-									<input type="text" id="series" list="seriesOptions"
+									<input type="text" id="series" autocomplete="off"
 										class="flex-1 bg-white dark:bg-zinc-900 border border-emerald-500/30 dark:border-emerald-900/40 rounded-xl px-4 py-3 text-zinc-700 dark:text-zinc-200 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all placeholder-zinc-400"
 										placeholder="Series Name">
 									<input type="text" id="seriesNumber"
@@ -700,10 +700,6 @@
 					</div>
 
 					<!-- Datalists for Autocomplete -->
-					<datalist id="authorOptions"></datalist>
-					<datalist id="tagOptions"></datalist>
-					<datalist id="universeOptions"></datalist>
-					<datalist id="seriesOptions"></datalist>
 
 				</form>
 			</div>

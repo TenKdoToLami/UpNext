@@ -10,7 +10,7 @@ import {
 	STATUS_COLOR_MAP, TYPE_COLOR_MAP,
 	RATING_LABELS, TEXT_COLORS, STAR_FILLS
 } from './constants.js';
-import { safeCreateIcons, toggleExpand, checkOverflow } from './dom_utils.js';
+import { safeCreateIcons, toggleExpand, checkOverflow, initCustomAutocomplete } from './dom_utils.js';
 import { generateCardHtml } from './card_renderer.js';
 
 
@@ -416,7 +416,7 @@ function renderAdvancedSidebar() {
                         { key: 'universe', label: 'Universe', icon: 'globe', placeholder: 'Search Universe...' },
                         { key: 'tag', label: 'Tag', icon: 'tag', placeholder: 'Search Tag...' }
                     ].map(field => `
-                        <div class="relative group"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-indigo-500 transition-colors"><i data-lucide="${field.icon}" class="w-3.5 h-3.5"></i></span><input type="text" class="w-full bg-white/40 dark:bg-black/20 border border-zinc-200 dark:border-zinc-800/50 rounded-2xl pl-9 pr-3 py-2.5 text-xs focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-600" placeholder="${field.placeholder}" list="sidebar${field.label}List" value="${getVal(field.key)}" oninput="syncSidebarFilter('${field.key}', this.value)"><datalist id="sidebar${field.label}List">${Array.from(new Set(state.items.flatMap(i => { if (field.key === 'tag') return i.tags || []; if (field.key === 'author') return i.authors || (i.author ? [i.author] : []); return i[field.key] ? [i[field.key]] : []; }))).filter(Boolean).sort().map(v => `<option value="${v}">`).join('')}</datalist></div>
+                        <div class="relative group"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-indigo-500 transition-colors"><i data-lucide="${field.icon}" class="w-3.5 h-3.5"></i></span><input type="text" id="sidebar${field.label}Input" autocomplete="off" class="w-full bg-white/40 dark:bg-black/20 border border-zinc-200 dark:border-zinc-800/50 rounded-2xl pl-9 pr-3 py-2.5 text-xs focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-600" placeholder="${field.placeholder}" value="${getVal(field.key)}" oninput="syncSidebarFilter('${field.key}', this.value)"></div>
                     `).join('')}
                 </div>
             `)}
@@ -485,6 +485,38 @@ function renderAdvancedSidebar() {
             `)}
         </div>
 	`;
+
+	// Initialize Custom Autocompletes for Sidebar Metadata Fields
+	[
+		{ id: 'sidebarAuthorInput', key: 'author' },
+		{ id: 'sidebarSeriesInput', key: 'series' },
+		{ id: 'sidebarUniverseInput', key: 'universe' },
+		{ id: 'sidebarTagInput', key: 'tag' }
+	].forEach(item => {
+		const el = document.getElementById(item.id);
+		if (el && initCustomAutocomplete) {
+			const getList = () => {
+				const set = new Set();
+				state.items.forEach(i => {
+					if (item.key === 'tag') {
+						const tags = Array.isArray(i.tags) ? i.tags : (i.tags ? [i.tags] : []);
+						tags.filter(Boolean).forEach(t => set.add(t));
+					} else if (item.key === 'author') {
+						const authors = Array.isArray(i.authors) ? i.authors : (i.author ? [i.author] : []);
+						authors.filter(Boolean).forEach(a => set.add(a));
+					} else if (i[item.key]) {
+						set.add(i[item.key]);
+					}
+				});
+				return Array.from(set).sort().filter(Boolean);
+			};
+
+			initCustomAutocomplete(el, `${item.id}Dropdown`, getList, (val) => {
+				el.value = val;
+				el.dispatchEvent(new Event('input')); // Trigger syncSidebarFilter
+			});
+		}
+	});
 
 	safeCreateIcons(container);
 }

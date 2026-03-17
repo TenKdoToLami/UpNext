@@ -1210,8 +1210,8 @@ export function resetWizardFields(startStep = 1) {
 		safeVal('releaseDate', '');
 
 		// Reset Inputs with Tags
-		safeHtml('authorTagsContainer', '<input id="authorInput" list="authorOptions" class="bg-transparent text-sm outline-none flex-1 min-w-[80px] text-zinc-700 dark:text-zinc-200 p-1 placeholder-zinc-400" placeholder="Type & Enter...">');
-		safeHtml('tagTagsContainer', '<input id="tagInput" list="tagOptions" class="bg-transparent text-sm outline-none flex-1 min-w-[80px] text-zinc-700 dark:text-zinc-200 p-1 placeholder-zinc-400" placeholder="Add Tags...">');
+		safeHtml('authorTagsContainer', '<input id="authorInput" autocomplete="off" class="bg-transparent text-sm outline-none flex-1 min-w-[80px] text-zinc-700 dark:text-zinc-200 p-1 placeholder-zinc-400" placeholder="Type & Enter...">');
+		safeHtml('tagTagsContainer', '<input id="tagInput" autocomplete="off" class="bg-transparent text-sm outline-none flex-1 min-w-[80px] text-zinc-700 dark:text-zinc-200 p-1 placeholder-zinc-400" placeholder="Add Tags...">');
 		safeHtml('altTitleTagsContainer', '<input id="altTitleInput" class="bg-transparent text-sm outline-none flex-1 min-w-[80px] text-zinc-700 dark:text-zinc-200 p-1 placeholder-zinc-400" placeholder="Type & Enter...">');
 		safeHtml('abbrTagsContainer', '<input id="abbrInput" class="bg-transparent text-sm outline-none flex-1 min-w-[80px] text-zinc-700 dark:text-zinc-200 p-1 placeholder-zinc-400" placeholder="Auto-filled from title...">');
 
@@ -1224,6 +1224,9 @@ export function resetWizardFields(startStep = 1) {
 			});
 			// Reinitialize tag autocomplete dropdown (it was destroyed when tagTagsContainer was reset)
 			if (window.renderGenericTags) window.renderGenericTags();
+
+			// Reinitialize custom autocompletes 
+			if (window.initWizardAutocompletes) window.initWizardAutocompletes();
 		}, 0);
 	}
 

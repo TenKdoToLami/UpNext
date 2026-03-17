@@ -12,7 +12,7 @@ import {
 } from './constants.js';
 import {
 	safeCreateIcons, safeVal, safeText, safeHtml, safeCheck, checkOverflow,
-	hslToHex, getRandomPastelHex
+	hslToHex, getRandomPastelHex, initCustomAutocomplete
 } from './dom_utils.js';
 import {
 	initWizard, validateStep, animateStepChange, getNextValidStep, getPrevValidStep
@@ -47,6 +47,9 @@ export function openModal(id = null) {
 		if (form) form.reset();
 		resetFormState();
 		state.isDirty = false;
+
+		// Initialize Custom Autocompletes
+		initWizardAutocompletes();
 
 		if (id) {
 			populateFormFromItem(id);
@@ -341,10 +344,106 @@ export function jumpToStep(step) {
 // TYPE & STATUS SELECTION
 // =============================================================================
 
+/**
+ * Initializes custom autocomplete dropdowns for wizard fields.
+ */
+export function initWizardAutocompletes() {
 
-// =============================================================================
-// AUTOCOMPLETE & TAGS
-// =============================================================================
+	const authorInput = document.getElementById('authorInput');
+	const universeInput = document.getElementById('universe');
+	const seriesInput = document.getElementById('series');
+	const tagInput = document.getElementById('tagInput');
+
+	if (authorInput) { authorInput.removeAttribute('list'); authorInput.setAttribute('autocomplete', 'off'); }
+	if (universeInput) { universeInput.removeAttribute('list'); universeInput.setAttribute('autocomplete', 'off'); }
+	if (seriesInput) { seriesInput.removeAttribute('list'); seriesInput.setAttribute('autocomplete', 'off'); }
+	if (tagInput) { tagInput.removeAttribute('list'); tagInput.setAttribute('autocomplete', 'off'); }
+
+	const getAuthors = () => {
+		const set = new Set();
+		state.items.forEach(item => {
+			if (Array.isArray(item.authors)) {
+				item.authors.forEach(a => set.add(a));
+			} else if (item.author) {
+				set.add(item.author);
+			}
+		});
+		return Array.from(set).sort().filter(Boolean).filter(a => !state.currentAuthors.includes(a));
+	};
+	
+	const getTags = () => {
+		return Object.values(state.allTags || {})
+			.map(t => t.name)
+			.filter(t => !state.currentTags.includes(t));
+	};
+
+	const getUniverses = () => {
+		const set = new Set();
+		state.items.forEach(item => { if (item.universe) set.add(item.universe); });
+		return Array.from(set);
+	};
+
+	const getSeries = () => {
+		const set = new Set();
+		state.items.forEach(item => { if (item.series) set.add(item.series); });
+		return Array.from(set);
+	};
+
+	initCustomAutocomplete(
+		document.getElementById('authorInput'),
+		'authorAutocompleteDropdown',
+		getAuthors,
+		(val) => {
+			if (!state.currentAuthors.includes(val)) {
+				state.currentAuthors.push(val);
+				updateModalTags();
+				const input = document.getElementById('authorInput');
+				if (input) input.value = '';
+			}
+		}
+	);
+
+	initCustomAutocomplete(
+		document.getElementById('universe'),
+		'universeAutocompleteDropdown',
+		getUniverses,
+		(val) => {
+			const input = document.getElementById('universe');
+			if (input) {
+				input.value = val;
+				input.dispatchEvent(new Event('input'));
+			}
+		}
+	);
+
+	initCustomAutocomplete(
+		document.getElementById('series'),
+		'seriesAutocompleteDropdown',
+		getSeries,
+		(val) => {
+			const input = document.getElementById('series');
+			if (input) {
+				input.value = val;
+				input.dispatchEvent(new Event('input'));
+			}
+		}
+	);
+
+	initCustomAutocomplete(
+		document.getElementById('tagInput'),
+		'tagAutocompleteDropdown',
+		getTags,
+		(val) => {
+			if (!state.currentTags.includes(val)) {
+				state.currentTags.push(val);
+				if (window.renderGenericTags) window.renderGenericTags();
+				const input = document.getElementById('tagInput');
+				if (input) input.value = '';
+			}
+		}
+	);
+}
+window.initWizardAutocompletes = initWizardAutocompletes;
 
 /**
  * Populates autocomplete datalists from existing items.
@@ -405,48 +504,7 @@ export function removeAuthor(val) {
 
 
 
-/**
- * Handles tag input for autocomplete.
- */
-/**
- * Handles tag input for the autocomplete dropdown.
- * @param {Event} e - Input event
- */
-function handleTagInput(e) {
-	const val = e.target.value.trim().toLowerCase();
-	const dropdown = document.getElementById('tagAutocompleteDropdown');
-	if (!dropdown) return;
 
-	if (!val) {
-		dropdown.classList.add('hidden');
-		return;
-	}
-
-	const matches = Object.values(state.allTags || {})
-		.filter(t => t.name.toLowerCase().includes(val) && !state.currentTags.includes(t.name));
-
-	if (matches.length === 0) {
-		dropdown.classList.add('hidden');
-		return;
-	}
-
-	dropdown.innerHTML = '';
-	matches.forEach(match => {
-		const item = document.createElement('div');
-		item.className = 'px-3 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-700 cursor-pointer flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-200 transition-colors';
-		item.innerHTML = `<span class="w-2.5 h-2.5 rounded-full ring-1 ring-black/10 flex-shrink-0" style="background-color: ${match.color}"></span> <span class="font-bold flex-shrink-0">${match.name}</span>${match.description ? `<span class="text-xs text-zinc-400 dark:text-zinc-500 ml-auto italic truncate">${match.description}</span>` : ''}`;
-		item.onclick = () => {
-			if (!state.currentTags.includes(match.name)) {
-				state.currentTags.push(match.name);
-				renderGenericTags();
-				document.getElementById('tagInput').value = '';
-				dropdown.classList.add('hidden');
-			}
-		};
-		dropdown.appendChild(item);
-	});
-	dropdown.classList.remove('hidden');
-}
 
 /**
  * Renders generic tags with persistent colors.
@@ -455,24 +513,6 @@ export function renderGenericTags() {
 	const container = document.getElementById('tagTagsContainer');
 	const input = document.getElementById('tagInput');
 	if (!container) return; // Might be hidden/not rendered
-
-	// Autocomplete setup
-	let dropdown = document.getElementById('tagAutocompleteDropdown');
-	if (!dropdown) {
-		dropdown = document.createElement('div');
-		dropdown.id = 'tagAutocompleteDropdown';
-		dropdown.className = 'absolute z-50 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-xl max-h-48 overflow-y-auto hidden w-full left-0 top-full mt-1 custom-scrollbar';
-		container.style.position = 'relative';
-		container.appendChild(dropdown);
-
-		input.addEventListener('input', handleTagInput);
-		input.addEventListener('focus', handleTagInput);
-
-		// Close on click outside
-		document.addEventListener('click', (e) => {
-			if (!container.contains(e.target)) dropdown.classList.add('hidden');
-		});
-	}
 
 	Array.from(container.children).forEach(c => {
 		if (c.tagName === 'SPAN') c.remove();
