@@ -1347,11 +1347,12 @@ function getFilteredSortedItems() {
     const searchInput = document.getElementById('searchInput');
     const searchVal = (searchInput?.value || '').toLowerCase();
 
-    let textQuery = searchVal.replace(/(universe|author|series|type|tags?)=("([^"]*)"|([^\"\s]+))/gi, () => '').trim();
+    let textQuery = searchVal.replace(/(universe|author|series|collection|type|tags?)=("([^"]*)"|([^\"\s]+))/gi, () => '').trim();
     const searchFilters = {};
-    searchVal.replace(/(universe|author|series|type|tags?)=("([^"]*)"|([^\"\s]+))/gi, (m, k, qf, qi, s) => {
+    searchVal.replace(/(universe|author|series|collection|type|tags?)=("([^"]*)"|([^\"\s]+))/gi, (m, k, qf, qi, s) => {
         let key = k.toLowerCase();
         if (key === 'tags') key = 'tag';
+        if (key === 'collection') key = 'series';
         searchFilters[key] = (qi || s).toLowerCase();
     });
 
