@@ -509,6 +509,15 @@ window.setMediaGrowthMode = (mode) => {
 	newTypes.mediaGrowthMode = mode;
 	setState('statsChartTypes', newTypes);
 	updateCharts();
+	updateActiveOptions();
+};
+
+window.setConsumptionGrowthMode = (mode) => {
+	const newTypes = { ...state.statsChartTypes };
+	newTypes.consumptionGrowthMode = mode;
+	setState('statsChartTypes', newTypes);
+	updateCharts();
+	updateActiveOptions();
 };
 
 
@@ -625,7 +634,14 @@ function updateActiveOptions() {
 	buttons.forEach(btn => {
 		const option = btn.getAttribute('data-chart-option');
 		const value = btn.getAttribute('data-chart-value');
-		const isActive = state.statsChartTypes && state.statsChartTypes[option] === value;
+		let isActive = state.statsChartTypes && state.statsChartTypes[option] === value;
+
+		// Fallback defaults for first-time render
+		if (state.statsChartTypes && state.statsChartTypes[option] === undefined) {
+			if ((option === 'mediaGrowthMode' || option === 'consumptionGrowthMode') && value === 'stacked') {
+				isActive = true;
+			}
+		}
 
 		if (isActive) {
 			btn.classList.add('bg-white', 'dark:bg-zinc-700', 'text-zinc-900', 'dark:text-white', 'shadow-sm', 'border', 'border-zinc-200', 'dark:border-zinc-600');
@@ -1281,6 +1297,16 @@ function renderMediaGrowthChart(stats) {
 		});
 	});
 
+	let displayDates = [...sortedDates];
+	if (mediaGrowthMode === 'separate' && displayDates.length > 10) {
+		displayDates = displayDates.filter((_, i) => i % 2 === 0);
+		MEDIA_TYPES.forEach(type => {
+			if (typeData[type] && typeData[type].cumulative) {
+				typeData[type].cumulative = typeData[type].cumulative.filter((_, i) => i % 2 === 0);
+			}
+		});
+	}
+
 	if (mediaGrowthChartInstance) mediaGrowthChartInstance.destroy();
 
 	if (mediaGrowthChartInstance) mediaGrowthChartInstance.destroy();
@@ -1301,7 +1327,7 @@ function renderMediaGrowthChart(stats) {
 			tension: 0.4,
 			pointRadius: 0,
 			pointHoverRadius: 4,
-			stack: 'mediaStack',
+			stack: mediaGrowthMode === 'stacked' ? 'mediaStack' : undefined,
 		};
 	}).filter(ds => activeMediaTypes.includes(ds.label));
 
@@ -1313,7 +1339,7 @@ function renderMediaGrowthChart(stats) {
 	mediaGrowthChartInstance = new Chart(ctx, {
 		type: mediaGrowthChartType,
 		data: {
-			labels: sortedDates,
+			labels: displayDates,
 			datasets: datasets
 		},
 		options: {
@@ -1331,7 +1357,7 @@ function renderMediaGrowthChart(stats) {
 					}
 				},
 				y: {
-					stacked: true,
+					stacked: mediaGrowthMode === 'stacked',
 					grid: {
 						color: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.1)',
 						borderDash: [5, 5]
@@ -1559,6 +1585,7 @@ function renderConsumptionGrowthChart(stats) {
 	if (!ctx) return;
 
 	const chartType = (state.statsChartTypes && state.statsChartTypes.consumptionGrowthChart) || 'line';
+	const consumptionGrowthMode = (state.statsChartTypes && state.statsChartTypes.consumptionGrowthMode) || 'stacked';
 	if (consumptionGrowthChartInstance) consumptionGrowthChartInstance.destroy();
 
 	const sortedItems = [...stats.filteredItems]
@@ -1620,6 +1647,16 @@ function renderConsumptionGrowthChart(stats) {
 		});
 	});
 
+	let displayDates = [...sortedDates];
+	if (consumptionGrowthMode === 'separate' && displayDates.length > 10) {
+		displayDates = displayDates.filter((_, i) => i % 2 === 0);
+		MEDIA_TYPES.forEach(type => {
+			if (typeData[type] && typeData[type].cumulative) {
+				typeData[type].cumulative = typeData[type].cumulative.filter((_, i) => i % 2 === 0);
+			}
+		});
+	}
+
 	const isDark = document.documentElement.classList.contains('dark');
 	const isLine = chartType === 'line';
 	const datasets = MEDIA_TYPES.map(type => {
@@ -1633,14 +1670,14 @@ function renderConsumptionGrowthChart(stats) {
 			tension: 0.4,
 			pointRadius: 0,
 			borderWidth: isLine ? 2 : 0,
-			stack: 'consumptionStack'
+			stack: consumptionGrowthMode === 'stacked' ? 'consumptionStack' : undefined
 		};
 	}).filter(ds => activeMediaTypes.includes(ds.label));
 
 	consumptionGrowthChartInstance = new Chart(ctx, {
 		type: chartType,
 		data: {
-			labels: sortedDates,
+			labels: displayDates,
 			datasets: datasets
 		},
 		options: {
@@ -1658,7 +1695,7 @@ function renderConsumptionGrowthChart(stats) {
 				},
 				y: {
 					beginAtZero: true,
-					stacked: true,
+					stacked: consumptionGrowthMode === 'stacked',
 					grid: { color: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' },
 					ticks: {
 						color: isDark ? '#71717a' : '#a1a1aa',
