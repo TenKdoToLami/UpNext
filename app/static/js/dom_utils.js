@@ -267,6 +267,25 @@ export function initCustomAutocomplete(inputEl, dropdownId, getItemsListFn, onSe
 	inputEl.addEventListener('focus', handleInput);
 
 	inputEl.addEventListener('keydown', (e) => {
+		if (e.key === 'Escape') {
+			let handled = false;
+			if (!dropdown.classList.contains('hidden')) {
+				dropdown.classList.add('hidden');
+				selectedIndex = -1;
+				handled = true;
+			}
+			if (document.activeElement === inputEl) {
+				inputEl.blur();
+				handled = true;
+			}
+			if (handled) {
+				e.preventDefault();
+				e.stopPropagation();
+				e.stopImmediatePropagation();
+			}
+			return;
+		}
+
 		if (dropdown.classList.contains('hidden')) return;
 
 		const items = dropdown.querySelectorAll('.autocomplete-item');
@@ -286,8 +305,6 @@ export function initCustomAutocomplete(inputEl, dropdownId, getItemsListFn, onSe
 				e.stopImmediatePropagation();
 				items[selectedIndex].click();
 			}
-		} else if (e.key === 'Escape') {
-			dropdown.classList.add('hidden');
 		}
 	}, { capture: true });
 

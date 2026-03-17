@@ -490,6 +490,7 @@ export function updateModalTags() {
 		tag.innerHTML = `${auth} <button type="button" onclick="window.removeAuthor('${safeAuth}')" class="hover:text-red-400 flex items-center"><i data-lucide="x" class="w-3 h-3"></i></button>`;
 		container.insertBefore(tag, input);
 	});
+	safeCreateIcons(container);
 }
 
 /**
@@ -619,7 +620,7 @@ export function renderAltTitles() {
 		tag.innerHTML = `<span onclick="window.swapTitle('${safeTitle}')" class="cursor-pointer hover:text-indigo-500 hover:underline transition-colors" title="Click to swap with Main Title">${title}</span> <button type="button" onclick="window.removeAltTitle('${safeTitle}')" class="hover:text-red-400 flex items-center"><i data-lucide="x" class="w-3 h-3"></i></button>`;
 		container.insertBefore(tag, input);
 	});
-
+	safeCreateIcons(container);
 	input.placeholder = state.currentAlternateTitles.length > 0 ? '' : 'Type & Enter...';
 }
 

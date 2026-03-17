@@ -1764,6 +1764,18 @@ async function initApp() {
         // 3. Modal closing with ESC (Always allowed if modal is open)
         // --- Escape: Close any open modal ---
         if (e.key === 'Escape') {
+            const active = document.activeElement;
+            const isInput = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA');
+            const wizardModal = document.getElementById('modal');
+            const isInsideWizard = wizardModal && wizardModal.contains(active);
+
+            // If inside a wizard input, blur it first instead of closing
+            if (isInput && isInsideWizard) {
+                active.blur();
+                e.preventDefault();
+                return;
+            }
+
             if (document.getElementById('modal') && !document.getElementById('modal').classList.contains('hidden')) window.closeModal();
             if (document.getElementById('detailModal') && !document.getElementById('detailModal').classList.contains('hidden')) window.closeDetail();
             if (document.getElementById('infoModal') && !document.getElementById('infoModal').classList.contains('hidden')) window.closeInfoModal();
