@@ -255,7 +255,8 @@ function externalTooltipHandler(context) {
 				label = categoryLabel;
 			}
 
-			const rawValue = dataPoint.parsed.y !== undefined ? dataPoint.parsed.y : dataPoint.parsed;
+			const rawValue = dataPoint.parsed.y !== undefined ? dataPoint.parsed.y : 
+			                 (dataPoint.parsed.r !== undefined ? dataPoint.parsed.r : dataPoint.parsed);
 			let value = dataPoint.formattedValue;
 
 			// For consumption charts, ensure we use formatMinutes for the tooltip values
@@ -1738,7 +1739,8 @@ function renderConsumptionSpreadChart(stats) {
 	});
 
 	if (window.lucide) window.lucide.createIcons();
-	renderCustomHTMLLegend('consumptionSpreadLegend', labels, colors, labels.map(l => ICON_MAP[l]), labels.map(l => formatMinutes(consumedData[l])), false);
+	const legendContainer = document.getElementById('consumptionSpreadLegend');
+	if (legendContainer) legendContainer.innerHTML = '';
 }
 
 // ============================================================================
