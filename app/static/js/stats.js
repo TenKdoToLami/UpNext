@@ -94,7 +94,7 @@ function getTooltipInfo(label) {
 		const typeColorClass = TYPE_COLOR_MAP[label] || '';
 		const colorMatch = typeColorClass.match(/text-([a-z]+)-[0-9]+/);
 		const baseColor = colorMatch ? colorMatch[1] : 'zinc';
-		
+
 		const hexMap = {
 			violet: '#a78bfa',
 			pink: '#f472b6',
@@ -118,7 +118,7 @@ function getTooltipInfo(label) {
 		const statusColorClass = STATUS_COLOR_MAP[label] || '';
 		const colorMatch = statusColorClass.match(/text-([a-z]+)-[0-9]+/);
 		const baseColor = colorMatch ? colorMatch[1] : 'zinc';
-		
+
 		const hexMap = {
 			zinc: '#a1a1aa',
 			sky: '#38bdf8',
@@ -256,8 +256,8 @@ function externalTooltipHandler(context) {
 				label = categoryLabel;
 			}
 
-			const rawValue = dataPoint.parsed.y !== undefined ? dataPoint.parsed.y : 
-			                 (dataPoint.parsed.r !== undefined ? dataPoint.parsed.r : dataPoint.parsed);
+			const rawValue = dataPoint.parsed.y !== undefined ? dataPoint.parsed.y :
+				(dataPoint.parsed.r !== undefined ? dataPoint.parsed.r : dataPoint.parsed);
 			let value = dataPoint.formattedValue;
 
 			// For consumption charts, ensure we use formatMinutes for the tooltip values
@@ -301,7 +301,7 @@ function externalTooltipHandler(context) {
 		// Add Total Row for multi-dataset charts (Like Momentum/Spread)
 		if (dataPoints.length > 1) {
 			const totalMins = dataPoints.reduce((sum, dp) => sum + (dp.parsed.y !== undefined ? dp.parsed.y : dp.parsed), 0);
-			
+
 			const tr = document.createElement('tr');
 			tr.style.borderTop = '1px solid rgba(255, 255, 255, 0.15)';
 			tr.style.marginTop = '4px';
@@ -325,7 +325,7 @@ function externalTooltipHandler(context) {
 			valueSpan.style.marginLeft = 'auto';
 			valueSpan.style.fontSize = '13px';
 			valueSpan.style.fontWeight = '800';
-			
+
 			// Format correctly if it's a consumption chart
 			if (chart.canvas.id === 'consumptionGrowthChart' || chart.canvas.id === 'consumptionSpreadChart') {
 				valueSpan.innerText = formatMinutes(totalMins);
@@ -376,18 +376,16 @@ function externalTooltipHandler(context) {
 	const tooltipWidth = tooltipEl.offsetWidth || 160;
 	const x = tooltip.caretX;
 
-	if (x + (tooltipWidth / 2) > chartWidth) {
-		// Overflow Right -> Align right edge of tooltip with caret or near it
-		tooltipEl.style.left = positionX + x + 'px';
-		tooltipEl.style.transform = 'translate(-100%, 0)';
-	} else if (x - (tooltipWidth / 2) < 0) {
-		// Overflow Left -> Align left edge
-		tooltipEl.style.left = positionX + x + 'px';
-		tooltipEl.style.transform = 'translate(0, 0)';
+	const offset = 30; // offset in pixels from the caret point
+
+	if (x + offset + tooltipWidth > chartWidth) {
+		// Overflow Right -> Position to the left of the caret
+		tooltipEl.style.left = positionX + x - offset + 'px';
+		tooltipEl.style.transform = 'translate(-100%, -50%)';
 	} else {
-		// Centered
-		tooltipEl.style.left = positionX + x + 'px';
-		tooltipEl.style.transform = 'translate(-50%, 0)';
+		// Position to the right of the caret
+		tooltipEl.style.left = positionX + x + offset + 'px';
+		tooltipEl.style.transform = 'translate(0, -50%)';
 	}
 
 	tooltipEl.style.top = positionY + tooltip.caretY + 'px';
@@ -468,8 +466,8 @@ function calculateStats() {
 
 	const avgRating = ratedCount > 0 ? (totalRatings / ratedCount).toFixed(1) : '0.0';
 
-	return { 
-		typeCounts, statusCounts, ratingCounts, totalItems, completedItems, avgRating, filteredItems, 
+	return {
+		typeCounts, statusCounts, ratingCounts, totalItems, completedItems, avgRating, filteredItems,
 		totalMinutes, consumedByType, consumedByStatus,
 		totalMinutesStrict, consumedByTypeStrict
 	};
@@ -682,8 +680,8 @@ function renderTimeframeFilters() {
 
 	let html = timeframes.map(tf => {
 		const isActive = state.activeTimeframe === tf.id;
-		const activeClass = isActive 
-			? 'bg-zinc-800 dark:bg-zinc-200 text-white dark:text-zinc-900 shadow-md ring-2 ring-zinc-800 dark:ring-zinc-200 ring-offset-2 dark:ring-offset-zinc-900' 
+		const activeClass = isActive
+			? 'bg-zinc-800 dark:bg-zinc-200 text-white dark:text-zinc-900 shadow-md ring-2 ring-zinc-800 dark:ring-zinc-200 ring-offset-2 dark:ring-offset-zinc-900'
 			: 'bg-zinc-100 dark:bg-zinc-800/50 text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-700';
 
 		return `
@@ -1262,14 +1260,14 @@ function renderMediaGrowthChart(stats) {
 			dates.add(new Date(getItemTimelineDate(item)).toISOString().split('T')[0]);
 		} catch (e) { }
 	});
-	
+
 	const startDate = getTimeframeStartDate(state.activeTimeframe);
 	let startIso = null;
 	if (startDate) {
 		startIso = startDate.toISOString().split('T')[0];
 		dates.add(startIso);
 	}
-	
+
 	const sortedDates = Array.from(dates).sort();
 
 	// Initialize tracking for each media type
@@ -1296,7 +1294,7 @@ function renderMediaGrowthChart(stats) {
 			const prevTotal = typeData[type].cumulative.length > 0
 				? typeData[type].cumulative[typeData[type].cumulative.length - 1]
 				: 0;
-			
+
 			// If this is the startIso and we have a startDate, initialize with baseline
 			if (date === startIso && typeData[type].cumulative.length === 0) {
 				const baselineCount = sortedItems.filter(i => i.type === type && new Date(getItemTimelineDate(i)) < startDate).length;
@@ -1463,11 +1461,11 @@ function renderRatingChart(stats) {
  */
 function parseProgressValue(str) {
 	if (!str || typeof str !== 'string') return 0;
-	
+
 	// Pattern 1: Look for "current / total" (e.g., "15 / 24")
 	const slashMatch = str.match(/(\d+)\s*\/\s*\d+/);
 	if (slashMatch) return parseInt(slashMatch[1]);
-	
+
 	// Pattern 2: Look for numbers following common prefixes
 	const prefixMatch = str.match(/(?:ep|episode|ch|chapter|v|vol|volume|p|page|part|#)\s*(\d+)/gi);
 	if (prefixMatch) {
@@ -1475,7 +1473,7 @@ function parseProgressValue(str) {
 		const num = lastMatch.match(/\d+/);
 		if (num) return parseInt(num[0]);
 	}
-	
+
 	// Pattern 3: Discrete numbers, skipping those that look like standalone years
 	const allNums = str.match(/\d+/g);
 	if (allNums) {
@@ -1492,7 +1490,7 @@ function parseProgressValue(str) {
 		if (firstVal >= 1900 && firstVal <= 2100 && str.toLowerCase().includes('started')) return 0;
 		return firstVal;
 	}
-	
+
 	return 0;
 }
 
@@ -1518,11 +1516,11 @@ function getItemConsumedMinutes(item, strict = false) {
 		let totalEp = item.episodeCount || 12; // Default to 12 if missing
 		let count = isCompleted ? totalEp : progress;
 		if (item.episodeCount && count > item.episodeCount) count = item.episodeCount;
-		
+
 		const explicitDur = item.avgDurationMinutes;
 		const hasExplicitData = explicitDur && explicitDur > 0;
 		if (strict && !hasExplicitData && !item.episodeCount) return 0;
-		
+
 		let dur = hasExplicitData ? explicitDur : DEFAULT_ANIME_DUR;
 		if (dur > 240 && count > 1) return dur * multiplier;
 		return count * dur * multiplier;
@@ -1532,18 +1530,18 @@ function getItemConsumedMinutes(item, strict = false) {
 		let totalCh = item.chapterCount || 60; // Default to 60 chapters (5 hours) if missing 
 		let count = isCompleted ? totalCh : progress;
 		if (item.chapterCount && count > item.chapterCount) count = item.chapterCount;
-		
+
 		if (strict && !item.chapterCount && !item.progress && !isCompleted) return 0;
-		
+
 		return count * DEFAULT_MANGA_MINS_PER_CH * multiplier;
 	}
 
 	if (type === 'Book') {
 		const MAX_BOOK_MINS = 20000;
-		
+
 		let mins = 0;
 		const hasWordData = item.wordCount && item.wordCount > 100;
-		
+
 		if (strict && !hasWordData) return 0;
 
 		if (hasWordData) {
@@ -1551,14 +1549,14 @@ function getItemConsumedMinutes(item, strict = false) {
 		} else if (isCompleted) {
 			mins = 100000 / DEFAULT_WORDS_PER_MIN; // 100k words default = 400 mins
 		}
-		
+
 		return Math.min(mins, MAX_BOOK_MINS) * multiplier;
 	}
 
 	if (type === 'Movie') {
 		const explicitDur = item.avgDurationMinutes;
 		if (strict && !explicitDur) return 0;
-		
+
 		const dur = explicitDur || (isCompleted ? DEFAULT_MOVIE_DUR : 0);
 		return dur * multiplier;
 	}
@@ -1571,7 +1569,7 @@ function getItemConsumedMinutes(item, strict = false) {
  */
 function formatMinutes(totalMins) {
 	if (!totalMins || totalMins <= 0) return '0m';
-	
+
 	const minsInDay = 1440;
 	const minsInHour = 60;
 
@@ -1864,9 +1862,9 @@ function renderVintageChart(stats) {
 
 	if (isLine) {
 		bucketSize = 1;
-	} else if (isDoughnut || isPie || isPolarArea || (isBar && vintageMode === 'separate')) {
+	} else if (isBar && vintageMode === 'separate') {
 		bucketSize = 10;
-	} else if (isBar && vintageMode === 'stacked') {
+	} else if (isDoughnut || isPie || isPolarArea || (isBar && vintageMode === 'stacked')) {
 		bucketSize = 5;
 	}
 
@@ -1945,7 +1943,7 @@ function renderVintageChart(stats) {
 		datasets = [{
 			label: 'Items',
 			data: totals,
-			backgroundColor: ['#7c3aed', '#db2777', '#2563eb', '#dc2626', '#d97706', '#059669', '#d946ef'],
+			backgroundColor: ['#7c3aed', '#db2777', '#2563eb', '#dc2626', '#d97706', '#059669', '#d946ef', '#10b981', '#f59e0b', '#6366f1', '#a855f7'],
 			borderWidth: 1,
 			borderColor: isDark ? '#18181b' : '#ffffff'
 		}];
@@ -1966,7 +1964,7 @@ function renderVintageChart(stats) {
 				y: {
 					stacked: vintageMode === 'stacked',
 					beginAtZero: true,
-					grid: { color: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)', borderDash: [5,5] },
+					grid: { color: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)', borderDash: [5, 5] },
 					ticks: { color: isDark ? '#a1a1aa' : '#71717a', font: { size: 10 } }
 				}
 			} : (isPolarArea ? {
@@ -1977,7 +1975,7 @@ function renderVintageChart(stats) {
 			} : undefined),
 			plugins: {
 				...COMMON_CHART_OPTIONS.plugins,
-				legend: { 
+				legend: {
 					display: !isMultiDataset,
 					position: 'bottom',
 					labels: {
@@ -1988,7 +1986,7 @@ function renderVintageChart(stats) {
 						font: { size: 11 }
 					}
 				},
-				datalabels: { 
+				datalabels: {
 					display: !isMultiDataset,
 					color: '#ffffff',
 					font: { weight: 'bold', size: 10 },
