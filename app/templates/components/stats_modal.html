@@ -60,7 +60,9 @@
 						<!-- Library Spread by Type (Count) - FULL WIDTH -->
 						<div class="bg-white dark:bg-[#18181b] p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 flex flex-col items-center">
 							<div class="w-full flex items-center justify-between mb-4 cursor-pointer" onclick="window.toggleChart('typeChartContainer')">
-								<h4 class="text-sm font-bold text-zinc-700 dark:text-zinc-300 flex items-center gap-2 uppercase tracking-wide">Library by Type</h4>
+								<h4 class="text-sm font-bold text-zinc-700 dark:text-zinc-300 flex items-center gap-2 uppercase tracking-wide">
+									<i data-lucide="pie-chart" class="w-5 h-5 text-indigo-500"></i> Library by Type
+								</h4>
 								<div class="flex items-center gap-2">
 									<div class="flex bg-zinc-100 dark:bg-zinc-800 rounded-lg p-0.5" onclick="event.stopPropagation()">
 										<button onclick="window.setChartType('typeChart', 'doughnut')" data-chart-option="typeChart" data-chart-value="doughnut" class="p-1 rounded-md hover:bg-white dark:hover:bg-zinc-700 text-zinc-500 dark:text-zinc-400 transition-all" title="Doughnut"><i data-lucide="circle-dot" class="w-4 h-4"></i></button>
@@ -79,7 +81,9 @@
 						<!-- Library Spread by Status (Count) - FULL WIDTH -->
 						<div class="bg-white dark:bg-[#18181b] p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 flex flex-col items-center">
 							<div class="w-full flex items-center justify-between mb-4 cursor-pointer" onclick="window.toggleChart('statusChartContainer')">
-								<h4 class="text-sm font-bold text-zinc-700 dark:text-zinc-300 flex items-center gap-2 uppercase tracking-wide">Library by Status</h4>
+								<h4 class="text-sm font-bold text-zinc-700 dark:text-zinc-300 flex items-center gap-2 uppercase tracking-wide">
+									<i data-lucide="check-circle" class="w-5 h-5 text-emerald-500"></i> Library by Status
+								</h4>
 								<div class="flex items-center gap-2">
 									<div class="flex bg-zinc-100 dark:bg-zinc-800 rounded-lg p-0.5" onclick="event.stopPropagation()">
 										<button onclick="window.setChartType('statusChart', 'doughnut')" data-chart-option="statusChart" data-chart-value="doughnut" class="p-1 rounded-md hover:bg-white dark:hover:bg-zinc-700 text-zinc-500 dark:text-zinc-400 transition-all" title="Doughnut"><i data-lucide="circle-dot" class="w-4 h-4"></i></button>
@@ -120,7 +124,9 @@
 						<!-- Consumption Spread by Type (Time) - FULL WIDTH -->
 						<div class="bg-white dark:bg-[#18181b] p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 flex flex-col items-center">
 							<div class="w-full flex items-center justify-between mb-4 cursor-pointer" onclick="window.toggleChart('consumptionSpreadContainer')">
-								<h4 class="text-sm font-bold text-zinc-700 dark:text-zinc-300 flex items-center gap-2 uppercase tracking-wide">Consumption Time by Type</h4>
+								<h4 class="text-sm font-bold text-zinc-700 dark:text-zinc-300 flex items-center gap-2 uppercase tracking-wide">
+									<i data-lucide="clock" class="w-5 h-5 text-indigo-500"></i> Consumption Time by Type
+								</h4>
 								<div class="flex items-center gap-2">
 									<!-- Detailed Calculation Info (Duplicated for accessibility) -->
 									<div class="group/calc_spread relative mr-1">
@@ -204,6 +210,53 @@
 								<div id="consumptionSpreadLegend" class="flex flex-wrap gap-2 justify-center"></div>
 							</div>
 						</div>
+
+						<!-- Release Vintage - FULL WIDTH -->
+						<div class="bg-white dark:bg-[#18181b] p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 flex flex-col items-center">
+							<div class="w-full flex items-center justify-between mb-4 cursor-pointer" onclick="window.toggleChart('vintageChartContainer')">
+								<h4 class="text-sm font-bold text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5 uppercase tracking-wide">
+									<i data-lucide="calendar" class="w-5 h-5 text-amber-500"></i> Release Vintage 
+								</h4>
+								<div class="flex items-center gap-2">
+									<div class="group/vintage_calc relative mr-1" onclick="event.stopPropagation()">
+										<div class="w-7 h-7 rounded-lg flex items-center justify-center bg-zinc-100 dark:bg-zinc-800 text-zinc-400 hover:text-amber-500 cursor-help transition-all">
+											<i data-lucide="info" class="w-4 h-4"></i>
+										</div>
+										<div class="absolute bottom-full right-0 mb-3 w-72 p-4 bg-zinc-900/95 backdrop-blur-md text-[11px] text-zinc-300 rounded-2xl opacity-0 group-hover/vintage_calc:opacity-100 pointer-events-none transition-all duration-300 border border-zinc-800 shadow-2xl z-50 translate-y-2 group-hover/vintage_calc:translate-y-0">
+											<div class="flex items-center gap-2 mb-2">
+												<i data-lucide="info" class="w-3.5 h-3.5 text-amber-400"></i>
+												<p class="font-black text-white uppercase tracking-wider text-[10px]">Release Breakdown Logic</p>
+											</div>
+											<p class="p-2.5 rounded-xl border border-amber-500/20 bg-amber-500/5 text-[10px] leading-relaxed text-zinc-300">
+												For entries containing volumes/seasons, it only computes the vintage using the release date of the absolute first season filled.
+											</p>
+										</div>
+									</div>
+									<!-- Mode: Stacked vs Separate -->
+									<div id="vintageModeToggle" class="flex bg-zinc-100 dark:bg-zinc-800 rounded-lg p-0.5" onclick="event.stopPropagation()">
+										<button onclick="window.setVintageMode('stacked')" data-chart-option="vintageMode" data-chart-value="stacked" class="p-1 rounded-md hover:bg-white dark:hover:bg-zinc-700 text-zinc-500 dark:text-zinc-400 transition-all" title="Stacked">
+											<i data-lucide="layers" class="w-4 h-4"></i>
+										</button>
+										<button onclick="window.setVintageMode('separate')" data-chart-option="vintageMode" data-chart-value="separate" class="p-1 rounded-md hover:bg-white dark:hover:bg-zinc-700 text-zinc-500 dark:text-zinc-400 transition-all" title="Separate">
+											<i data-lucide="layout-grid" class="w-4 h-4"></i>
+										</button>
+									</div>
+
+									<div class="flex bg-zinc-100 dark:bg-zinc-800 rounded-lg p-0.5" onclick="event.stopPropagation()">
+										<button onclick="window.setChartType('vintageChart', 'bar')" data-chart-option="vintageChart" data-chart-value="bar" class="p-1 rounded-md hover:bg-white dark:hover:bg-zinc-700 text-zinc-500 dark:text-zinc-400 transition-all" title="Bar"><i data-lucide="bar-chart-2" class="w-4 h-4"></i></button>
+										<button onclick="window.setChartType('vintageChart', 'line')" data-chart-option="vintageChart" data-chart-value="line" class="p-1 rounded-md hover:bg-white dark:hover:bg-zinc-700 text-zinc-500 dark:text-zinc-400 transition-all" title="Line"><i data-lucide="line-chart" class="w-4 h-4"></i></button>
+										<button onclick="window.setChartType('vintageChart', 'doughnut')" data-chart-option="vintageChart" data-chart-value="doughnut" class="p-1 rounded-md hover:bg-white dark:hover:bg-zinc-700 text-zinc-500 dark:text-zinc-400 transition-all" title="Doughnut"><i data-lucide="circle-dot" class="w-4 h-4"></i></button>
+										<button onclick="window.setChartType('vintageChart', 'pie')" data-chart-option="vintageChart" data-chart-value="pie" class="p-1 rounded-md hover:bg-white dark:hover:bg-zinc-700 text-zinc-500 dark:text-zinc-400 transition-all" title="Pie"><i data-lucide="pie-chart" class="w-4 h-4"></i></button>
+										<button onclick="window.setChartType('vintageChart', 'polarArea')" data-chart-option="vintageChart" data-chart-value="polarArea" class="p-1 rounded-md hover:bg-white dark:hover:bg-zinc-700 text-zinc-500 dark:text-zinc-400 transition-all" title="Polar Area"><i data-lucide="compass" class="w-4 h-4"></i></button>
+									</div>
+									<i id="chevron-vintageChartContainer" data-lucide="chevron-up" class="w-4 h-4 text-zinc-400 transition-transform rotate-180"></i>
+								</div>
+							</div>
+							<div id="vintageChartContainer" class="w-full h-[35vh] relative transition-all duration-300">
+								<canvas id="vintageChart"></canvas>
+							</div>
+						</div>
+
 					</div>
 				</div>
 
@@ -395,6 +448,9 @@
 								<canvas id="consumptionGrowthChart"></canvas>
 							</div>
 						</div>
+							</div>
+						</div>
+
 					</div>
 				</div>
 			</div>

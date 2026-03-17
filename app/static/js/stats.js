@@ -15,6 +15,7 @@ let mediaGrowthChartInstance = null;
 let ratingChartInstance = null;
 let consumptionGrowthChartInstance = null;
 let consumptionSpreadChartInstance = null;
+let vintageChartInstance = null;
 let activeMediaTypes = [...MEDIA_TYPES]; // Global filter, default all active
 
 // Reusable chart options for consistency
@@ -520,6 +521,14 @@ window.setConsumptionGrowthMode = (mode) => {
 	updateActiveOptions();
 };
 
+window.setVintageMode = (mode) => {
+	const newTypes = { ...state.statsChartTypes };
+	newTypes.vintageMode = mode;
+	setState('statsChartTypes', newTypes);
+	updateCharts();
+	updateActiveOptions();
+};
+
 
 function updateCharts() {
 	const stats = calculateStats();
@@ -530,6 +539,7 @@ function updateCharts() {
 	renderRatingChart(stats);
 	renderConsumptionGrowthChart(stats);
 	renderConsumptionSpreadChart(stats);
+	renderVintageChart(stats);
 	updateStrictTrackingUI();
 }
 
@@ -638,7 +648,7 @@ function updateActiveOptions() {
 
 		// Fallback defaults for first-time render
 		if (state.statsChartTypes && state.statsChartTypes[option] === undefined) {
-			if ((option === 'mediaGrowthMode' || option === 'consumptionGrowthMode') && value === 'stacked') {
+			if ((option === 'mediaGrowthMode' || option === 'consumptionGrowthMode' || option === 'vintageMode') && value === 'stacked') {
 				isActive = true;
 			}
 		}
@@ -788,6 +798,7 @@ window.toggleChart = (containerId) => {
 			else if (containerId === 'ratingChartContainer') instance = ratingChartInstance;
 			else if (containerId === 'consumptionGrowthContainer') instance = consumptionGrowthChartInstance;
 			else if (containerId === 'consumptionSpreadContainer') instance = consumptionSpreadChartInstance;
+			else if (containerId === 'vintageChartContainer') instance = vintageChartInstance;
 
 			if (instance) {
 				instance.resize();
@@ -1823,4 +1834,178 @@ function updateStrictTrackingUI() {
 			sKnob.classList.remove('translate-x-4');
 		}
 	}
+}
+
+function renderVintageChart(stats) {
+	const ctx = document.getElementById('vintageChart');
+	if (!ctx) return;
+
+	const chartType = (state.statsChartTypes && state.statsChartTypes.vintageChart) || 'bar';
+	const vintageMode = (state.statsChartTypes && state.statsChartTypes.vintageMode) || 'stacked';
+	if (vintageChartInstance) vintageChartInstance.destroy();
+
+	const isDark = document.documentElement.classList.contains('dark');
+	const isBar = chartType === 'bar';
+	const isLine = chartType === 'line';
+	const isDoughnut = chartType === 'doughnut';
+	const isPie = chartType === 'pie';
+	const isPolarArea = chartType === 'polarArea';
+
+	// Hide mode toggle if Pie, Doughnut, or Polar in use
+	const modeToggle = document.getElementById('vintageModeToggle');
+	if (modeToggle) {
+		if (isDoughnut || isPie || isPolarArea) modeToggle.classList.add('hidden');
+		else modeToggle.classList.remove('hidden');
+	}
+
+	// 1. Calculate Bucket Range
+	let labels = [];
+	let bucketSize = 1;
+
+	if (isLine) {
+		bucketSize = 1;
+	} else if (isDoughnut || isPie || isPolarArea || (isBar && vintageMode === 'separate')) {
+		bucketSize = 10;
+	} else if (isBar && vintageMode === 'stacked') {
+		bucketSize = 5;
+	}
+
+	if (bucketSize === 1) {
+		// Continuous Years
+		const itemsWithRelease = stats.filteredItems.filter(i => i.releaseDate);
+		const years = itemsWithRelease.map(i => new Date(i.releaseDate).getFullYear());
+		const minYear = years.length > 0 ? Math.min(...years) : 2000;
+		const maxYear = years.length > 0 ? Math.max(...years) : new Date().getFullYear();
+		for (let y = minYear; y <= maxYear; y++) {
+			labels.push(y);
+		}
+	} else {
+		// Grouped Buckets
+		labels.push('< 1990');
+		const currentYear = new Date().getFullYear();
+		const startYear = 1990;
+		for (let y = startYear; y <= currentYear; y += bucketSize) {
+			const endYear = Math.min(y + bucketSize - 1, currentYear);
+			if (bucketSize === 10) labels.push(`${y}s`);
+			else labels.push(`${y}-${endYear}`);
+		}
+	}
+
+	// 2. Aggregate Data
+	const typeData = {};
+	MEDIA_TYPES.forEach(type => typeData[type] = Array(labels.length).fill(0));
+
+	stats.filteredItems.forEach(item => {
+		if (!item.releaseDate) return;
+		try {
+			const year = new Date(item.releaseDate).getFullYear();
+			let idx = -1;
+
+			if (bucketSize === 1) {
+				idx = labels.indexOf(year);
+			} else {
+				if (year < 1990) idx = 0;
+				else idx = 1 + Math.floor((year - 1990) / bucketSize);
+			}
+
+			if (typeData[item.type] && idx >= 0 && idx < labels.length) {
+				typeData[item.type][idx]++;
+			}
+		} catch (e) { }
+	});
+
+	// 3. Dataset Formation
+	const isMultiDataset = isBar || isLine;
+	let datasets = [];
+
+	if (isMultiDataset) {
+		datasets = MEDIA_TYPES.map(type => {
+			const color = getTypeColorHex(type);
+			return {
+				label: type,
+				data: typeData[type],
+				backgroundColor: isLine ? color + '22' : color,
+				borderColor: color,
+				borderWidth: isLine ? 2 : 0,
+				borderRadius: isBar ? 4 : 0,
+				fill: isLine,
+				tension: 0.4,
+				pointRadius: 0,
+				stack: vintageMode === 'stacked' ? 'vintageStack' : undefined
+			};
+		}).filter(ds => activeMediaTypes.includes(ds.label));
+	} else {
+		// Aggregated Totals (Doughnut, Pie, PolarArea)
+		const totals = Array(labels.length).fill(0);
+		MEDIA_TYPES.forEach(type => {
+			if (activeMediaTypes.includes(type)) {
+				typeData[type].forEach((v, i) => totals[i] += v);
+			}
+		});
+		datasets = [{
+			label: 'Items',
+			data: totals,
+			backgroundColor: ['#7c3aed', '#db2777', '#2563eb', '#dc2626', '#d97706', '#059669', '#d946ef'],
+			borderWidth: 1,
+			borderColor: isDark ? '#18181b' : '#ffffff'
+		}];
+	}
+
+	// 4. Create Chart with External Tooltip!
+	vintageChartInstance = new Chart(ctx, {
+		type: isPolarArea ? 'polarArea' : (isPie || isDoughnut ? 'doughnut' : isLine ? 'line' : 'bar'),
+		data: { labels: labels, datasets: datasets },
+		options: {
+			...COMMON_CHART_OPTIONS,
+			cutout: isDoughnut ? '75%' : 0,
+			scales: isMultiDataset ? {
+				x: {
+					grid: { display: false },
+					ticks: { color: isDark ? '#a1a1aa' : '#71717a', font: { size: 10 }, maxTicksLimit: isLine ? 15 : undefined }
+				},
+				y: {
+					stacked: vintageMode === 'stacked',
+					beginAtZero: true,
+					grid: { color: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)', borderDash: [5,5] },
+					ticks: { color: isDark ? '#a1a1aa' : '#71717a', font: { size: 10 } }
+				}
+			} : (isPolarArea ? {
+				r: {
+					ticks: { backdropColor: 'transparent', color: isDark ? '#a1a1aa' : '#71717a' },
+					grid: { color: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)' }
+				}
+			} : undefined),
+			plugins: {
+				...COMMON_CHART_OPTIONS.plugins,
+				legend: { 
+					display: !isMultiDataset,
+					position: 'bottom',
+					labels: {
+						color: isDark ? '#a1a1aa' : '#71717a',
+						usePointStyle: true,
+						pointStyle: 'circle',
+						padding: 15,
+						font: { size: 11 }
+					}
+				},
+				datalabels: { 
+					display: !isMultiDataset,
+					color: '#ffffff',
+					font: { weight: 'bold', size: 10 },
+					formatter: (value, ctx) => {
+						let sum = 0;
+						if (ctx.chart.data.datasets && ctx.chart.data.datasets[0] && ctx.chart.data.datasets[0].data) {
+							sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+						}
+						if (sum === 0) return '0%';
+						return (value * 100 / sum).toFixed(0) + "%";
+					}
+				},
+				tooltip: {
+					enabled: false,
+					external: externalTooltipHandler
+				}
+			}
+		}
+	});
 }
