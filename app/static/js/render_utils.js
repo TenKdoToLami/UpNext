@@ -148,58 +148,95 @@ export function renderFilters() {
 	const typeContainer = document.getElementById('typeFilters');
 	if (typeContainer) {
 		const isGroups = state.aggregationMode === 'groups';
-		let html = '';
 
-		if (isGroups) {
-			const groupTypes = ['All Groups', 'Author/Studio', 'Series', 'Universe', 'Tag'];
-			const groupIcons = {'All Groups': 'folder-tree', 'Author/Studio': 'users', 'Series': 'library', 'Universe': 'globe', 'Tag': 'tag'};
+	let typeHtml = '';
+	let typeHtmlMobile = '';
+
+	if (isGroups) {
+		const groupTypes = ['All Groups', 'Author/Studio', 'Series', 'Universe', 'Tag'];
+		const groupIcons = {'All Groups': 'folder-tree', 'Author/Studio': 'users', 'Series': 'library', 'Universe': 'globe', 'Tag': 'tag'};
+		
+		groupTypes.forEach(t => {
+			const isAll = t === 'All Groups';
+			const filterVal = isAll ? 'All' : t;
+			const isActive = state.filterGroupTypes.includes(filterVal);
+			const icon = groupIcons[t];
 			
-			html += groupTypes.map(t => {
-				const isAll = t === 'All Groups';
-				const filterVal = isAll ? 'All' : t;
-				const isActive = state.filterGroupTypes.includes(filterVal);
-				const icon = groupIcons[t];
-				
-				let btnClass = isActive 
-					? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-black border-transparent shadow-xl ring-2 ring-indigo-500/30 glow-indigo' 
-					: 'bg-white/80 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-700/60 text-zinc-600 dark:text-zinc-400 font-bold shadow-sm hover:!bg-indigo-50 dark:hover:!bg-indigo-500/10 hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-300 dark:hover:border-indigo-500/50 backdrop-blur-sm';
-				
-				return `<button onclick="setFilterGroupType('${filterVal}')" 
-							class="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[11px] uppercase tracking-widest transition-all duration-300 ${btnClass} ${isActive ? 'scale-[1.03] translate-y-[-2px]' : 'hover:scale-[1.02] active:scale-95'}">
-							<i data-lucide="${icon}" class="w-4 h-4 ${isActive ? 'opacity-100' : 'opacity-70'}"></i>
-							${t}
-						</button>`;
-			}).join('');
+			// Desktop Styling
+			let btnClass = isActive 
+				? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-black border-transparent shadow-xl ring-2 ring-indigo-500/30' 
+				: 'bg-white/80 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-700/60 text-zinc-600 dark:text-zinc-400 font-bold shadow-sm';
+			
+			typeHtml += `<button onclick="setFilterGroupType('${filterVal}')" 
+						class="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[11px] uppercase tracking-widest transition-all duration-300 ${btnClass} ${isActive ? 'scale-[1.03] translate-y-[-2px]' : 'hover:scale-[1.02] active:scale-95'}">
+						<i data-lucide="${icon}" class="w-4 h-4 ${isActive ? 'opacity-100' : 'opacity-70'}"></i>
+						${t}
+					</button>`;
+					
+			// Mobile Styling (matching status buttons)
+			let mobileBtnClass = isActive
+				? 'bg-zinc-800 dark:bg-zinc-200 text-white dark:text-black font-bold shadow-md border-transparent'
+				: 'bg-zinc-100 dark:bg-zinc-800 border-transparent text-zinc-600 dark:text-zinc-400 font-bold';
+			
+			typeHtmlMobile += `<button onclick="setFilterGroupType('${filterVal}'); event.stopPropagation();" 
+					class="flex items-center gap-1.5 px-2 py-2 rounded-lg text-[9px] font-bold uppercase tracking-wide border transition-all w-full ${mobileBtnClass}">
+                    <i data-lucide="${icon}" class="w-3 h-3 shrink-0"></i>
+                    <span class="truncate">${t}</span>
+                </button>`;
+		});
 
-			html += `<div class="w-full h-px bg-zinc-200 dark:bg-zinc-800 my-2.5 opacity-60 rounded-full"></div>`;
+		typeHtml += `<div class="w-full h-px bg-zinc-200 dark:bg-zinc-800 my-2.5 opacity-60 rounded-full"></div>`;
+		typeHtmlMobile += `<div class="col-span-2 h-px bg-zinc-200 dark:bg-zinc-800 my-1 opacity-60 rounded-full"></div>`;
+	}
+
+	const mediaTypes = ['All', ...MEDIA_TYPES];
+	
+	mediaTypes.forEach(t => {
+		const isActive = state.filterTypes.includes(t);
+		const count = counts.typeCounts[t] || 0;
+		const icon = t === 'All' ? 'layout-grid' : (ICON_MAP[t] || 'layer');
+
+		// Desktop Styling
+		let btnClass = isActive 
+			? 'bg-zinc-800 dark:bg-zinc-200 text-white dark:text-black font-bold border-transparent' 
+			: 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300';
+		
+		if (isActive && t !== 'All') {
+			const baseColor = TYPE_COLOR_MAP[t]?.split(' ')[0].replace('text-', 'bg-') || 'bg-indigo-500';
+			btnClass = `${baseColor} text-white border-transparent font-bold shadow-lg`;
+		} else if (!isActive && t !== 'All') {
+			btnClass = `${TYPE_COLOR_MAP[t]} font-medium border bg-opacity-10`;
 		}
 
-		const mediaTypes = ['All', ...MEDIA_TYPES];
+		typeHtml += `<button onclick="setFilterType('${t}')" 
+					class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wide border transition-all ${btnClass} ${isActive ? 'scale-110 shadow-lg' : 'hover:scale-105'}">
+					<i data-lucide="${icon}" class="w-3.5 h-3.5 shrink-0"></i>
+					<span class="truncate">${t}</span> <span class="px-1.5 py-0.5 rounded-full text-[9px] bg-black/20">${count}</span>
+				</button>`;
+				
+		// Mobile Styling (matching status buttons)
+		let mobileBtnClass = isActive
+			? 'bg-zinc-800 dark:bg-zinc-200 text-white dark:text-black font-bold shadow-md border-transparent'
+			: 'bg-zinc-100 dark:bg-zinc-800 border-transparent text-zinc-600 dark:text-zinc-400 font-bold';
 		
-		html += mediaTypes.map(t => {
-			const isActive = state.filterTypes.includes(t);
-			const count = counts.typeCounts[t] || 0;
-			const icon = t === 'All' ? 'layout-grid' : (ICON_MAP[t] || 'layer');
+		if (isActive && t !== 'All') {
+			const baseColor = TYPE_COLOR_MAP[t]?.split(' ')[0].replace('text-', 'bg-') || 'bg-indigo-500';
+			mobileBtnClass = `${baseColor} text-white border-transparent font-bold shadow-md`;
+		} else if (!isActive && t !== 'All') {
+			mobileBtnClass = `${TYPE_COLOR_MAP[t]} font-medium border bg-opacity-10`;
+		}
 
-			let btnClass = isActive 
-				? 'bg-zinc-800 dark:bg-zinc-200 text-white dark:text-black font-bold border-transparent' 
-				: 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300';
-			
-			if (isActive && t !== 'All') {
-				const baseColor = TYPE_COLOR_MAP[t]?.split(' ')[0].replace('text-', 'bg-') || 'bg-indigo-500';
-				btnClass = `${baseColor} text-white border-transparent font-bold shadow-lg`;
-			} else if (!isActive && t !== 'All') {
-				btnClass = `${TYPE_COLOR_MAP[t]} font-medium border bg-opacity-10`;
-			}
+		typeHtmlMobile += `<button onclick="setFilterType('${t}'); event.stopPropagation();" 
+					class="flex items-center gap-1.5 px-2 py-2 rounded-lg text-[9px] font-bold uppercase tracking-wide border transition-all w-full ${mobileBtnClass}">
+                    <i data-lucide="${icon}" class="w-3 h-3 shrink-0"></i>
+                    <span class="truncate">${t}</span>
+                </button>`;
+	});
 
-			return `<button onclick="setFilterType('${t}')" 
-						class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wide border transition-all ${btnClass} ${isActive ? 'scale-110 shadow-lg' : 'hover:scale-105'}">
-						<i data-lucide="${icon}" class="w-3.5 h-3.5"></i>
-						${t} <span class="px-1.5 py-0.5 rounded-full text-[9px] bg-black/20">${count}</span>
-					</button>`;
-		}).join('');
+	if (typeContainer) typeContainer.innerHTML = typeHtml;
 
-		typeContainer.innerHTML = html;
+	const typeContainerMobile = document.getElementById('typeFiltersMobile');
+	if (typeContainerMobile) typeContainerMobile.innerHTML = typeHtmlMobile;	
 	}
 
 	// Status Filters
@@ -461,6 +498,38 @@ function renderAdvancedSidebar() {
                 </div>
             `)}
 
+            ${generateSectionHtml('groupsMode', 'Library View', `
+                <div class="flex p-1 bg-zinc-200/50 dark:bg-black/40 rounded-[14px] border border-zinc-200 dark:border-white/5 relative shadow-inner mb-3">
+                    <button onclick="if(state.aggregationMode==='groups')window.toggleAggregationMode()" class="relative flex-1 flex items-center justify-center gap-2 py-2 rounded-xl transition-all z-10 ${state.aggregationMode !== 'groups' ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm ring-1 ring-black/5 dark:ring-white/10 font-bold' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'}">
+                        <i data-lucide="layout-grid" class="w-4 h-4"></i>
+                        <span class="text-[10px] font-black uppercase tracking-widest">Items</span>
+                    </button>
+                    <button onclick="if(state.aggregationMode!=='groups')window.toggleAggregationMode()" class="relative flex-1 flex items-center justify-center gap-2 py-2 rounded-xl transition-all z-10 ${state.aggregationMode === 'groups' ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm ring-1 ring-black/5 dark:ring-white/10 font-bold' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'}">
+                        <i data-lucide="folder-tree" class="w-4 h-4"></i>
+                        <span class="text-[10px] font-black uppercase tracking-widest">Groups</span>
+                    </button>
+                </div>
+                ${state.aggregationMode === 'groups' ? `
+                <div class="flex flex-col gap-1.5">
+                    ${['All Groups', 'Author/Studio', 'Series', 'Universe', 'Tag'].map(t => {
+                        const isAll = t === 'All Groups';
+                        const filterVal = isAll ? 'All' : t;
+                        const isActive = state.filterGroupTypes.includes(filterVal);
+                        const groupIcons = {'All Groups': 'folder-tree', 'Author/Studio': 'users', 'Series': 'library', 'Universe': 'globe', 'Tag': 'tag'};
+                        const icon = groupIcons[t];
+                        
+                        let btnClass = isActive ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg font-bold' : 'bg-white/60 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800/50 text-zinc-500 dark:text-zinc-400 hover:bg-white dark:hover:bg-zinc-800 hover:text-zinc-900 transition-colors shadow-sm';
+                        return `
+                        <button onclick="window.setFilterGroupType('${filterVal}')" class="flex items-center gap-3 w-full px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${btnClass}">
+                            <i data-lucide="${icon}" class="w-4 h-4 ${isActive ? 'opacity-100' : 'opacity-60'}"></i>
+                            <span>${t}</span>
+                        </button>`;
+                    }).join('')}
+                    <div class="w-full h-px bg-zinc-200 dark:bg-zinc-800 my-1 opacity-60"></div>
+                </div>
+                ` : ''}
+            `)}
+
             ${generateSectionHtml('mediaType', 'Media Type', `
                 <div class="flex flex-col gap-1.5">
                     ${['All', ...MEDIA_TYPES].map(t => {
@@ -635,15 +704,16 @@ function updateHeaderAggregationButtons() {
     const desktop = document.getElementById('desktopAggModeBtn');
     const mobile = document.getElementById('mobileAggModeBtn');
     
-    const activeClass = 'text-indigo-500 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 shadow-sm ring-1 ring-indigo-500/20';
+    const activeClassDesktop = 'bg-zinc-800 dark:bg-zinc-100 text-white dark:text-black shadow-md';
     const inactiveClassDesktop = 'text-zinc-400 hover:text-indigo-500 dark:hover:text-indigo-400';
-    const inactiveClassMobile = 'text-zinc-400 hover:text-white bg-zinc-200/50 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700';
     
     if (desktop) {
-        desktop.className = `p-2 rounded-lg transition-all active:scale-90 ${state.aggregationMode === 'groups' ? activeClass : inactiveClassDesktop}`;
+        desktop.className = `p-2 rounded-lg transition-all active:scale-90 ${state.aggregationMode === 'groups' ? activeClassDesktop : inactiveClassDesktop}`;
     }
     if (mobile) {
-        mobile.className = `p-2.5 rounded-lg flex items-center justify-center transition-all bg-zinc-200/50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 ${state.aggregationMode === 'groups' ? activeClass : inactiveClassMobile}`;
+        const activeClassMobile = 'bg-zinc-800 dark:bg-zinc-100 text-white dark:text-black shadow-md border-transparent';
+        const inactiveClassMobile = 'text-zinc-400 hover:text-white bg-zinc-200/50 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700';
+        mobile.className = `p-2.5 rounded-lg flex items-center justify-center transition-all border ${state.aggregationMode === 'groups' ? activeClassMobile : inactiveClassMobile}`;
     }
 }
 

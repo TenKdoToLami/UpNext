@@ -904,11 +904,11 @@ function syncMultiSelectUI() {
 
     btns.forEach(btn => {
         if (state.isMultiSelect) {
-            btn.classList.add('bg-emerald-500', 'text-white', 'shadow-lg', 'shadow-emerald-500/20');
-            btn.classList.remove('text-zinc-400', 'text-zinc-600', 'text-zinc-500', 'dark:text-zinc-400', 'bg-white/10');
+            btn.classList.add('bg-emerald-500', 'text-white', 'shadow-lg', 'shadow-emerald-500/20', 'border-emerald-500');
+            btn.classList.remove('text-zinc-400', 'text-zinc-600', 'text-zinc-500', 'dark:text-zinc-400', 'bg-white/10', 'bg-zinc-200/50', 'dark:bg-zinc-800', 'border-zinc-200', 'dark:border-zinc-700', 'hover:text-white');
         } else {
-            btn.classList.remove('bg-emerald-500', 'text-white', 'shadow-lg', 'shadow-emerald-500/20');
-            btn.classList.add('text-zinc-500', 'dark:text-zinc-400');
+            btn.classList.remove('bg-emerald-500', 'text-white', 'shadow-lg', 'shadow-emerald-500/20', 'border-emerald-500');
+            btn.classList.add('text-zinc-600', 'dark:text-zinc-400', 'bg-zinc-200/50', 'dark:bg-zinc-800', 'border-zinc-200', 'dark:border-zinc-700', 'hover:text-white');
         }
     });
 }
@@ -941,11 +941,11 @@ function syncDetailsUI() {
 
     btns.forEach(btn => {
         if (state.showDetails) {
-            btn.classList.add('bg-indigo-500', 'text-white', 'shadow-lg', 'shadow-indigo-500/20');
-            btn.classList.remove('text-zinc-400', 'text-zinc-600', 'text-zinc-500', 'dark:text-zinc-400', 'bg-white/10');
+            btn.classList.add('bg-indigo-500', 'text-white', 'shadow-lg', 'shadow-indigo-500/20', 'border-indigo-500');
+            btn.classList.remove('text-zinc-400', 'text-zinc-600', 'text-zinc-500', 'dark:text-zinc-400', 'bg-zinc-200/50', 'dark:bg-zinc-800', 'border-zinc-200', 'dark:border-zinc-700', 'hover:text-white');
         } else {
-            btn.classList.remove('bg-indigo-500', 'text-white', 'shadow-lg', 'shadow-indigo-500/20');
-            btn.classList.add('text-zinc-500', 'dark:text-zinc-400');
+            btn.classList.remove('bg-indigo-500', 'text-white', 'shadow-lg', 'shadow-indigo-500/20', 'border-indigo-500');
+            btn.classList.add('text-zinc-600', 'dark:text-zinc-400', 'bg-zinc-200/50', 'dark:bg-zinc-800', 'border-zinc-200', 'dark:border-zinc-700', 'hover:text-white');
         }
     });
 }
@@ -970,25 +970,18 @@ function syncViewModeUI() {
     const listBtns = document.querySelectorAll('.view-list-btn');
     const isGrid = state.viewMode === 'grid';
 
-    gridBtns.forEach(btn => {
-        if (isGrid) {
-            btn.classList.add('bg-zinc-800', 'dark:bg-zinc-100', 'text-white', 'dark:text-black', 'shadow-md');
-            btn.classList.remove('text-zinc-400', 'text-zinc-500', 'dark:text-white', 'bg-zinc-200', 'dark:bg-zinc-700');
+    const applyViewClasses = (btn, isActive) => {
+        if (isActive) {
+            btn.classList.add('bg-zinc-800', 'dark:bg-zinc-100', 'text-white', 'dark:text-black', 'shadow-md', 'border-transparent');
+            btn.classList.remove('text-zinc-400', 'text-zinc-500', 'dark:text-white', 'bg-zinc-200', 'dark:bg-zinc-700', 'bg-zinc-200/50', 'dark:bg-zinc-800', 'border-zinc-200', 'dark:border-zinc-700', 'hover:text-white');
         } else {
-            btn.classList.remove('bg-zinc-800', 'dark:bg-zinc-100', 'text-white', 'dark:text-black', 'shadow-md');
-            btn.classList.add('text-zinc-400', 'dark:text-zinc-500');
+            btn.classList.remove('bg-zinc-800', 'dark:bg-zinc-100', 'text-white', 'dark:text-black', 'shadow-md', 'border-transparent');
+            btn.classList.add('text-zinc-400', 'bg-zinc-200/50', 'dark:bg-zinc-800', 'border-zinc-200', 'dark:border-zinc-700', 'hover:text-white');
         }
-    });
+    };
 
-    listBtns.forEach(btn => {
-        if (!isGrid) {
-            btn.classList.add('bg-zinc-800', 'dark:bg-zinc-100', 'text-white', 'dark:text-black', 'shadow-md');
-            btn.classList.remove('text-zinc-400', 'text-zinc-500', 'dark:text-white', 'bg-zinc-200', 'dark:bg-zinc-700');
-        } else {
-            btn.classList.remove('bg-zinc-800', 'dark:bg-zinc-100', 'text-white', 'dark:text-black', 'shadow-md');
-            btn.classList.add('text-zinc-400', 'dark:text-zinc-500');
-        }
-    });
+    gridBtns.forEach(btn => applyViewClasses(btn, isGrid));
+    listBtns.forEach(btn => applyViewClasses(btn, !isGrid));
 }
 
 // =============================================================================
