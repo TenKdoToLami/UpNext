@@ -34,11 +34,13 @@ export const state = {
 
 	// Filter state
 	filterTypes: ['All'],
+	filterGroupTypes: ['All'],
 	filterStatuses: ['All'],
 	filterRatings: [],
 
 	// View preferences
 	viewMode: 'grid',
+	aggregationMode: 'items', // 'items' or 'groups'
 	sortBy: 'updatedAt',
 	sortOrder: 'desc',
 	showDetails: false,
@@ -112,7 +114,7 @@ export const state = {
  * Keys that should be persisted to LocalStorage.
  */
 const PERSISTED_KEYS = [
-	'viewMode', 'sortBy', 'sortOrder', 'showDetails',
+	'viewMode', 'aggregationMode', 'sortBy', 'sortOrder', 'showDetails',
 	'isHidden', 'isMultiSelect', 'filterHiddenOnly', 'theme',
 	'statsChartTypes', 'calendarView', 'appSettings', 'activeTimeframe',
 	'statsCustomStart', 'statsCustomEnd', 'statsStrictTrackingMomentum', 'statsStrictTrackingSpread',

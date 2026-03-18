@@ -366,3 +366,94 @@ export function generateCardHtml(item) {
         }
     }
 }
+
+/**
+ * Helper to render a collage of cover images for groups.
+ * @param {Array<string>} covers - Array of cover filenames
+ * @returns {string} HTML string
+ */
+function renderCoversCollage(covers) {
+    if (!covers || covers.length === 0) {
+        return `<div class="w-full h-full flex items-center justify-center text-zinc-400 dark:text-zinc-700 bg-zinc-100 dark:bg-zinc-900"><i data-lucide="folder-tree" class="w-10 h-10 opacity-30"></i></div>`;
+    }
+    if (covers.length === 1) {
+        return `<img src="/images/${covers[0]}" loading="lazy" class="w-full h-full object-cover">`;
+    }
+    if (covers.length === 2) {
+        return `
+            <div class="flex w-full h-full">
+                <img src="/images/${covers[0]}" loading="lazy" class="w-1/2 h-full object-cover border-r border-black/20 dark:border-white/10">
+                <img src="/images/${covers[1]}" loading="lazy" class="w-1/2 h-full object-cover">
+            </div>
+        `;
+    }
+    if (covers.length === 3) {
+        return `
+            <div class="flex flex-col w-1/2 h-full border-r border-black/20 dark:border-white/10">
+                <img src="/images/${covers[0]}" loading="lazy" class="w-full h-1/2 object-cover border-b border-black/20 dark:border-white/10">
+                <img src="/images/${covers[1]}" loading="lazy" class="w-full h-1/2 object-cover">
+            </div>
+            <div class="w-1/2 h-full">
+                <img src="/images/${covers[2]}" loading="lazy" class="w-full h-full object-cover">
+            </div>
+        `;
+    }
+    // 4 or more
+    return `
+        <div class="grid grid-cols-2 grid-rows-2 w-full h-full">
+            <img src="/images/${covers[0]}" loading="lazy" class="w-full h-full object-cover border-r border-b border-black/20 dark:border-white/10">
+            <img src="/images/${covers[1]}" loading="lazy" class="w-full h-full object-cover border-b border-black/20 dark:border-white/10">
+            <img src="/images/${covers[2]}" loading="lazy" class="w-full h-full object-cover border-r border-black/20 dark:border-white/10">
+            <img src="/images/${covers[3]}" loading="lazy" class="w-full h-full object-cover">
+        </div>
+    `;
+}
+
+/**
+ * Generates the HTML string for a Group Card.
+ * @param {Object} group - The group object (type, name, count, covers)
+ * @returns {string} The generated HTML string.
+ */
+export function generateGroupCardHtml(group) {
+    const safeName = group.name.replace(/'/g, "\\'");
+    
+    if (state.viewMode === 'grid') {
+        return `
+            <div onclick="window.applyGroupFilter('${group.type}', '${safeName}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); window.applyGroupFilter('${group.type}', '${safeName}');}" class="group relative aspect-[2/3] rounded-xl overflow-hidden cursor-pointer media-card bg-white dark:bg-zinc-900 flex flex-col shadow-lg outline-none focus:ring-4 focus:ring-indigo-500/50 hover:-translate-y-1 transition-transform">
+                <div class="relative w-full h-full flex flex-wrap bg-zinc-100 dark:bg-zinc-950">
+                    ${renderCoversCollage(group.covers)}
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent pointer-events-none transition-opacity duration-300 group-hover:via-black/50"></div>
+                    <div class="absolute bottom-5 left-4 right-4 z-20 flex flex-col gap-1 pointer-events-none">
+                        <span class="text-[10px] uppercase font-black tracking-widest text-indigo-400 drop-shadow-md shadow-black flex items-center gap-1">
+                            <i data-lucide="${group.type === 'Author/Studio' ? 'pen-tool' : group.type === 'Series' ? 'library' : group.type === 'Universe' ? 'globe' : 'tag'}" class="w-3 h-3"></i> ${group.type}
+                        </span>
+                        <h3 class="font-heading font-black text-2xl text-white leading-tight drop-shadow-lg shadow-black line-clamp-3 mb-1 group-hover:text-indigo-200 transition-colors">${group.name}</h3>
+                        <span class="text-[11px] font-bold text-black bg-white/90 backdrop-blur-sm w-fit px-2 py-0.5 rounded-md shadow-md">${group.count} Items</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    } else {
+        return `
+            <div onclick="window.applyGroupFilter('${group.type}', '${safeName}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); window.applyGroupFilter('${group.type}', '${safeName}');}" class="group flex items-center justify-between gap-4 p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800/80 rounded-xl hover:border-indigo-500 dark:hover:border-indigo-500 hover:bg-zinc-50 dark:hover:bg-zinc-800/80 cursor-pointer mb-3 outline-none focus:ring-4 focus:ring-indigo-500/50 shadow-sm hover:shadow-md transition-all">
+                <div class="flex items-center gap-5 flex-1 min-w-0">
+                    <div class="w-16 h-24 shrink-0 relative overflow-hidden rounded-md flex flex-wrap bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-white/10 shadow-lg group-hover:scale-105 transition-transform">
+                        ${renderCoversCollage(group.covers)}
+                    </div>
+                    <div class="flex flex-col gap-1.5 min-w-0 flex-1">
+                        <span class="text-[9px] uppercase font-black tracking-widest text-indigo-500 dark:text-indigo-400 flex items-center gap-1">
+                            <i data-lucide="${group.type === 'Author/Studio' ? 'pen-tool' : group.type === 'Series' ? 'library' : group.type === 'Universe' ? 'globe' : 'tag'}" class="w-3 h-3"></i> ${group.type}
+                        </span>
+                        <h3 class="font-heading font-black text-xl md:text-2xl text-zinc-900 dark:text-zinc-100 truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">${group.name}</h3>
+                        <span class="text-xs font-bold text-zinc-600 dark:text-zinc-300 bg-zinc-200 dark:bg-zinc-800 w-fit px-2.5 py-0.5 rounded-full shadow-sm">${group.count} Items</span>
+                    </div>
+                </div>
+                <div class="flex items-center justify-center pr-2 md:pr-4">
+                    <div class="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-400 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-500/20 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                        <i data-lucide="chevron-right" class="w-4 h-4 group-hover:translate-x-0.5 transition-transform"></i>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+}

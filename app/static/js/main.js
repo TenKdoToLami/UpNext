@@ -780,6 +780,31 @@ window.setFilterType = (type) => {
 };
 
 /**
+ * Sets the group type filter when in groups view.
+ * @param {string} type - Group type to filter by ('All' for no filter)
+ */
+window.setFilterGroupType = (type) => {
+    if (state.isMultiSelect) {
+        if (type === 'All') {
+            state.filterGroupTypes = ['All'];
+        } else {
+            if (state.filterGroupTypes.includes('All')) state.filterGroupTypes = [];
+            if (state.filterGroupTypes.includes(type)) {
+                state.filterGroupTypes = state.filterGroupTypes.filter(t => t !== type);
+                if (state.filterGroupTypes.length === 0) state.filterGroupTypes = ['All'];
+            } else {
+                state.filterGroupTypes.push(type);
+                if (state.filterGroupTypes.length >= 4) state.filterGroupTypes = ['All'];
+            }
+        }
+    } else {
+        state.filterGroupTypes = [type];
+    }
+    renderFilters();
+    renderGrid();
+};
+
+/**
  * Sets the status filter.
  * @param {string} status - Status to filter by ('All' for no filter)
  */

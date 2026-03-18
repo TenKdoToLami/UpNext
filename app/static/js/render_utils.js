@@ -11,7 +11,7 @@ import {
 	RATING_LABELS, TEXT_COLORS, STAR_FILLS
 } from './constants.js';
 import { safeCreateIcons, toggleExpand, checkOverflow, initCustomAutocomplete } from './dom_utils.js';
-import { generateCardHtml } from './card_renderer.js';
+import { generateCardHtml, generateGroupCardHtml } from './card_renderer.js';
 
 
 let gridObserver = null;
@@ -117,6 +117,7 @@ export function renderFilters() {
 		dot?.classList.add('translate-x-4');
 		dotBg?.classList.add('bg-indigo-500');
 		
+        updateHeaderAggregationButtons();
 		renderAdvancedSidebar();
 		return;
 	}
@@ -141,13 +142,41 @@ export function renderFilters() {
 	dot?.classList.remove('translate-x-4');
 	dotBg?.classList.remove('bg-indigo-500');
 
+    updateHeaderAggregationButtons();
 	const counts = getCounts();
 
-	// Type Filters
 	const typeContainer = document.getElementById('typeFilters');
 	if (typeContainer) {
-		const types = ['All', ...MEDIA_TYPES];
-		typeContainer.innerHTML = types.map(t => {
+		const isGroups = state.aggregationMode === 'groups';
+		let html = '';
+
+		if (isGroups) {
+			const groupTypes = ['All Groups', 'Author/Studio', 'Series', 'Universe', 'Tag'];
+			const groupIcons = {'All Groups': 'folder-tree', 'Author/Studio': 'users', 'Series': 'library', 'Universe': 'globe', 'Tag': 'tag'};
+			
+			html += groupTypes.map(t => {
+				const isAll = t === 'All Groups';
+				const filterVal = isAll ? 'All' : t;
+				const isActive = state.filterGroupTypes.includes(filterVal);
+				const icon = groupIcons[t];
+				
+				let btnClass = isActive 
+					? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-black border-transparent shadow-xl ring-2 ring-indigo-500/30 glow-indigo' 
+					: 'bg-white/80 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-700/60 text-zinc-600 dark:text-zinc-400 font-bold shadow-sm hover:!bg-indigo-50 dark:hover:!bg-indigo-500/10 hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-300 dark:hover:border-indigo-500/50 backdrop-blur-sm';
+				
+				return `<button onclick="setFilterGroupType('${filterVal}')" 
+							class="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[11px] uppercase tracking-widest transition-all duration-300 ${btnClass} ${isActive ? 'scale-[1.03] translate-y-[-2px]' : 'hover:scale-[1.02] active:scale-95'}">
+							<i data-lucide="${icon}" class="w-4 h-4 ${isActive ? 'opacity-100' : 'opacity-70'}"></i>
+							${t}
+						</button>`;
+			}).join('');
+
+			html += `<div class="w-full h-px bg-zinc-200 dark:bg-zinc-800 my-2.5 opacity-60 rounded-full"></div>`;
+		}
+
+		const mediaTypes = ['All', ...MEDIA_TYPES];
+		
+		html += mediaTypes.map(t => {
 			const isActive = state.filterTypes.includes(t);
 			const count = counts.typeCounts[t] || 0;
 			const icon = t === 'All' ? 'layout-grid' : (ICON_MAP[t] || 'layer');
@@ -169,6 +198,8 @@ export function renderFilters() {
 						${t} <span class="px-1.5 py-0.5 rounded-full text-[9px] bg-black/20">${count}</span>
 					</button>`;
 		}).join('');
+
+		typeContainer.innerHTML = html;
 	}
 
 	// Status Filters
@@ -176,7 +207,14 @@ export function renderFilters() {
 		const isActive = state.filterStatuses.includes(s);
 		const count = counts.statusCounts[s] || 0;
 		const icon = s === 'All' ? 'list' : (STATUS_ICON_MAP[s] || 'circle');
-		const baseColor = STATUS_COLOR_MAP[s]?.split(' ')[0].replace('text-', 'bg-') || 'bg-indigo-500';
+		const mappedBgColors = {
+			'Reading/Watching': 'bg-amber-500',
+			'Completed': 'bg-emerald-500',
+			'Planning': 'bg-zinc-500',
+			'On Hold': 'bg-indigo-500',
+			'Dropped': 'bg-red-500'
+		};
+		const bgClass = mappedBgColors[s] || 'bg-indigo-500';
 
 		let btnClass = '';
 		let extra = '';
@@ -185,7 +223,7 @@ export function renderFilters() {
 		if (isMobile) {
 			if (isActive) {
 				if (s === 'All') btnClass = `bg-zinc-800 dark:bg-zinc-200 text-white dark:text-black font-bold`;
-				else btnClass = `bg-${baseColor} text-white border-transparent font-bold shadow-md`;
+				else btnClass = `${bgClass} text-white border-transparent font-bold shadow-md`;
 				if (s === 'Planning') btnClass = `bg-zinc-500 text-white border-transparent font-bold`;
 			} else if (s !== 'All') {
 				btnClass = `${STATUS_COLOR_MAP[s]} bg-opacity-5 font-bold`;
@@ -199,7 +237,7 @@ export function renderFilters() {
 				: `bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300 hover:border-zinc-400 dark:hover:border-zinc-600`;
 
 			if (isActive && s !== 'All') {
-				btnClass = `bg-${baseColor} text-white border-transparent font-bold shadow-lg`;
+				btnClass = `${bgClass} text-white border-transparent font-bold shadow-lg`;
 				if (s === 'Planning') btnClass = `bg-zinc-500 text-white border-transparent font-bold`;
 			} else if (!isActive && s !== 'All') {
 				btnClass = `${STATUS_COLOR_MAP[s]} font-medium border bg-opacity-10`;
@@ -317,6 +355,8 @@ export function renderFilters() {
 		const mobileWrapper = document.getElementById('ratingFiltersMobileContainer');
 		if (mobileWrapper) mobileWrapper.classList.add('hidden');
 	}
+
+    updateHeaderAggregationButtons();
 
 	// Refresh Lucide Icons
 	safeCreateIcons();
@@ -561,6 +601,135 @@ function renderAdvancedSidebar() {
 	safeCreateIcons(container);
 }
 
+window.applyGroupFilter = (type, name) => {
+    setState('aggregationMode', 'items');
+    updateHeaderAggregationButtons();
+    
+    // Convert type to filter key, splitting merged combinations out securely
+    const firstType = type.split(' \u2022 ')[0].trim();
+    const firstName = name.split(' / ')[0].trim();
+
+    let key = '';
+    if (firstType === 'Author/Studio') key = 'author';
+    else if (firstType === 'Series') key = 'series';
+    else if (firstType === 'Universe') key = 'universe';
+    else if (firstType === 'Tag') key = 'tag';
+
+    if (key && window.syncSidebarFilter) {
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) searchInput.value = '';
+
+        renderFilters();
+        window.syncSidebarFilter(key, firstName);
+    }
+};
+
+window.toggleAggregationMode = () => {
+    setState('aggregationMode', state.aggregationMode === 'groups' ? 'items' : 'groups');
+    updateHeaderAggregationButtons();
+    renderFilters();
+    renderGrid();
+};
+
+function updateHeaderAggregationButtons() {
+    const desktop = document.getElementById('desktopAggModeBtn');
+    const mobile = document.getElementById('mobileAggModeBtn');
+    
+    const activeClass = 'text-indigo-500 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 shadow-sm ring-1 ring-indigo-500/20';
+    const inactiveClassDesktop = 'text-zinc-400 hover:text-indigo-500 dark:hover:text-indigo-400';
+    const inactiveClassMobile = 'text-zinc-400 hover:text-white bg-zinc-200/50 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700';
+    
+    if (desktop) {
+        desktop.className = `p-2 rounded-lg transition-all active:scale-90 ${state.aggregationMode === 'groups' ? activeClass : inactiveClassDesktop}`;
+    }
+    if (mobile) {
+        mobile.className = `p-2.5 rounded-lg flex items-center justify-center transition-all bg-zinc-200/50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 ${state.aggregationMode === 'groups' ? activeClass : inactiveClassMobile}`;
+    }
+}
+
+function generateGroups(items) {
+    const groupsMap = new Map();
+
+    const addGroupItem = (type, name, item) => {
+        if (!name) return;
+        const key = `${type}:${name}`;
+        if (!groupsMap.has(key)) {
+            groupsMap.set(key, { type, name, items: [], covers: [] });
+        }
+        const g = groupsMap.get(key);
+        g.items.push(item);
+        if (item.coverUrl && g.covers.length < 4 && !g.covers.includes(item.coverUrl)) {
+            g.covers.push(item.coverUrl);
+        }
+    };
+
+    const activeFilters = state.filterGroupTypes || ['All'];
+    const isAll = activeFilters.includes('All');
+
+    items.forEach(item => {
+        // Authors
+        if (isAll || activeFilters.includes('Author/Studio')) {
+            let authors = item.authors || [];
+            if (!authors.length && item.author) authors = [item.author];
+            authors.forEach(a => addGroupItem('Author/Studio', a, item));
+        }
+        
+        // Series
+        if (isAll || activeFilters.includes('Series')) {
+            addGroupItem('Series', item.series, item);
+        }
+
+        // Universe
+        if (isAll || activeFilters.includes('Universe')) {
+            addGroupItem('Universe', item.universe, item);
+        }
+
+        // Tags
+        if (isAll || activeFilters.includes('Tag')) {
+            (item.tags || []).forEach(t => addGroupItem('Tag', t, item));
+        }
+    });
+
+    let groups = Array.from(groupsMap.values());
+    
+    // Sort items within each group by id to create deterministic hash for merging
+    groups.forEach(g => {
+        g.items.sort((a, b) => String(a.id).localeCompare(String(b.id)));
+        g.hash = g.items.map(i => i.id).join(',');
+    });
+
+    // Merge identical groups and filter out ONLY TAG groups with < 5 items
+    const mergedGroups = new Map();
+    groups.forEach(g => {
+        if (g.type === 'Tag' && g.items.length < 5) return; 
+        
+        if (mergedGroups.has(g.hash)) {
+            const existing = mergedGroups.get(g.hash);
+            // Merge types and names if different
+            if (!existing.type.includes(g.type)) existing.type += ` \u2022 ${g.type}`;
+            if (!existing.name.includes(g.name)) existing.name += ` / ${g.name}`;
+        } else {
+            mergedGroups.set(g.hash, g);
+        }
+    });
+
+    groups = Array.from(mergedGroups.values());
+    
+    // Sort groups. By count desc, then alphabetically
+    groups.sort((a, b) => {
+        if (b.items.length !== a.items.length) {
+            return b.items.length - a.items.length;
+        }
+        return a.name.localeCompare(b.name);
+    });
+    
+    groups.forEach(g => {
+        g.count = g.items.length;
+    });
+
+    return groups;
+}
+
 /**
  * Renders the main grid or list view of items.
  * Applies all active filters (search, type, status, rating, hidden).
@@ -618,18 +787,28 @@ export function renderGrid() {
 		}
 
 		if (!textQuery) return true;
+        
+        // In groups mode, textQuery ONLY filters the group names themselves, so all underlying items should pass stringently!
+        if (state.aggregationMode === 'groups') return true;
 
 		const matchesMainTitle = item.title.toLowerCase().includes(textQuery);
 		const matchesAlternateTitle = (item.alternateTitles || []).some(alt => alt.toLowerCase().includes(textQuery));
-		const matchesUniverse = (item.universe && item.universe.toLowerCase().includes(textQuery));
+		
 		// Match against any abbreviation in the list
 		const matchesAbbreviation = (item.abbreviations || []).some(abbr => abbr.toLowerCase().includes(textQuery));
-		const matchesTags = (item.tags || []).some(tag => tag.toLowerCase().includes(textQuery));
 
-		return matchesMainTitle || matchesAlternateTitle || matchesUniverse || matchesAbbreviation || matchesTags;
+		return matchesMainTitle || matchesAlternateTitle || matchesAbbreviation;
 	});
 
 	filtered = sortItems(filtered);
+    
+    if (state.aggregationMode === 'groups') {
+        filtered = generateGroups(filtered);
+        if (textQuery) {
+            filtered = filtered.filter(g => g.name.toLowerCase().includes(textQuery));
+        }
+    }
+    
 	state.currentFilteredItems = filtered;
 
 	// Reset limit and start for fresh render
@@ -659,7 +838,12 @@ function renderVisibleBatch(container) {
 	if (typeof state.visibleStart === 'undefined') state.visibleStart = 0;
 
 	const visibleItems = filtered.slice(state.visibleStart, state.visibleLimit);
-	const html = visibleItems.map(item => generateCardHtml(item)).join('');
+	const html = visibleItems.map(item => {
+        if (state.aggregationMode === 'groups') {
+            return generateGroupCardHtml(item);
+        }
+        return generateCardHtml(item);
+    }).join('');
 
 	// Handle Footer / Sentinel
 	container.innerHTML = html;
@@ -740,7 +924,12 @@ export function loadMoreItems() {
 	if (footer) footer.remove();
 
 	const nextBatch = filtered.slice(oldLimit, state.visibleLimit);
-	const html = nextBatch.map(item => generateCardHtml(item)).join('');
+	const html = nextBatch.map(item => {
+        if (state.aggregationMode === 'groups') {
+            return generateGroupCardHtml(item);
+        }
+        return generateCardHtml(item);
+    }).join('');
 
 	// Create temp container to parse HTML string into nodes
 	const tempDiv = document.createElement('div');
