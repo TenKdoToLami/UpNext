@@ -858,7 +858,11 @@ window.setViewMode = (mode) => {
     if (!container) return;
 
     if (mode === 'grid') {
-        container.className = 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6 pb-20 animate-enter';
+        if (state.advancedFiltersEnabled) {
+            container.className = 'grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 pb-20 animate-enter';
+        } else {
+            container.className = 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6 pb-20 animate-enter';
+        }
     } else {
         container.className = 'flex flex-col gap-4 pb-20 animate-enter max-w-4xl mx-auto';
     }
@@ -1936,7 +1940,7 @@ export function toggleAdvancedFilters() {
     }
 
     renderFilters();
-    renderGrid();
+    window.setViewMode(state.viewMode);
 }
 
 /**
