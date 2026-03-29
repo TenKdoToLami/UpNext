@@ -11,6 +11,16 @@ import {
 } from './constants.js';
 
 /**
+ * Pre-rendered inline SVG for star icons to avoid expensive Lucide createIcons() calls.
+ * @param {string} sizeClass - Tailwind size class (e.g., 'w-4 h-4')
+ * @param {string} colorClass - Tailwind color/fill class
+ * @returns {string} Inline SVG string
+ */
+function starSvg(sizeClass, colorClass) {
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="${sizeClass} ${colorClass}"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>`;
+}
+
+/**
  * Generates HTML for the authors list with smart filter buttons.
  * @param {Array<string>} authors - List of authors/studios.
  * @param {string} [extraClass=''] - Additional CSS classes.
@@ -183,7 +193,7 @@ export function generateCardHtml(item) {
                 childrenListHtml = item.children.map(c => {
                     let stars = '';
                     for (let i = 1; i <= 4; i++) {
-                        stars += `<i data-lucide="star" class="w-4 h-4 ${c.rating >= i ? STAR_FILLS[c.rating] : 'text-zinc-400 dark:text-zinc-700'} fill-current"></i>`;
+                        stars += starSvg('w-4 h-4', c.rating >= i ? STAR_FILLS[c.rating] : 'text-zinc-400 dark:text-zinc-700');
                     }
 
                     // Build stats text
@@ -278,7 +288,7 @@ export function generateCardHtml(item) {
                                            <div class="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">Verdict</div>
                                            <div class="text-4xl font-heading font-black uppercase ${TEXT_COLORS[item.rating]}">${RATING_LABELS[item.rating]}</div>
                                            <div class="flex gap-1 mt-1">
-                                               ${[1, 2, 3, 4].map(i => `<i data-lucide="star" class="w-4 h-4 ${item.rating >= i ? STAR_FILLS[item.rating] : 'text-zinc-300 dark:text-zinc-800'} fill-current"></i>`).join('')}
+                                                ${[1, 2, 3, 4].map(i => starSvg('w-4 h-4', item.rating >= i ? STAR_FILLS[item.rating] : 'text-zinc-300 dark:text-zinc-800')).join('')}
                                            </div>
                                            ${isFieldVisible('reread_count') && item.rereadCount ? `<div class="text-[10px] text-zinc-500 mt-1">${['Book', 'Manga'].includes(item.type) ? 'Reread' : 'Rewatched'} ${item.rereadCount}x</div>` : ''}
                                         </div>` : ''}

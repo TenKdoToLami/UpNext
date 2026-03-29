@@ -934,11 +934,15 @@ function renderVisibleBatch(container) {
 		}
 	}
 
-	safeCreateIcons();
+	safeCreateIcons(container);
 
-	// Check truncation for new items
+	// Check truncation for new items (defer to idle to avoid blocking render)
 	const visibleIds = visibleItems.map(i => i.id);
-	setTimeout(() => updateGridTruncation(visibleIds), 50);
+	if (typeof requestIdleCallback === 'function') {
+		requestIdleCallback(() => updateGridTruncation(visibleIds));
+	} else {
+		setTimeout(() => updateGridTruncation(visibleIds), 100);
+	}
 }
 
 /**
@@ -1027,9 +1031,13 @@ export function loadMoreItems() {
 		}
 	}
 
-	safeCreateIcons();
+	safeCreateIcons(container);
 	const nextBatchIds = nextBatch.map(i => i.id);
-	setTimeout(() => updateGridTruncation(nextBatchIds), 50);
+	if (typeof requestIdleCallback === 'function') {
+		requestIdleCallback(() => updateGridTruncation(nextBatchIds));
+	} else {
+		setTimeout(() => updateGridTruncation(nextBatchIds), 100);
+	}
 }
 
 /**

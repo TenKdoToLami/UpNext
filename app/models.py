@@ -3,7 +3,7 @@ import uuid
 from typing import List, Optional
 
 from sqlalchemy import String, Integer, Text, Boolean, DateTime, JSON, LargeBinary, ForeignKey, Date, Time
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship, deferred
 
 from app.database import db
 
@@ -43,13 +43,13 @@ class MediaItem(db.Model):
 
     # Relationships to optimized secondary tables
     cover: Mapped["MediaCover"] = relationship(
-        "MediaCover", back_populates="item", uselist=False, cascade="all, delete-orphan", lazy="select"
+        "MediaCover", back_populates="item", uselist=False, cascade="all, delete-orphan", lazy="joined"
     )
     user_data: Mapped["MediaUserData"] = relationship(
         "MediaUserData", back_populates="item", uselist=False, cascade="all, delete-orphan", lazy="joined"
     )
     metadata_info: Mapped["MediaMetadata"] = relationship(
-        "MediaMetadata", back_populates="item", uselist=False, cascade="all, delete-orphan", lazy="select"
+        "MediaMetadata", back_populates="item", uselist=False, cascade="all, delete-orphan", lazy="joined"
     )
     releases: Mapped[List["MediaRelease"]] = relationship(
         "MediaRelease", back_populates="item", cascade="all, delete-orphan"
@@ -210,7 +210,7 @@ class MediaCover(db.Model):
 
     item_id: Mapped[str] = mapped_column(ForeignKey("media_items.id"), primary_key=True)
     
-    cover_image: Mapped[Optional[bytes]] = mapped_column(LargeBinary, nullable=True)
+    cover_image: Mapped[Optional[bytes]] = deferred(mapped_column(LargeBinary, nullable=True))
     cover_mime: Mapped[str] = mapped_column(String(50), default="")
     cover_url: Mapped[str] = mapped_column(String(255), default="")
     
