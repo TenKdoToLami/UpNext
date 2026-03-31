@@ -56,16 +56,47 @@ def save_config(new_data: Dict[str, Any]) -> None:
                 pass
 
 def save_window_geometry(window: Any) -> None:
-    """Helper to save just the window geometry."""
+    """Helper to save just the window geometry.
+    
+    Validates values before saving to prevent persisting minimized/hidden
+    window coordinates. On Windows, minimized windows report x,y as -32000
+    and may report tiny dimensions.
+    """
+    try:
+        x, y = window.x, window.y
+        w, h = window.width, window.height
+    except Exception as e:
+        logger.warning(f"Could not read window geometry: {e}")
+        return
+    
+    logger.info(f"save_window_geometry called: x={x}, y={y}, w={w}, h={h}")
+    
+    # Reject None values
+    if x is None or y is None or w is None or h is None:
+        logger.info(f"Skipping geometry save: None values detected")
+        return
+    
+    # Reject Windows minimized sentinel coordinates (-32000)
+    # and any clearly off-screen positions
+    if x <= -16000 or y <= -16000:
+        logger.info(f"Skipping geometry save: minimized coordinates ({x}, {y})")
+        return
+    
+    # Reject suspiciously small dimensions (likely minimized/corrupted state)
+    # The app's min_size is (800, 600)
+    if w < 800 or h < 600:
+        logger.info(f"Skipping geometry save: dimensions below minimum ({w}x{h})")
+        return
+    
     save_config({
         'window': {
-            'width': window.width,
-            'height': window.height,
-            'x': window.x,
-            'y': window.y
+            'width': w,
+            'height': h,
+            'x': x,
+            'y': y
         }
     })
-
+    logger.info(f"Window geometry saved successfully: ({x}, {y}) {w}x{h}")
 def ensure_window_on_screen(x: Optional[int], y: Optional[int], 
                             width: int, height: int) -> Tuple[Optional[int], Optional[int]]:
     """
@@ -82,6 +113,12 @@ def ensure_window_on_screen(x: Optional[int], y: Optional[int],
         Tuple of (x, y) - validated position, or (None, None) if should use OS default
     """
     if x is None or y is None:
+        return None, None
+    
+    # Fast rejection of Windows minimized sentinel values (-32000)
+    # and any clearly absurd positions
+    if x <= -16000 or y <= -16000:
+        logger.warning(f"Rejecting minimized sentinel coordinates ({x}, {y}), using OS default")
         return None, None
     
     try:

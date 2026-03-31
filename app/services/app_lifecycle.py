@@ -296,6 +296,37 @@ def run_application_stack(create_app_func: Callable, host: str, port: int, headl
             window_ref[0].restore()
             window_ref[0].show()
 
+            # Ensure the window geometry is valid after restoring.
+            # Sometimes Windows taskbar minimization or hidden states result in the window
+            # being restored to an off-screen position (e.g. -32000, -32000).
+            try:
+                from app.utils.config_manager import load_config, ensure_window_on_screen
+                wx, wy = window_ref[0].x, window_ref[0].y
+                ww, wh = window_ref[0].width, window_ref[0].height
+                
+                config = load_config()
+                win_conf = config.get('window', {})
+                
+                if wx <= -16000 or wy <= -16000 or wx >= 32000 or wy >= 32000:
+                    wx = win_conf.get('x', None)
+                    wy = win_conf.get('y', None)
+                    
+                if ww < 800 or wh < 600:
+                    ww = max(win_conf.get('width', 1200), 800)
+                    wh = max(win_conf.get('height', 800), 600)
+                    
+                valid_x, valid_y = ensure_window_on_screen(wx, wy, ww, wh)
+                
+                if valid_x is not None and valid_y is not None:
+                    if window_ref[0].x != valid_x or window_ref[0].y != valid_y:
+                        logger.info(f"Relocating window back to screen: ({valid_x}, {valid_y})")
+                        window_ref[0].move(int(valid_x), int(valid_y))
+                        
+                if window_ref[0].width != ww or window_ref[0].height != wh:
+                    window_ref[0].resize(int(ww), int(wh))
+            except Exception as e:
+                logger.error(f"Error enforcing geometry on restore: {e}")
+
     import webbrowser
 
     def on_open_browser(icon, item):
@@ -355,13 +386,20 @@ def run_application_stack(create_app_func: Callable, host: str, port: int, headl
 
     def on_closing():
         """Intercept window closing to minimize to tray or exit based on preference."""
-        # Always save window geometry before closing/hiding
-        if window_ref[0]:
+        logger.info(f"on_closing fired: is_dormant={is_dormant[0]}, window_ref={window_ref[0] is not None}")
+        
+        # Only save geometry when the window is in a normal visible state.
+        # When the window is dormant (hidden to tray), its coordinates/dimensions
+        # are unreliable (e.g. Windows reports -32000 for minimized windows).
+        # The good geometry was already saved when the window was first hidden.
+        if window_ref[0] and not is_dormant[0]:
             try:
                 from app.utils.config_manager import save_window_geometry
                 save_window_geometry(window_ref[0])
             except Exception as e:
                 logger.debug(f"Failed to save window geometry: {e}")
+        else:
+            logger.info("Skipping geometry save: window is dormant or None")
         
         if not tray_available[0] or not tray_icon[0]:
             return True  # Allow close if no tray
@@ -546,6 +584,14 @@ def run_application_stack(create_app_func: Callable, host: str, port: int, headl
     initial_x = window_state.get('x', None)
     initial_y = window_state.get('y', None)
     
+    # Validate dimensions against minimum window size
+    # Corrupted configs can save tiny dimensions (e.g. from minimized/hidden state)
+    MIN_WIDTH, MIN_HEIGHT = 800, 600
+    if initial_width < MIN_WIDTH or initial_height < MIN_HEIGHT:
+        logger.warning(f"Saved window size ({initial_width}x{initial_height}) below minimum, resetting to defaults")
+        initial_width = max(initial_width, MIN_WIDTH)
+        initial_height = max(initial_height, MIN_HEIGHT)
+    
     # Ensure window is on screen (boundary check)
     from app.utils.config_manager import ensure_window_on_screen
     initial_x, initial_y = ensure_window_on_screen(initial_x, initial_y, initial_width, initial_height)
@@ -585,6 +631,17 @@ def run_application_stack(create_app_func: Callable, host: str, port: int, headl
     # Attach closing event to minimize instead of quit if tray is active
     if ENABLE_TRAY:
         window.events.closing += on_closing
+
+    # Force the window to restore on load
+    # This defeats Windows OS behavior that caches the minimized state if the app was closed while minimized.
+    def on_loaded():
+        if window_ref[0] and not is_dormant[0]:
+            try:
+                window_ref[0].restore()
+            except Exception:
+                pass
+    
+    window.events.loaded += on_loaded
 
     # Initialize System Tray (Platform Specific)
     if ENABLE_TRAY:
