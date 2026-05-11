@@ -202,7 +202,8 @@ def run_application_stack(create_app_func: Callable, host: str, port: int, headl
         logger.info("Exiting - another instance is already running")
         sys.exit(0)
     
-    if headless:
+    if headless or os.environ.get('UPNEXT_HEADLESS') == '1':
+        headless = True
         os.environ['UPNEXT_HEADLESS'] = '1'
     
     # 1. Start Server

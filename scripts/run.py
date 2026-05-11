@@ -24,11 +24,31 @@ logger = logging.getLogger("run")
 
 def main() -> None:
     """Main entry point."""
+    import argparse
+    
     # Check frozen state (PyInstaller)
     if getattr(sys, 'frozen', False):
         os.chdir(os.path.dirname(sys.executable))
 
-    run_application_stack(create_app, HOST, PORT)
+    parser = argparse.ArgumentParser(description="UpNext Application")
+    parser.add_argument("--headless", action="store_true", help="Run in headless mode")
+    parser.add_argument("--minimized", action="store_true", help="Start minimized")
+    
+    # If the executable name contains '-server', default to headless
+    exe_name = os.path.basename(sys.executable).lower()
+    default_headless = "-server" in exe_name
+    
+    args, unknown = parser.parse_known_args()
+    
+    is_headless = args.headless or default_headless or os.environ.get('UPNEXT_HEADLESS') == '1'
+
+    run_application_stack(
+        create_app, 
+        HOST, 
+        PORT, 
+        headless=is_headless, 
+        minimized=args.minimized
+    )
 
 
 if __name__ == '__main__':

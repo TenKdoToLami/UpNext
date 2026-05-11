@@ -114,6 +114,19 @@ jobs:
              mv ${{ matrix.artifact_name }} UpNext-${{ matrix.os_short }}-Standard-x64${{ matrix.ext }}
            fi
 
+      # --- BUILD PROCESS (SERVER VERSION) ---
+      - name: Build Server Version
+        run: python manage.py build --server
+
+      - name: Prepare Server Artifact
+        shell: bash
+        run: |
+           if [ "${{ matrix.os_short }}" == "Linux" ]; then
+             mv UpNext-server UpNext-Linux-Server-x64
+           else
+             mv UpNext-server.exe UpNext-Windows-Server-x64.exe
+           fi
+
       # --- UPLOAD ASSETS ---
       - name: Upload Release Assets
         uses: softprops/action-gh-release@v1
@@ -122,5 +135,6 @@ jobs:
           files: |
             UpNext-${{ matrix.os_short }}-Tray-x64*
             UpNext-${{ matrix.os_short }}-Standard-x64*
+            UpNext-${{ matrix.os_short }}-Server-x64*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
