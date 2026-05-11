@@ -49,7 +49,9 @@ def main():
     run_parser.add_argument("--headless", action="store_true", help="Run in headless mode (no GUI)")
     run_parser.add_argument("--minimized", action="store_true", help="Start with window minimized to tray")
     
-    subparsers.add_parser("build", help="Compile the application into a standalone executable")
+    build_parser = subparsers.add_parser("build", help="Compile the application into a standalone executable")
+    build_parser.add_argument("--server", action="store_true", help="Build server-only version (no GUI, smaller size)")
+    
     subparsers.add_parser("clean", help="Remove temporary build artifacts and cache files")
 
     args = parser.parse_args()
@@ -57,7 +59,7 @@ def main():
     if args.command == "run":
         run_application_stack(create_app, HOST, PORT, headless=args.headless, minimized=args.minimized)
     elif args.command == "build":
-        build.build_project()
+        build.build_project(server_only=args.server)
     elif args.command == "clean":
         clean.clean_project()
     else:

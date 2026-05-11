@@ -10,17 +10,15 @@ logging.basicConfig(level=logging.INFO, format='%(message)s')
 logger = logging.getLogger("Builder")
 
 
-def build_project():
+def build_project(server_only: bool = False):
     """
     Orchestrates the build process to create a standalone binary.
-    
-    1. Invokes PyInstaller to bundle dependencies.
-    2. Relocates the resulting artifact to the project root.
-    3. (Linux) Generates a .desktop integration file.
-    4. Cleans up temporary build directories.
     """
-    logger.info("Starting production build process...")
+    logger.info(f"Starting {'SERVER-ONLY ' if server_only else ''}production build process...")
     
+    if server_only:
+        os.environ['UPNEXT_BUILD_SERVER'] = '1'
+
     # Path Resolution
     root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     spec_file = os.path.join(root_dir, 'scripts', 'UpNext.spec')
@@ -28,18 +26,16 @@ def build_project():
 
     # 1. Compilation Stage
     try:
-        # Removed --clean to speed up repeated builds by using cache
         subprocess.run([python_exe, '-m', 'PyInstaller', spec_file, '--noconfirm'], check=True)
         logger.info("PyInstaller compilation successful.")
-    except Exception as e:
-        logger.error(f"Build failed during compilation phase: {e}")
     except Exception as e:
         logger.error(f"Build failed during compilation phase: {e}")
         sys.exit(1)
 
     # 2. Artifact Management
-    dist_exe = os.path.join(root_dir, 'dist', 'UpNext' + ('.exe' if os.name == 'nt' else ''))
-    target_exe = os.path.join(root_dir, 'UpNext' + ('.exe' if os.name == 'nt' else ''))
+    exe_name = 'UpNext' + ('-server' if server_only else '')
+    dist_exe = os.path.join(root_dir, 'dist', exe_name + ('.exe' if os.name == 'nt' else ''))
+    target_exe = os.path.join(root_dir, exe_name + ('.exe' if os.name == 'nt' else ''))
         
     if os.path.exists(dist_exe):
         try:

@@ -437,6 +437,9 @@ def check_update():
 @bp.route('/system/shutdown', methods=['POST'])
 def shutdown_app():
     """Shuts down the application."""
+    if os.environ.get('UPNEXT_HEADLESS') == '1':
+        return jsonify({"status": "error", "message": "Shutdown disabled in headless mode"}), 403
+
     def shutdown():
         import time
         time.sleep(1)

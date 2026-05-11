@@ -31,7 +31,8 @@ def create_app():
     def inject_globals():
         return dict(
             APP_VERSION=app.config.get('APP_VERSION', '0.0.0'),
-            ENABLE_TRAY=ENABLE_TRAY
+            ENABLE_TRAY=ENABLE_TRAY,
+            IS_HEADLESS=os.environ.get('UPNEXT_HEADLESS') == '1'
         )
 
     # Register Blueprints for API, Exports, and HTML Views

@@ -16,13 +16,16 @@ a = Analysis(
     hooksconfig={},
     runtime_hooks=[],
 
-    excludes=['tkinter'] + (['PyQt6', 'PyQt6.QtWebEngine', 'PyQt6.QtWebEngineWidgets', 'PyQt5'] if os.name == 'nt' else []),
+    excludes=['tkinter'] + (['PyQt6', 'PyQt6.QtWebEngine', 'PyQt6.QtWebEngineWidgets', 'webview', 'pystray'] if os.environ.get('UPNEXT_BUILD_SERVER') == '1' else []),
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=block_cipher,
     noarchive=False,
 )
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
+
+# Toggle console based on server mode
+is_server = os.environ.get('UPNEXT_BUILD_SERVER') == '1'
 
 exe = EXE(
     pyz,
@@ -31,14 +34,14 @@ exe = EXE(
     a.zipfiles,
     a.datas,
     [],
-    name='UpNext',
+    name='UpNext' + ('-server' if is_server else ''),
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=False, # Disable UPX compression for faster builds
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=False,
+    console=is_server, # Show console for server builds
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,

@@ -109,7 +109,7 @@ export function generateCardHtml(item) {
         verdictHtml = `<span class="text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-md backdrop-blur-md shadow-xl ${TEXT_COLORS[item.rating]}">${RATING_LABELS[item.rating]}</span>`;
     }
 
-    const coverUrl = item.coverUrl ? `/images/${item.coverUrl}` : null;
+    const coverUrl = item.coverUrl ? `images/${item.coverUrl}` : null;
     const coverHtml = coverUrl
         ? `<img src="${coverUrl}" loading="lazy" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105">`
         : `<div class="w-full h-full flex items-center justify-center text-zinc-400 dark:text-zinc-700 bg-zinc-100 dark:bg-zinc-900"><i data-lucide="image" class="w-10 h-10 opacity-30"></i></div>`;
@@ -387,34 +387,34 @@ function renderCoversCollage(covers) {
         return `<div class="w-full h-full flex items-center justify-center text-zinc-400 dark:text-zinc-700 bg-zinc-100 dark:bg-zinc-900"><i data-lucide="folder-tree" class="w-10 h-10 opacity-30"></i></div>`;
     }
     if (covers.length === 1) {
-        return `<img src="/images/${covers[0]}" loading="lazy" class="w-full h-full object-cover">`;
+        return `<img src="images/${covers[0]}" loading="lazy" class="w-full h-full object-cover">`;
     }
     if (covers.length === 2) {
         return `
             <div class="flex w-full h-full">
-                <img src="/images/${covers[0]}" loading="lazy" class="w-1/2 h-full object-cover border-r border-black/20 dark:border-white/10">
-                <img src="/images/${covers[1]}" loading="lazy" class="w-1/2 h-full object-cover">
+                <img src="images/${covers[0]}" loading="lazy" class="w-1/2 h-full object-cover border-r border-black/20 dark:border-white/10">
+                <img src="images/${covers[1]}" loading="lazy" class="w-1/2 h-full object-cover">
             </div>
         `;
     }
     if (covers.length === 3) {
         return `
             <div class="flex flex-col w-1/2 h-full border-r border-black/20 dark:border-white/10">
-                <img src="/images/${covers[0]}" loading="lazy" class="w-full h-1/2 object-cover border-b border-black/20 dark:border-white/10">
-                <img src="/images/${covers[1]}" loading="lazy" class="w-full h-1/2 object-cover">
+                <img src="images/${covers[0]}" loading="lazy" class="w-full h-1/2 object-cover border-b border-black/20 dark:border-white/10">
+                <img src="images/${covers[1]}" loading="lazy" class="w-full h-1/2 object-cover">
             </div>
             <div class="w-1/2 h-full">
-                <img src="/images/${covers[2]}" loading="lazy" class="w-full h-full object-cover">
+                <img src="images/${covers[2]}" loading="lazy" class="w-full h-full object-cover">
             </div>
         `;
     }
     // 4 or more
     return `
         <div class="grid grid-cols-2 grid-rows-2 w-full h-full">
-            <img src="/images/${covers[0]}" loading="lazy" class="w-full h-full object-cover border-r border-b border-black/20 dark:border-white/10">
-            <img src="/images/${covers[1]}" loading="lazy" class="w-full h-full object-cover border-b border-black/20 dark:border-white/10">
-            <img src="/images/${covers[2]}" loading="lazy" class="w-full h-full object-cover border-r border-black/20 dark:border-white/10">
-            <img src="/images/${covers[3]}" loading="lazy" class="w-full h-full object-cover">
+            <img src="images/${covers[0]}" loading="lazy" class="w-full h-full object-cover border-r border-b border-black/20 dark:border-white/10">
+            <img src="images/${covers[1]}" loading="lazy" class="w-full h-full object-cover border-b border-black/20 dark:border-white/10">
+            <img src="images/${covers[2]}" loading="lazy" class="w-full h-full object-cover border-r border-black/20 dark:border-white/10">
+            <img src="images/${covers[3]}" loading="lazy" class="w-full h-full object-cover">
         </div>
     `;
 }

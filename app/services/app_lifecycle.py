@@ -12,7 +12,9 @@ import os
 import locale
 from typing import Callable
 
-from app.services.browser import launch_browser_app
+# GUI imports moved to run_application_stack for headless compatibility
+# from app.services.browser import launch_browser_app 
+
 
 logger = logging.getLogger("app_lifecycle")
 # Single Instance Lock File and IPC
@@ -179,7 +181,9 @@ def start_flask_server_thread(create_app_func: Callable, host: str, port: int):
     t.start()
     return t
 
-from PIL import Image
+# Image is only needed for tray, move to tray setup
+# from PIL import Image
+
 
 
 def run_application_stack(create_app_func: Callable, host: str, port: int, headless: bool = False, minimized: bool = False):
@@ -197,6 +201,9 @@ def run_application_stack(create_app_func: Callable, host: str, port: int, headl
     if not headless and check_existing_instance():
         logger.info("Exiting - another instance is already running")
         sys.exit(0)
+    
+    if headless:
+        os.environ['UPNEXT_HEADLESS'] = '1'
     
     # 1. Start Server
     start_flask_server_thread(create_app_func, host, port)
@@ -229,25 +236,10 @@ def run_application_stack(create_app_func: Callable, host: str, port: int, headl
             sys.exit(0)
 
     # --- GUI & TRAY MODE ---
-    
-    # Stability fixes for Linux/Qt (Existing logic)
-    if sys.platform != 'win32':
-        try:
-            locale.setlocale(locale.LC_ALL, 'C.UTF-8')
-        except Exception:
-            pass
-        os.environ['QTWEBENGINE_DISABLE_SANDBOX'] = '1'
-        # Force disable GPU for QT on Linux to prevent flickering (Wayland/X11 compositing issues)
-        os.environ['QT_WEBENGINE_DISABLE_GPU'] = '1'
-        os.environ['QT_X11_NO_MITSHM'] = '1'
-        # Force XCB (X11) platform to avoid native Wayland flickering issues
-        os.environ['QT_QPA_PLATFORM'] = 'xcb'
-        
-        if os.environ.get('WEBVIEW_DISABLE_GPU'):
-            os.environ['QT_WEBENGINE_DISABLE_GPU'] = '1'
-        os.environ['PYTHONIOENCODING'] = 'utf-8'
-
+    # Only import these if not headless to allow server-only runs without GUI libs
     import webview
+    from PIL import Image
+    from app.services.browser import launch_browser_app
 
     # Configure Webview
     webview.settings['OPEN_DEVTOOLS_IN_DEBUG'] = False
@@ -675,13 +667,7 @@ def run_application_stack(create_app_func: Callable, host: str, port: int, headl
         try:
              from PyQt6.QtWidgets import QApplication, QSystemTrayIcon, QMenu
              from PyQt6.QtGui import QIcon, QAction
-
-             # CRITICAL: Prevent "QtWebEngineWidgets must be imported before a QCoreApplication instance is created" error
-             # We must import this before creating QApplication if we intend to use WebEngine later (which pywebview does)
-             try:
-                 from PyQt6.QtWebEngineWidgets import QWebEnginePage
-             except ImportError:
-                 pass
+             from PyQt6.QtWebEngineWidgets import QWebEnginePage
              
              # Create/Get Application Instance
              app = QApplication.instance()

@@ -108,6 +108,7 @@
                                         2</div>
                                 </div>
                                 <div class="flex-1 pt-1">
+                                    {% if not IS_HEADLESS %}
                                     <h4 class="text-base font-bold text-zinc-900 dark:text-white">Close Application</h4>
                                     <p class="text-sm text-zinc-500 dark:text-zinc-400 mt-1 mb-3">
                                         You MUST close UpNext completely before replacing the file.
@@ -117,6 +118,12 @@
                                         <i data-lucide="power" class="w-4 h-4"></i>
                                         Close UpNext Now
                                     </button>
+                                    {% else %}
+                                    <h4 class="text-base font-bold text-zinc-900 dark:text-white">Server Mode</h4>
+                                    <p class="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+                                        Headless server detected. Shutdown must be handled via system process manager (e.g. systemd).
+                                    </p>
+                                    {% endif %}
                                 </div>
                             </div>
 
@@ -170,7 +177,7 @@
 </div>
 
 <script type="module">
-    import { shutdownApp } from '/static/js/api_service.js';
+    import { shutdownApp } from 'static/js/api_service.js';
     window.shutdownApp = shutdownApp;
 </script>
 

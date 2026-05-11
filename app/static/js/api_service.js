@@ -15,7 +15,7 @@ import { showToast } from './toast.js';
  */
 export async function getDbStatus() {
 	try {
-		const response = await fetch('/api/database/status');
+		const response = await fetch('api/database/status');
 		if (!response.ok) throw new Error('Failed to fetch DB status');
 		return await response.json();
 	} catch (e) {
@@ -31,7 +31,7 @@ export async function getDbStatus() {
  */
 export async function selectDatabase(dbName) {
 	try {
-		const response = await fetch('/api/database/select', {
+		const response = await fetch('api/database/select', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ db_name: dbName })
@@ -50,7 +50,7 @@ export async function selectDatabase(dbName) {
  */
 export async function createDatabase(dbName) {
 	try {
-		const response = await fetch('/api/database/create', {
+		const response = await fetch('api/database/create', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ db_name: dbName })
@@ -69,7 +69,7 @@ export async function createDatabase(dbName) {
  */
 export async function deleteDatabase(dbName) {
 	try {
-		const response = await fetch('/api/database/delete', {
+		const response = await fetch('api/database/delete', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ db_name: dbName })
@@ -127,7 +127,7 @@ export async function createBackup(dbName) {
  */
 export async function restoreBackup(backupPath, dbName, force = false) {
 	try {
-		const response = await fetch('/api/backups/restore', {
+		const response = await fetch('api/backups/restore', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ backup_path: backupPath, db_name: dbName, force })
@@ -163,7 +163,7 @@ export async function deleteBackup(dbName, backupFile) {
  */
 export async function getBackupSettings() {
 	try {
-		const response = await fetch('/api/backups/settings');
+		const response = await fetch('api/backups/settings');
 		return await response.json();
 	} catch (e) {
 		console.error('Failed to fetch backup settings:', e);
@@ -178,7 +178,7 @@ export async function getBackupSettings() {
  */
 export async function saveBackupSettings(settings) {
 	try {
-		const response = await fetch('/api/backups/settings', {
+		const response = await fetch('api/backups/settings', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify(settings)
@@ -196,7 +196,7 @@ export async function saveBackupSettings(settings) {
  */
 export async function checkSystemUpdate() {
 	try {
-		const response = await fetch('/api/system/check_update');
+		const response = await fetch('api/system/check_update');
 		if (!response.ok) throw new Error('Failed to check for updates');
 		return await response.json();
 	} catch (e) {
@@ -210,7 +210,7 @@ export async function checkSystemUpdate() {
  */
 export async function shutdownApp() {
 	try {
-		await fetch('/api/system/shutdown', { method: 'POST' });
+		await fetch('api/system/shutdown', { method: 'POST' });
 		return true;
 	} catch (e) {
 		console.error('Shutdown failed:', e);
@@ -229,13 +229,13 @@ export async function loadItems() {
 		showGridLoading();
 
 		// 1. Fetch Items (Critical)
-		const itemsRes = await fetch('/api/items');
+		const itemsRes = await fetch('api/items');
 		if (!itemsRes.ok) throw new Error('Failed to fetch items');
 		state.items = await itemsRes.json();
 
 		// 2. Fetch Tags (Optional)
 		try {
-			const tagsRes = await fetch('/api/tags');
+			const tagsRes = await fetch('api/tags');
 			if (tagsRes.ok) state.allTags = await tagsRes.json();
 		} catch (e) {
 			console.warn('Failed to fetch tags:', e);
@@ -302,7 +302,7 @@ export async function deleteItem(id) {
  * @throws {Error} If the save operation fails.
  */
 export async function saveItem(formData) {
-	const response = await fetch('/api/items', {
+	const response = await fetch('api/items', {
 		method: 'POST',
 		body: formData
 	});
@@ -323,7 +323,7 @@ export async function saveItem(formData) {
  */
 export async function saveTag(name, color, description = "") {
 	try {
-		const res = await fetch('/api/tags', {
+		const res = await fetch('api/tags', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ name, color, description })
@@ -348,7 +348,7 @@ export async function saveTag(name, color, description = "") {
 export async function renameTag(oldName, newName) {
 	if (oldName === newName) return;
 	try {
-		const res = await fetch('/api/tags/rename', {
+		const res = await fetch('api/tags/rename', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ oldName, newName })
