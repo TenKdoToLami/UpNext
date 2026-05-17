@@ -13,7 +13,7 @@ def clean_project():
     root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     
     dirs_to_remove = ['build', 'dist', os.path.join('data', 'browser_profile')]
-    files_to_remove = ['UpNext', 'UpNext.exe', 'UpNext.desktop']
+    files_to_remove = ['UpNext', 'UpNext.exe', 'UpNext-server', 'UpNext-server.exe', 'UpNext.desktop']
     
     logger.info("Starting comprehensive project cleanup...")
 

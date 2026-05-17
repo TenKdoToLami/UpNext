@@ -13,7 +13,6 @@ import locale
 from typing import Callable
 
 # GUI imports moved to run_application_stack for headless compatibility
-# from app.services.browser import launch_browser_app 
 
 
 logger = logging.getLogger("app_lifecycle")
@@ -240,7 +239,6 @@ def run_application_stack(create_app_func: Callable, host: str, port: int, headl
     # Only import these if not headless to allow server-only runs without GUI libs
     import webview
     from PIL import Image
-    from app.services.browser import launch_browser_app
 
     # Configure Webview
     webview.settings['OPEN_DEVTOOLS_IN_DEBUG'] = False
