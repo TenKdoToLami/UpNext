@@ -157,7 +157,14 @@ Accessibility and configuration are key components of the UpNext experience.
     pip install -r requirements.txt
     ```
 
-3.  **Run Application**:
+3.  **Environment Configuration**:
+    The application supports optional `.env` file configuration via `python-dotenv`. You can create a `.env` file in the root directory to customize operational environments:
+    
+    | Environment Variable | Type | Default | Description |
+    | :--- | :--- | :--- | :--- |
+    | `UPNEXT_HEADLESS` | `int` (0 or 1) | `0` | If set to `1`, the application will start in headless mode (server only, no GUI window). |
+
+4.  **Run Application**:
     ```bash
     python manage.py run
     ```
@@ -166,11 +173,43 @@ Accessibility and configuration are key components of the UpNext experience.
 
 ## 🛠️ Project Management
 
-The `manage.py` script is the central hub for development and distribution:
+The [manage.py](file:///i:/UpNext/manage.py) script is the central hub for development and distribution.
 
--   `python manage.py run`: Launches the Flask backend and native GUI window.
--   `python manage.py build`: Compiles the entire project into a standalone executable.
--   `python manage.py clean`: Wipes build artifacts and temporary files.
+### Commands
+
+#### 1. Start the Application (`run`)
+Launches the Flask backend and native GUI window.
+
+*   **Usage**:
+    ```bash
+    python manage.py run [options]
+    ```
+*   **Parameters**:
+    | Parameter | Type | Default | Description |
+    | :--- | :--- | :--- | :--- |
+    | `--headless` | Flag | `False` | Run in headless mode (server only, no GUI window). |
+    | `--minimized` | Flag | `False` | Start with the application window minimized to the system tray. |
+
+#### 2. Compile the Application (`build`)
+Compiles the application into a standalone executable.
+
+*   **Usage**:
+    ```bash
+    python manage.py build [options]
+    ```
+*   **Parameters**:
+    | Parameter | Type | Default | Description |
+    | :--- | :--- | :--- | :--- |
+    | `--server` | Flag | `False` | Build a server-only version (no GUI, smaller bundle size). |
+
+#### 3. Clean Build Artifacts (`clean`)
+Wipes temporary build directories, compiled caches (`__pycache__`), and packaging files to keep the workspace clean.
+
+*   **Usage**:
+    ```bash
+    python manage.py clean
+    ```
+*   **Parameters**: None.
 
 ---
 

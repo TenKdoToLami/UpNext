@@ -140,6 +140,9 @@ Thumbs.db
 # Project specific
 UpNext
 UpNext.exe
+UpNext-server
+UpNext-server.exe
 /UpNext.desktop
 data/browser_profile/
 data/
+

@@ -16,4 +16,5 @@ defusedxml==0.7.1
 itsdangerous==2.2.0
 tinycss2==1.5.1
 webencodings==0.5.1
+python-dotenv==1.0.1
 # Pruned all GUI dependencies (webview, PyQt6, pystray, screeninfo, etc.)

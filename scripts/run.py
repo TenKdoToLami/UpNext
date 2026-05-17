@@ -7,6 +7,11 @@ It uses the shared lifecycle service to ensure behavior consistency with develop
 import os
 import sys
 import logging
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
 # Ensure root dir is in path
 root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

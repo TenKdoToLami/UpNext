@@ -1,8 +1,13 @@
-import argparse
-import sys
 import os
+import sys
+import argparse
 import subprocess
 import logging
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
 # Ensure we're running from the root directory to allow absolute imports
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -13,9 +18,14 @@ if ROOT_DIR not in sys.path:
 def main():
     """Main entry point for project management."""
     # Environment Detection and Self-Correction: ensure we run inside the venv
-    venv_dir = os.path.join(ROOT_DIR, '.venv')
-    
-    if os.path.exists(venv_dir) and sys.prefix != venv_dir:
+    venv_dir = None
+    for v in ['.venv', 'venv']:
+        candidate = os.path.join(ROOT_DIR, v)
+        if os.path.isdir(candidate):
+            venv_dir = candidate
+            break
+            
+    if venv_dir and sys.prefix != venv_dir:
         python_exe = os.path.join(venv_dir, "Scripts", "python.exe") if sys.platform == "win32" else os.path.join(venv_dir, "bin", "python")
         
         if os.path.exists(python_exe):
