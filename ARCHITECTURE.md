@@ -66,7 +66,7 @@ For developers looking to extend UpNext:
 
 ### 1. Backend Services
 - **`DataManager`**: The core abstraction layer over SQLAlchemy. It handles complex relational operations across multiple tables (Covers, UserData, Metadata) and ensures data normalization.
-- **`AppLifecycle`**: Manages the startup sequence: initializing the Flask thread, waiting for the port to open, and launching the `pywebview` window.
+- **`lifecycle` package**: Manages the startup sequence: initializing the Flask thread, waiting for the port to open, and launching the `pywebview` window (split into `server`, `ipc`, `gui`, and `tray` modules).
 - **`ConfigManager`**: Handles `config.json` serialization, including application settings, database history, and window state.
 
 ### 2. Frontend Core

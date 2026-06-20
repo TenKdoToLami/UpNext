@@ -173,7 +173,7 @@ Accessibility and configuration are key components of the UpNext experience.
 
 ## 🛠️ Project Management
 
-The [manage.py](file:///i:/UpNext/manage.py) script is the central hub for development and distribution.
+The [manage.py](file:///j:/UpNext/manage.py) script is the central hub for development and distribution.
 
 ### Commands
 

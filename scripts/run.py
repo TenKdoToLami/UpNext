@@ -19,7 +19,7 @@ sys.path.append(root_dir)
 
 from app import create_app
 from app.config import HOST, PORT
-from app.services.app_lifecycle import run_application_stack
+from app.services.lifecycle import run_application_stack
 from app.utils.logging_setup import setup_logging
 
 # Configure logging
