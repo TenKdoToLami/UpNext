@@ -36,11 +36,14 @@ def create_app():
         )
 
     # Register Blueprints for API, Exports, and HTML Views
-    from app.routes import api, export, views, releases
+    from app.routes import api, export, views, releases, database, tags, external
     app.register_blueprint(views.bp)
     app.register_blueprint(api.bp)
     app.register_blueprint(export.bp)
     app.register_blueprint(releases.bp)
+    app.register_blueprint(database.bp)
+    app.register_blueprint(tags.bp)
+    app.register_blueprint(external.bp)
 
     # Initialize Database with SQLAlchemy
     from app.database import db
