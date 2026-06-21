@@ -1,11 +1,14 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
 
+
 class BaseAPIClient(ABC):
     """Abstract base class for external API clients."""
 
     @abstractmethod
-    def search(self, query: str, media_type: Optional[str] = None) -> List[Dict[str, Any]]:
+    def search(
+        self, query: str, media_type: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
         """Search for media items."""
         pass
 

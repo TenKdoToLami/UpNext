@@ -6,7 +6,7 @@ import logging
 import shutil
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format='%(message)s')
+logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger("Builder")
 
 
@@ -14,38 +14,44 @@ def build_project(server_only: bool = False):
     """
     Orchestrates the build process to create a standalone binary.
     """
-    logger.info(f"Starting {'SERVER-ONLY ' if server_only else ''}production build process...")
-    
+    logger.info(
+        f"Starting {'SERVER-ONLY ' if server_only else ''}production build process..."
+    )
+
     if server_only:
-        os.environ['UPNEXT_BUILD_SERVER'] = '1'
+        os.environ["UPNEXT_BUILD_SERVER"] = "1"
 
     # Path Resolution
     root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    spec_file = os.path.join(root_dir, 'scripts', 'UpNext.spec')
+    spec_file = os.path.join(root_dir, "scripts", "UpNext.spec")
     python_exe = sys.executable
 
     # 1. Compilation Stage
     try:
-        subprocess.run([python_exe, '-m', 'PyInstaller', spec_file, '--noconfirm'], check=True)
+        subprocess.run(
+            [python_exe, "-m", "PyInstaller", spec_file, "--noconfirm"], check=True
+        )
         logger.info("PyInstaller compilation successful.")
     except Exception as e:
         logger.error(f"Build failed during compilation phase: {e}")
         sys.exit(1)
 
     # 2. Artifact Management
-    exe_name = 'UpNext' + ('-server' if server_only else '')
-    dist_exe = os.path.join(root_dir, 'dist', exe_name + ('.exe' if os.name == 'nt' else ''))
-    target_exe = os.path.join(root_dir, exe_name + ('.exe' if os.name == 'nt' else ''))
-        
+    exe_name = "UpNext" + ("-server" if server_only else "")
+    dist_exe = os.path.join(
+        root_dir, "dist", exe_name + (".exe" if os.name == "nt" else "")
+    )
+    target_exe = os.path.join(root_dir, exe_name + (".exe" if os.name == "nt" else ""))
+
     if os.path.exists(dist_exe):
         try:
             if os.path.exists(target_exe):
                 os.remove(target_exe)
             shutil.move(dist_exe, target_exe)
             logger.info(f"Executable moved to root: {os.path.basename(target_exe)}")
-            
+
             # Platform-specific integrations
-            if os.name != 'nt':
+            if os.name != "nt":
                 _create_linux_desktop_entry(root_dir, target_exe)
 
         except Exception as e:
@@ -61,22 +67,22 @@ def build_project(server_only: bool = False):
 
 def _create_linux_desktop_entry(root_dir: str, target_exe: str):
     """Copies Linux packaging files to the root directory."""
-    pkg_dir = os.path.join(root_dir, 'packaging', 'linux')
-    
+    pkg_dir = os.path.join(root_dir, "packaging", "linux")
+
     # 1. Copy Desktop File
-    src_desktop = os.path.join(pkg_dir, 'UpNext.desktop')
-    dst_desktop = os.path.join(root_dir, 'UpNext.desktop')
+    src_desktop = os.path.join(pkg_dir, "UpNext.desktop")
+    dst_desktop = os.path.join(root_dir, "UpNext.desktop")
     if os.path.exists(src_desktop):
         shutil.copy(src_desktop, dst_desktop)
-        
+
         # Update the placeholder in the local copy to point to current dir
-        with open(dst_desktop, 'r') as f:
+        with open(dst_desktop, "r") as f:
             content = f.read()
-        
+
         # For local dev builds, point absolute path to root_dir
-        content = content.replace('__APP_DIR__', root_dir)
-        
-        with open(dst_desktop, 'w') as f:
+        content = content.replace("__APP_DIR__", root_dir)
+
+        with open(dst_desktop, "w") as f:
             f.write(content)
         os.chmod(dst_desktop, 0o755)
         logger.info("Linux Desktop entry created from template.")
@@ -84,16 +90,16 @@ def _create_linux_desktop_entry(root_dir: str, target_exe: str):
         logger.warning(f"Template not found: {src_desktop}")
 
     # 2. Copy Installer Script
-    src_install = os.path.join(pkg_dir, 'install.sh')
-    dst_install = os.path.join(root_dir, 'install.sh')
+    src_install = os.path.join(pkg_dir, "install.sh")
+    dst_install = os.path.join(root_dir, "install.sh")
     if os.path.exists(src_install):
         shutil.copy(src_install, dst_install)
         os.chmod(dst_install, 0o755)
         logger.info("Installer script copied.")
 
     # 3. Copy Uninstaller Script
-    src_uninstall = os.path.join(pkg_dir, 'uninstall.sh')
-    dst_uninstall = os.path.join(root_dir, 'uninstall.sh')
+    src_uninstall = os.path.join(pkg_dir, "uninstall.sh")
+    dst_uninstall = os.path.join(root_dir, "uninstall.sh")
     if os.path.exists(src_uninstall):
         shutil.copy(src_uninstall, dst_uninstall)
         os.chmod(dst_uninstall, 0o755)
@@ -102,7 +108,7 @@ def _create_linux_desktop_entry(root_dir: str, target_exe: str):
 
 def _cleanup_build_artifacts(root_dir: str, target_exe: str):
     """Removes temporary filesystem objects created during the build."""
-    for folder in ['build', 'dist']:
+    for folder in ["build", "dist"]:
         path = os.path.join(root_dir, folder)
         if os.path.exists(path):
             shutil.rmtree(path)

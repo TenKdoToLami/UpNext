@@ -36,66 +36,66 @@ def get_items():
 def check_duplicate():
     """
     Checks if an item with the same title and type already exists.
-    
+
     Query params:
         title: Title to search for (required)
         type: Media type (required)
         exclude_id: Optional ID to exclude from check (for edit mode)
-        
+
     Returns:
         { "exists": bool, "item": {id, title, type} | null }
     """
     title = request.args.get("title", "").strip()
     media_type = request.args.get("type", "").strip()
     exclude_id = request.args.get("exclude_id")
-    
+
     if not title or not media_type:
         return jsonify({"exists": False, "item": None})
-        
+
     # Case-insensitive search
     # 1. Check strict title match
     query = MediaItem.query.filter(
-        db.func.lower(MediaItem.title) == title.lower(),
-        MediaItem.type == media_type
+        db.func.lower(MediaItem.title) == title.lower(), MediaItem.type == media_type
     )
-    
+
     if exclude_id:
         query = query.filter(MediaItem.id != exclude_id)
-        
+
     existing = query.first()
-    
+
     if existing:
-        return jsonify({
-            "exists": True,
-            "item": {
-                "id": existing.id,
-                "title": existing.title,
-                "type": existing.type
-            }
-        })
-
-    # 2. Check overlap with alternate titles
-    candidates = db.session.query(MediaItem.id, MediaItem.title, MediaItem.alternate_titles).filter(
-        MediaItem.type == media_type
-    )
-    
-    if exclude_id:
-        candidates = candidates.filter(MediaItem.id != exclude_id)
-        
-    for cid, ctitle, calts in candidates.all():
-        if not calts: continue
-
-        alts_list = calts if isinstance(calts, list) else []
-        
-        if any(t.lower() == title.lower() for t in alts_list):
-             return jsonify({
+        return jsonify(
+            {
                 "exists": True,
                 "item": {
-                    "id": cid,
-                    "title": ctitle,
-                    "type": media_type
+                    "id": existing.id,
+                    "title": existing.title,
+                    "type": existing.type,
+                },
+            }
+        )
+
+    # 2. Check overlap with alternate titles
+    candidates = db.session.query(
+        MediaItem.id, MediaItem.title, MediaItem.alternate_titles
+    ).filter(MediaItem.type == media_type)
+
+    if exclude_id:
+        candidates = candidates.filter(MediaItem.id != exclude_id)
+
+    for cid, ctitle, calts in candidates.all():
+        if not calts:
+            continue
+
+        alts_list = calts if isinstance(calts, list) else []
+
+        if any(t.lower() == title.lower() for t in alts_list):
+            return jsonify(
+                {
+                    "exists": True,
+                    "item": {"id": cid, "title": ctitle, "type": media_type},
                 }
-            })
+            )
 
     return jsonify({"exists": False, "item": None})
 
@@ -104,7 +104,7 @@ def check_duplicate():
 def save_item():
     """
     Creates a new media item or updates an existing one.
-    
+
     Expects a multipart/form-data request with:
     - data: JSON string containing item attributes.
     - image: (Optional) Binary image file for the cover.
@@ -125,16 +125,18 @@ def save_item():
         if image_file and image_file.filename:
             # Process uploaded image to match user defaults
             config = load_config()
-            target_width, target_format, target_quality = get_default_image_settings(config)
-            
+            target_width, target_format, target_quality = get_default_image_settings(
+                config
+            )
+
             raw_data = image_file.read()
             processed_blob, actual_mime = process_image(
-                raw_data, 
-                target_width=target_width, 
-                target_format=target_format, 
-                quality=target_quality
+                raw_data,
+                target_width=target_width,
+                target_format=target_format,
+                quality=target_quality,
             )
-            
+
             form_data["cover_image"] = processed_blob
             form_data["cover_mime"] = actual_mime
             form_data["cover_url"] = ""  # Real image overrides external URL
@@ -144,27 +146,35 @@ def save_item():
             cover_url = request.form.get("cover_url")
             if cover_url:
                 try:
-                    response = requests.get(cover_url, timeout=10, headers={
-                        "User-Agent": "UpNext/1.0 (Media Tracker App)"
-                    })
+                    response = requests.get(
+                        cover_url,
+                        timeout=10,
+                        headers={"User-Agent": "UpNext/1.0 (Media Tracker App)"},
+                    )
                     if response.status_code == 200:
                         # Process image to match user defaults
                         config = load_config()
-                        target_width, target_format, target_quality = get_default_image_settings(config)
-                        
-                        processed_blob, actual_mime = process_image(
-                            response.content, 
-                            target_width=target_width, 
-                            target_format=target_format, 
-                            quality=target_quality
+                        target_width, target_format, target_quality = (
+                            get_default_image_settings(config)
                         )
-                        
+
+                        processed_blob, actual_mime = process_image(
+                            response.content,
+                            target_width=target_width,
+                            target_format=target_format,
+                            quality=target_quality,
+                        )
+
                         form_data["cover_image"] = processed_blob
                         form_data["cover_mime"] = actual_mime
                         form_data["cover_url"] = cover_url
-                        logger.info(f"Downloaded and processed cover from: {cover_url} as {actual_mime}")
+                        logger.info(
+                            f"Downloaded and processed cover from: {cover_url} as {actual_mime}"
+                        )
                 except Exception as e:
-                    logger.warning(f"Failed to download/process cover from {cover_url}: {e}")
+                    logger.warning(
+                        f"Failed to download/process cover from {cover_url}: {e}"
+                    )
 
         if item_id:
             # Update existing record
@@ -202,7 +212,7 @@ def delete_item(item_id):
     try:
         if data_manager.delete_item(item_id):
             return jsonify({"status": "success"})
-        
+
         # If not found, return success (idempotent)
         return jsonify({"status": "success"})
 
@@ -214,11 +224,11 @@ def delete_item(item_id):
 def _validate_item(data: Dict[str, Any], is_update: bool = False) -> None:
     """
     Validates item data against allowed constants.
-    
+
     Args:
         data: The item dictionary to validate.
         is_update: Whether this is an update to an existing item.
-        
+
     Raises:
         ValueError: If validation fails.
     """
@@ -226,7 +236,7 @@ def _validate_item(data: Dict[str, Any], is_update: bool = False) -> None:
     item_type = data.get("type")
     if not is_update or "type" in data:
         if item_type not in MEDIA_TYPES:
-             raise ValueError(f"Invalid media type: {item_type}")
+            raise ValueError(f"Invalid media type: {item_type}")
 
     # Status validation
     status = data.get("status")

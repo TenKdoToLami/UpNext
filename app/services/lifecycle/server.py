@@ -23,8 +23,11 @@ def wait_for_server(host: str, port: int, timeout: float = 5.0) -> bool:
     return False
 
 
-def start_flask_server_thread(create_app_func: Callable, host: str, port: int) -> threading.Thread:
+def start_flask_server_thread(
+    create_app_func: Callable, host: str, port: int
+) -> threading.Thread:
     """Starts the Flask application in a daemon thread."""
+
     def server_thread():
         app = create_app_func()
         logger.info(f"Server starting at http://{host}:{port}")

@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 class OpenLibraryClient(BaseAPIClient):
     """
     OpenLibrary REST API client for Books.
-    
+
     API Docs: https://openlibrary.org/developers/api
     Rate Limit: None (but use User-Agent header for high volume)
     """
@@ -27,7 +27,7 @@ class OpenLibraryClient(BaseAPIClient):
                 url,
                 params=params,
                 headers={"User-Agent": "UpNext/1.0 (Media Tracker App)"},
-                timeout=10
+                timeout=10,
             )
             response.raise_for_status()
             return response.json()
@@ -35,13 +35,18 @@ class OpenLibraryClient(BaseAPIClient):
             logger.error(f"OpenLibrary API request failed: {e}")
             return None
 
-    def search(self, query: str, media_type: Optional[str] = None) -> List[Dict[str, Any]]:
+    def search(
+        self, query: str, media_type: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
         """Search OpenLibrary for books."""
-        data = self._request(self.SEARCH_URL, {
-            "q": query,
-            "limit": 10,
-            "fields": "key,title,author_name,first_publish_year,cover_i,number_of_pages_median,subject,publisher,isbn,edition_count,language"
-        })
+        data = self._request(
+            self.SEARCH_URL,
+            {
+                "q": query,
+                "limit": 10,
+                "fields": "key,title,author_name,first_publish_year,cover_i,number_of_pages_median,subject,publisher,isbn,edition_count,language",
+            },
+        )
         if not data:
             return []
 
@@ -56,20 +61,22 @@ class OpenLibraryClient(BaseAPIClient):
             isbns = item.get("isbn", [])[:3]
             edition_count = item.get("edition_count")
 
-            results.append({
-                "id": item.get("key", "").replace("/works/", ""),
-                "source": "openlibrary",
-                "title": item.get("title", "Unknown"),
-                "cover_url": cover_url,
-                "year": item.get("first_publish_year"),
-                "description_preview": "",  # Search doesn't include description
-                "authors": authors,
-                "page_count": item.get("number_of_pages_median"),
-                "tags": subjects,
-                "publishers": publishers,
-                "isbns": isbns,
-                "edition_count": edition_count,
-            })
+            results.append(
+                {
+                    "id": item.get("key", "").replace("/works/", ""),
+                    "source": "openlibrary",
+                    "title": item.get("title", "Unknown"),
+                    "cover_url": cover_url,
+                    "year": item.get("first_publish_year"),
+                    "description_preview": "",  # Search doesn't include description
+                    "authors": authors,
+                    "page_count": item.get("number_of_pages_median"),
+                    "tags": subjects,
+                    "publishers": publishers,
+                    "isbns": isbns,
+                    "edition_count": edition_count,
+                }
+            )
 
         return results
 
@@ -109,21 +116,22 @@ class OpenLibraryClient(BaseAPIClient):
         # First publish date
         first_publish = data.get("first_publish_date", "")
         release_date = None
-        
+
         if first_publish:
             # Try to extract year
-            year_match = re.search(r'\d{4}', first_publish)
+            year_match = re.search(r"\d{4}", first_publish)
             if year_match:
                 release_date = f"{year_match.group()}-01-01"
             else:
                 release_date = str(first_publish)
-        
+
         if not release_date:
             # Fallback to created date
             created = data.get("created", {}).get("value", "")
             if created:
-                year_match = re.search(r'\d{4}', created)
-                if year_match: release_date = f"{year_match.group()}-01-01"
+                year_match = re.search(r"\d{4}", created)
+                if year_match:
+                    release_date = f"{year_match.group()}-01-01"
 
         subjects = data.get("subjects", [])[:10]
         if subjects and isinstance(subjects[0], dict):

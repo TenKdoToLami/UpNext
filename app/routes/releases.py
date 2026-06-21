@@ -44,13 +44,14 @@ def get_releases() -> Tuple[Response, int]:
             to_date = today + timedelta(days=60)
 
         if item_id := request.args.get("item_id"):
-            query = db.session.query(MediaRelease).filter(MediaRelease.item_id == item_id)
+            query = db.session.query(MediaRelease).filter(
+                MediaRelease.item_id == item_id
+            )
         else:
             query = db.session.query(MediaRelease)
 
         releases = (
-            query
-            .filter(MediaRelease.date >= from_date)
+            query.filter(MediaRelease.date >= from_date)
             .filter(MediaRelease.date <= to_date)
             .order_by(MediaRelease.date.asc(), MediaRelease.release_time.asc())
             .all()
@@ -61,7 +62,11 @@ def get_releases() -> Tuple[Response, int]:
             release_data = {
                 "id": release.id,
                 "date": release.date.isoformat(),
-                "time": release.release_time.strftime("%H:%M") if release.release_time else None,
+                "time": (
+                    release.release_time.strftime("%H:%M")
+                    if release.release_time
+                    else None
+                ),
                 "content": release.content,
                 "isTracked": release.is_tracked,
                 "itemId": release.item_id,
@@ -101,7 +106,9 @@ def get_upcoming_releases() -> Tuple[Response, int]:
         overdue_releases = (
             db.session.query(MediaRelease)
             .filter(MediaRelease.date <= today)
-            .filter(or_(MediaRelease.is_tracked == True, MediaRelease.is_tracked == None))
+            .filter(
+                or_(MediaRelease.is_tracked == True, MediaRelease.is_tracked == None)
+            )
             .order_by(MediaRelease.date.asc(), MediaRelease.release_time.asc())
             .all()
         )
@@ -110,7 +117,9 @@ def get_upcoming_releases() -> Tuple[Response, int]:
         future_releases = (
             db.session.query(MediaRelease)
             .filter(MediaRelease.date > today)
-            .filter(or_(MediaRelease.is_tracked == True, MediaRelease.is_tracked == None))
+            .filter(
+                or_(MediaRelease.is_tracked == True, MediaRelease.is_tracked == None)
+            )
             .order_by(MediaRelease.date.asc(), MediaRelease.release_time.asc())
             .offset(offset)
             .limit(limit)
@@ -124,7 +133,11 @@ def get_upcoming_releases() -> Tuple[Response, int]:
             release_data = {
                 "id": release.id,
                 "date": release.date.isoformat(),
-                "time": release.release_time.strftime("%H:%M") if release.release_time else None,
+                "time": (
+                    release.release_time.strftime("%H:%M")
+                    if release.release_time
+                    else None
+                ),
                 "content": release.content,
                 "isTracked": release.is_tracked,
                 "itemId": release.item_id,
@@ -138,7 +151,7 @@ def get_upcoming_releases() -> Tuple[Response, int]:
                     "coverUrl": release.item.cover_url,
                     "userData": {
                         "rating": release.item.rating if release.item.user_data else 0
-                    }
+                    },
                 }
             result.append(release_data)
 
@@ -162,7 +175,9 @@ def get_overdue_releases() -> Tuple[Response, int]:
         query = (
             db.session.query(MediaRelease)
             .filter(MediaRelease.date <= today)
-            .filter(or_(MediaRelease.is_tracked == True, MediaRelease.is_tracked == None))
+            .filter(
+                or_(MediaRelease.is_tracked == True, MediaRelease.is_tracked == None)
+            )
             .order_by(MediaRelease.date.desc())
         )
 
@@ -175,20 +190,17 @@ def get_overdue_releases() -> Tuple[Response, int]:
                 "id": release.id,
                 "date": release.date.isoformat(),
                 "content": release.content,
-                "item": None
+                "item": None,
             }
             if release.item:
                 item_data["item"] = {
                     "title": release.item.title,
                     "type": release.item.type,
-                    "coverUrl": release.item.cover_url
+                    "coverUrl": release.item.cover_url,
                 }
             items.append(item_data)
 
-        return jsonify({
-            "count": total_count,
-            "items": items
-        }), 200
+        return jsonify({"count": total_count, "items": items}), 200
     except Exception as e:
         logger.error(f"Error fetching overdue releases: {e}", exc_info=True)
         return jsonify({"error": "Failed to fetch overdue releases"}), 500
@@ -198,8 +210,8 @@ def get_overdue_releases() -> Tuple[Response, int]:
 def catch_up_releases() -> Tuple[Response, int]:
     """
     Mark all previous and current overdue releases as seen.
-    
-    Includes strictly past days, and today's releases IF they are before 
+
+    Includes strictly past days, and today's releases IF they are before
     the current system time (or have no specific time set).
     """
     try:
@@ -215,12 +227,14 @@ def catch_up_releases() -> Tuple[Response, int]:
                         MediaRelease.date == today,
                         or_(
                             MediaRelease.release_time < now_time,
-                            MediaRelease.release_time == None
-                        )
-                    )
+                            MediaRelease.release_time == None,
+                        ),
+                    ),
                 )
             )
-            .filter(or_(MediaRelease.is_tracked == True, MediaRelease.is_tracked == None))
+            .filter(
+                or_(MediaRelease.is_tracked == True, MediaRelease.is_tracked == None)
+            )
             .update({MediaRelease.is_tracked: False}, synchronize_session=False)
         )
         db.session.commit()
@@ -296,7 +310,9 @@ def create_release() -> Tuple[Response, int]:
             current_count = start_count
 
             for _ in range(count):
-                final_content = get_content(prefix if use_counter else "", current_count, content_base)
+                final_content = get_content(
+                    prefix if use_counter else "", current_count, content_base
+                )
                 # If content is empty (because optional) and no counter, use fallback
                 if not final_content and item_id:
                     final_content = "New Release"
@@ -307,7 +323,7 @@ def create_release() -> Tuple[Response, int]:
                     content=final_content or "New Release",
                     item_id=item_id,
                     is_tracked=data.get("isTracked", True),
-                    notification_sent=False
+                    notification_sent=False,
                 )
                 db.session.add(new_release)
                 db.session.flush()  # flush to get ID
@@ -322,11 +338,12 @@ def create_release() -> Tuple[Response, int]:
                 current_count += 1
 
             db.session.commit()
-            return jsonify({
-                "status": "success",
-                "count": len(created_ids),
-                "ids": created_ids
-            }), 201
+            return (
+                jsonify(
+                    {"status": "success", "count": len(created_ids), "ids": created_ids}
+                ),
+                201,
+            )
 
         else:
             # Single Event
@@ -341,16 +358,13 @@ def create_release() -> Tuple[Response, int]:
                 content=final_content,
                 item_id=item_id,
                 is_tracked=data.get("isTracked", True),
-                notification_sent=False
+                notification_sent=False,
             )
 
             db.session.add(new_release)
             db.session.commit()
 
-            return jsonify({
-                "status": "success",
-                "id": new_release.id
-            }), 201
+            return jsonify({"status": "success", "id": new_release.id}), 201
 
     except Exception as e:
         logger.error(f"Error creating release: {e}", exc_info=True)
@@ -383,7 +397,9 @@ def update_release(release_id: int) -> Tuple[Response, int]:
         if "time" in data:
             if data["time"]:
                 try:
-                    release.release_time = datetime.strptime(data["time"], "%H:%M").time()
+                    release.release_time = datetime.strptime(
+                        data["time"], "%H:%M"
+                    ).time()
                 except ValueError:
                     pass
             else:

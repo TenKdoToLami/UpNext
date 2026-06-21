@@ -16,7 +16,7 @@ def find_available_port(host, preferred_ports):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             if s.connect_ex((host, port)) != 0:
                 return port
-                
+
     # Fallback: bind to 0 to let OS choose
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind((host, 0))
@@ -28,7 +28,7 @@ PORT = find_available_port(HOST, PREFERRED_PORTS)
 
 # Path and Environment Configuration
 # We handle both standard development runs and frozen PyInstaller executables.
-if getattr(sys, 'frozen', False):
+if getattr(sys, "frozen", False):
     # Production Mode (compiled .exe)
     # BASE_DIR is the directory containing the executable.
     BASE_DIR = os.path.dirname(sys.executable)
@@ -45,38 +45,42 @@ else:
 DATA_DIR = os.path.join(BASE_DIR, "data")
 # Database Configuration
 APP_CONFIG_FILE = os.path.join(DATA_DIR, "config.json")
-DEFAULT_DB_NAME = 'library.db'
+DEFAULT_DB_NAME = "library.db"
+
 
 def get_sqlite_db_path(db_filename=None):
     """
     Returns the absolute path to the specified or default database file.
-    
-    If no filename is provided, it attempts to look up the 'last_db' 
+
+    If no filename is provided, it attempts to look up the 'last_db'
     from the persistent configuration.
     """
     if db_filename:
         return os.path.join(DATA_DIR, db_filename)
-    
+
     # Check for persisted selection in config.json
     if os.path.exists(APP_CONFIG_FILE):
         try:
             import json
-            with open(APP_CONFIG_FILE, 'r') as f:
+
+            with open(APP_CONFIG_FILE, "r") as f:
                 config = json.load(f)
-                last_db = config.get('last_db')
+                last_db = config.get("last_db")
                 if last_db and os.path.exists(os.path.join(DATA_DIR, last_db)):
                     return os.path.join(DATA_DIR, last_db)
         except Exception:
             # Fallback to default on error (e.g. malformed JSON)
-            pass 
+            pass
 
     return os.path.join(DATA_DIR, DEFAULT_DB_NAME)
+
 
 def list_available_databases():
     """Lists all .db files in the data directory."""
     if not os.path.exists(DATA_DIR):
         return []
-    return [f for f in os.listdir(DATA_DIR) if f.endswith('.db')]
+    return [f for f in os.listdir(DATA_DIR) if f.endswith(".db")]
+
 
 # Initial Database Setup
 SQLITE_DB_PATH = get_sqlite_db_path()

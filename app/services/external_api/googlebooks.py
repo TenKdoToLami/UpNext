@@ -11,6 +11,7 @@ class GoogleBooksClient(BaseAPIClient):
     """
     Google Books API client.
     """
+
     BASE_URL = "https://www.googleapis.com/books/v1"
 
     def __init__(self, api_key: Optional[str] = None):
@@ -20,15 +21,13 @@ class GoogleBooksClient(BaseAPIClient):
         params = params or {}
         if self.api_key:
             params["key"] = self.api_key
-        
+
         # Force English language for results
         params["hl"] = "en"
-        
+
         try:
             response = requests.get(
-                f"{self.BASE_URL}{endpoint}",
-                params=params,
-                timeout=10
+                f"{self.BASE_URL}{endpoint}", params=params, timeout=10
             )
             response.raise_for_status()
             return response.json()
@@ -36,16 +35,20 @@ class GoogleBooksClient(BaseAPIClient):
             logger.error(f"Google Books API request failed: {e}")
             return None
 
-    def search(self, query: str, media_type: Optional[str] = None) -> List[Dict[str, Any]]:
+    def search(
+        self, query: str, media_type: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
         # Restrict to English results
-        data = self._request("/volumes", {"q": query, "maxResults": 10, "langRestrict": "en"})
+        data = self._request(
+            "/volumes", {"q": query, "maxResults": 10, "langRestrict": "en"}
+        )
         if not data or "items" not in data:
             return []
 
         results = []
         for item in data["items"]:
             info = item.get("volumeInfo", {})
-            
+
             # High quality cover if available
             img_links = info.get("imageLinks", {})
             cover_url = img_links.get("thumbnail") or img_links.get("smallThumbnail")
@@ -55,16 +58,18 @@ class GoogleBooksClient(BaseAPIClient):
             date_str = info.get("publishedDate", "")
             year = int(date_str[:4]) if len(date_str) >= 4 else None
 
-            results.append({
-                "id": item["id"],
-                "source": "googlebooks",
-                "title": info.get("title", "Unknown"),
-                "cover_url": cover_url,
-                "year": year,
-                "description_preview": (info.get("description") or "")[:200],
-                "authors": info.get("authors", []),
-                "page_count": info.get("pageCount")
-            })
+            results.append(
+                {
+                    "id": item["id"],
+                    "source": "googlebooks",
+                    "title": info.get("title", "Unknown"),
+                    "cover_url": cover_url,
+                    "year": year,
+                    "description_preview": (info.get("description") or "")[:200],
+                    "authors": info.get("authors", []),
+                    "page_count": info.get("pageCount"),
+                }
+            )
         return results
 
     def get_details(self, external_id: str) -> Optional[Dict[str, Any]]:
@@ -73,10 +78,16 @@ class GoogleBooksClient(BaseAPIClient):
             return None
 
         info = data.get("volumeInfo", {})
-        
+
         img_links = info.get("imageLinks", {})
-        cover_url = img_links.get("extraLarge") or img_links.get("large") or img_links.get("medium") or img_links.get("thumbnail")
-        if cover_url: cover_url = cover_url.replace("http://", "https://")
+        cover_url = (
+            img_links.get("extraLarge")
+            or img_links.get("large")
+            or img_links.get("medium")
+            or img_links.get("thumbnail")
+        )
+        if cover_url:
+            cover_url = cover_url.replace("http://", "https://")
 
         return {
             "id": data["id"],
@@ -90,5 +101,5 @@ class GoogleBooksClient(BaseAPIClient):
             "publisher": info.get("publisher"),
             "page_count": info.get("pageCount"),
             "categories": info.get("categories", []),
-            "external_link": info.get("infoLink")
+            "external_link": info.get("infoLink"),
         }

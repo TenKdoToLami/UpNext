@@ -28,10 +28,10 @@ def save_tag():
     name = data.get("name")
     color = data.get("color")
     description = data.get("description", "")
-    
+
     if not name or not color:
         return jsonify({"error": "Name and color are required"}), 400
-        
+
     tag = TagMeta.query.get(name)
     if not tag:
         tag = TagMeta(name=name, color=color, description=description)
@@ -39,8 +39,8 @@ def save_tag():
     else:
         tag.color = color
         if description is not None:
-             tag.description = description
-            
+            tag.description = description
+
     db.session.commit()
     return jsonify(tag.to_dict()), 200
 
@@ -52,14 +52,14 @@ def delete_tag(name):
     tag = TagMeta.query.get(name)
     if tag:
         db.session.delete(tag)
-    
+
     # 2. Update all items
     items = MediaItem.query.all()
     for item in items:
         if item.tags and name in item.tags:
             # Filter out deleted tag
             item.tags = [t for t in item.tags if t != name]
-            
+
     db.session.commit()
     return jsonify({"success": True}), 200
 
@@ -70,28 +70,28 @@ def rename_tag():
     data = request.json
     old_name = data.get("oldName")
     new_name = data.get("newName")
-    
+
     if not old_name or not new_name:
         return jsonify({"error": "oldName and newName required"}), 400
-        
+
     if old_name == new_name:
         return jsonify({"success": True}), 200
-        
+
     # 1. Handle Metadata
     old_tag = TagMeta.query.get(old_name)
     new_tag = TagMeta.query.get(new_name)
-    
+
     color = old_tag.color if old_tag else "#e4e4e7"
     desc = old_tag.description if old_tag else ""
-    
+
     if not new_tag:
         # Create new tag carrying over old metadata
         new_tag = TagMeta(name=new_name, color=color, description=desc)
         db.session.add(new_tag)
-    
+
     if old_tag:
         db.session.delete(old_tag)
-        
+
     # 2. Update Items
     items = MediaItem.query.all()
     for item in items:
@@ -105,6 +105,6 @@ def rename_tag():
                     final_tags.append(val)
                     seen.add(val)
             item.tags = final_tags
-            
+
     db.session.commit()
     return jsonify(new_tag.to_dict()), 200

@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 class TMDBClient(BaseAPIClient):
     """
     TMDB REST API client for Movies and TV Series.
-    
+
     API Docs: https://developer.themoviedb.org/docs
     Rate Limit: None (officially removed Dec 2019)
     """
@@ -29,15 +29,13 @@ class TMDBClient(BaseAPIClient):
 
         params = params or {}
         params["api_key"] = self.api_key
-        
+
         # Force English language
         params["language"] = "en-US"
-        
+
         try:
             response = requests.get(
-                f"{self.API_BASE}{endpoint}",
-                params=params,
-                timeout=10
+                f"{self.API_BASE}{endpoint}", params=params, timeout=10
             )
             response.raise_for_status()
             return response.json()
@@ -45,16 +43,18 @@ class TMDBClient(BaseAPIClient):
             logger.error(f"TMDB API request failed: {e}")
             return None
 
-    def search(self, query: str, media_type: Optional[str] = None) -> List[Dict[str, Any]]:
+    def search(
+        self, query: str, media_type: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
         """
         Search TMDB for movies or TV series.
-        
+
         Args:
             query: Search query string
             media_type: 'Movie' or 'Series'
         """
         endpoint = "/search/movie" if media_type == "Movie" else "/search/tv"
-        
+
         data = self._request(endpoint, {"query": query, "page": 1})
         if not data:
             return []
@@ -64,7 +64,7 @@ class TMDBClient(BaseAPIClient):
             # Movies use 'title', TV uses 'name'
             title = item.get("title") or item.get("name") or "Unknown"
             original_title = item.get("original_title") or item.get("original_name")
-            
+
             # Date parsing
             date_str = item.get("release_date") or item.get("first_air_date") or ""
             year = None
@@ -77,22 +77,30 @@ class TMDBClient(BaseAPIClient):
             desc = item.get("overview", "") or ""
             desc_preview = desc[:200] + "..." if len(desc) > 200 else desc
 
-            results.append({
-                "id": str(item["id"]),
-                "source": "tmdb",
-                "title": title,
-                "original_title": original_title if original_title != title else None,
-                "cover_url": cover_url,
-                "year": year,
-                "description_preview": desc_preview,
-            })
+            results.append(
+                {
+                    "id": str(item["id"]),
+                    "source": "tmdb",
+                    "title": title,
+                    "original_title": (
+                        original_title if original_title != title else None
+                    ),
+                    "cover_url": cover_url,
+                    "year": year,
+                    "description_preview": desc_preview,
+                }
+            )
 
         return results
 
-    def get_details(self, external_id: str, media_type: str = "Movie") -> Optional[Dict[str, Any]]:
+    def get_details(
+        self, external_id: str, media_type: str = "Movie"
+    ) -> Optional[Dict[str, Any]]:
         """Get full details for a TMDB item."""
-        endpoint = f"/movie/{external_id}" if media_type == "Movie" else f"/tv/{external_id}"
-        
+        endpoint = (
+            f"/movie/{external_id}" if media_type == "Movie" else f"/tv/{external_id}"
+        )
+
         # Append credits to get cast/crew
         data = self._request(endpoint, {"append_to_response": "credits"})
         if not data:
@@ -109,7 +117,7 @@ class TMDBClient(BaseAPIClient):
         # Date
         date_str = data.get("release_date") or data.get("first_air_date") or ""
         release_date = date_str if date_str else None
-        
+
         # Standardize YYYY to YYYY-01-01
         if release_date and len(release_date) == 4 and release_date.isdigit():
             release_date = f"{release_date}-01-01"
@@ -124,10 +132,9 @@ class TMDBClient(BaseAPIClient):
         # Directors/Creators
         credits = data.get("credits", {})
         directors = [
-            c["name"] for c in credits.get("crew", [])
-            if c.get("job") == "Director"
+            c["name"] for c in credits.get("crew", []) if c.get("job") == "Director"
         ][:3]
-        
+
         # For TV, get creators instead
         if media_type == "Series":
             directors = [c["name"] for c in data.get("created_by", [])][:3]
@@ -139,13 +146,13 @@ class TMDBClient(BaseAPIClient):
             runtimes = data.get("episode_run_time", [])
             if runtimes:
                 runtime = sum(runtimes) // len(runtimes)
-            
+
             # Fallback 1: Last episode to air
             if not runtime:
                 last_ep = data.get("last_episode_to_air") or {}
                 if last_ep.get("runtime"):
                     runtime = last_ep.get("runtime")
-            
+
             # Fallback 2: Next episode to air
             if not runtime:
                 next_ep = data.get("next_episode_to_air") or {}
@@ -161,24 +168,29 @@ class TMDBClient(BaseAPIClient):
             # If we have season data from API, use it
             if data.get("seasons"):
                 for s in data["seasons"]:
-                    if s.get("season_number") == 0: continue 
-                    
-                    seasons_list.append({
-                        "number": s.get("season_number"),
-                        "episodes": s.get("episode_count") or 0,
-                        "duration": runtime or 0,
-                        "release_date": s.get("air_date")
-                    })
-            
+                    if s.get("season_number") == 0:
+                        continue
+
+                    seasons_list.append(
+                        {
+                            "number": s.get("season_number"),
+                            "episodes": s.get("episode_count") or 0,
+                            "duration": runtime or 0,
+                            "release_date": s.get("air_date"),
+                        }
+                    )
+
             # Fallback: If no season details but we have a season count, generate placeholders
             elif seasons and seasons > 0:
                 for i in range(1, seasons + 1):
-                    seasons_list.append({
-                        "number": i,
-                        "episodes": 0,
-                        "duration": runtime or 0,
-                        "release_date": None
-                    })
+                    seasons_list.append(
+                        {
+                            "number": i,
+                            "episodes": 0,
+                            "duration": runtime or 0,
+                            "release_date": None,
+                        }
+                    )
 
         return {
             "id": str(data["id"]),
@@ -191,7 +203,7 @@ class TMDBClient(BaseAPIClient):
             "avg_duration_minutes": runtime,
             "episodes": episodes,
             "volumes": seasons,  # Map seasons count to volumes for Series
-            "seasons": seasons_list, # Full list for auto-population
+            "seasons": seasons_list,  # Full list for auto-population
             "genres": genres,
             "authors": directors,  # Directors/Creators
             "external_link": f"https://www.themoviedb.org/{'movie' if media_type == 'Movie' else 'tv'}/{data['id']}",
