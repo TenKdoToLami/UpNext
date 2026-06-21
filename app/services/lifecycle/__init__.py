@@ -262,7 +262,10 @@ def run_application_stack(
 
     logger.info("Starting GUI...")
     gui_engine = 'qt' if sys.platform == 'linux' else None
-    webview.start(debug=True, icon=icon_path, gui=gui_engine)
+    
+    is_frozen = getattr(sys, 'frozen', False)
+    debug_mode = not is_frozen or os.environ.get('UPNEXT_DEBUG') == '1'
+    webview.start(debug=debug_mode, icon=icon_path, gui=gui_engine)
     
     # Cleanup after loop exit
     remove_lock_file()
