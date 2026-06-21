@@ -173,7 +173,19 @@ Accessibility and configuration are key components of the UpNext experience.
 
 ## 🛠️ Project Management
 
-The [manage.py](file:///j:/UpNext/manage.py) script is the central hub for development and distribution.
+The [manage.py](file:///j:/UpNext/manage.py) script is the central hub for development and distribution. It can be run either in interactive mode or via direct commands.
+
+### Interactive Mode
+When executed without arguments, `manage.py` starts a text-based interactive menu to guide you through selecting a command and setting options.
+*   **Usage**:
+    ```bash
+    python manage.py
+    ```
+*   **Options Available Interactively**:
+    - **run**: Prompt for headless mode and starting minimized.
+    - **build**: Prompt for server-only build.
+    - **clean**: Directly runs the workspace cleanup.
+    - **exit**: Exits the management menu safely.
 
 ### Commands
 

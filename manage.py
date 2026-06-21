@@ -48,6 +48,53 @@ def main():
     setup_logging()
     logger = logging.getLogger("manage")
     
+    def run_interactive():
+        print("==================================================")
+        print("              UpNext CLI Manager                  ")
+        print("==================================================")
+        print("\nPlease select a command:")
+        print("  1) run   - Start the development server and launch UI")
+        print("  2) build - Compile the application into a standalone executable")
+        print("  3) clean - Remove temporary build artifacts and cache files")
+        print("  4) exit  - Cancel and exit\n")
+
+        try:
+            choice = input("Select an option (1-4): ").strip()
+        except (KeyboardInterrupt, EOFError):
+            print("\nExiting.")
+            sys.exit(0)
+
+        if choice == "1":
+            try:
+                hl = input("Run in headless mode (no GUI)? (y/N): ").strip().lower()
+                headless = hl in ("y", "yes")
+                min_arg = input("Start minimized to the system tray? (y/N): ").strip().lower()
+                minimized = min_arg in ("y", "yes")
+            except (KeyboardInterrupt, EOFError):
+                print("\nExiting.")
+                sys.exit(0)
+            run_application_stack(create_app, HOST, PORT, headless=headless, minimized=minimized)
+        elif choice == "2":
+            try:
+                so = input("Build server-only version (no GUI)? (y/N): ").strip().lower()
+                server_only = so in ("y", "yes")
+            except (KeyboardInterrupt, EOFError):
+                print("\nExiting.")
+                sys.exit(0)
+            build.build_project(server_only=server_only)
+        elif choice == "3":
+            clean.clean_project()
+        elif choice == "4":
+            print("Exiting.")
+            sys.exit(0)
+        else:
+            print("Invalid option. Exiting.")
+            sys.exit(1)
+
+    if len(sys.argv) == 1:
+        run_interactive()
+        sys.exit(0)
+
     parser = argparse.ArgumentParser(
         description="UpNext Management CLI",
         formatter_class=argparse.RawDescriptionHelpFormatter,
